@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
-    <!-- Theme Initialization Script (Prevents FOUC) -->
+    <!-- Theme & Sidebar Initialization Script (Prevents FOUC) -->
     <script>
         (function() {
             var saved = localStorage.getItem('hucems-theme');
@@ -22,6 +22,10 @@
             var theme = saved ? saved : (prefersDark ? 'dark' : 'light');
             document.documentElement.setAttribute('data-theme', theme);
             if (theme === 'dark') document.documentElement.classList.add('dark-theme');
+
+            if (localStorage.getItem('hucems-admin-sidebar-collapsed') === 'true' && window.innerWidth >= 992) {
+                document.documentElement.classList.add('sidebar-collapsed-init');
+            }
         })();
     </script>
 
@@ -137,6 +141,11 @@
                 <a asp-controller="Admin" asp-action="AuditLogs" class="admin-nav-item @(currentAction == "AuditLogs" ? "active" : "")">
                     <i class="bi bi-shield-lock"></i>
                     <span>Security Audit Logs</span>
+                </a>
+                <a asp-controller="Admin" asp-action="DatabaseRecords" class="admin-nav-item @(currentAction == "DatabaseRecords" ? "active" : "")">
+                    <i class="bi bi-table"></i>
+                    <span>Database CRUD Grid</span>
+                    <span class="badge bg-success-subtle text-success ms-auto py-1 px-2 fw-semibold" style="font-size: 10px;">Live SQL</span>
                 </a>
                 <a asp-controller="Admin" asp-action="DatabaseManagement" class="admin-nav-item @(currentAction == "DatabaseManagement" ? "active" : "")">
                     <i class="bi bi-database-check"></i>

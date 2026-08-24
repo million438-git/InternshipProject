@@ -149,6 +149,13 @@
                                     <a asp-controller="Admin" asp-action="DownloadBackup" asp-route-fileName="@f.FileName" class="btn btn-sm btn-outline-secondary px-2 py-1" title="Download Snapshot Archive">
                                         <i class="bi bi-download"></i>
                                     </a>
+                                    <form asp-controller="Admin" asp-action="DeleteBackup" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete backup snapshot @f.FileName?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="fileName" value="@f.FileName" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1" title="Delete Snapshot File">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                             <div class="small text-muted font-monospace" style="font-size: 0.75rem;">

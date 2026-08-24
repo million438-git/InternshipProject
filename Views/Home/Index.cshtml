@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Home";
 }
 
@@ -46,6 +46,13 @@
                asp-action="Register"
                class="hero-btn secondary">
                 Join HUCEMS
+            </a>
+
+            <a asp-controller="Home"
+               asp-action="Contact"
+               class="hero-btn outline">
+                <i class="bi bi-headset"></i>
+                Contact & Support
             </a>
 
         </div>
@@ -333,6 +340,29 @@
 
             </a>
 
+
+            <a asp-controller="Home"
+               asp-action="Contact"
+               class="feature-card reveal">
+
+                <div class="feature-icon">
+                    🎧
+                </div>
+
+                <h3>
+                    Campus Helpdesk
+                </h3>
+
+                <p>
+                    Reach campus coordinators, book auditoriums, or submit inquiries.
+                </p>
+
+                <span>
+                    Contact Helpdesk →
+                </span>
+
+            </a>
+
         </div>
 
     </div>
@@ -506,6 +536,59 @@
 
 
 <!-- =========================================
+     CAMPUS HELPDESK & SUPPORT SECTION
+     ========================================= -->
+
+<section class="support-banner-section reveal">
+
+    <div class="section-container">
+
+        <div class="support-banner-card">
+
+            <div class="row align-items-center g-4">
+
+                <div class="col-lg-7">
+
+                    <span class="section-label light">
+                        <i class="bi bi-headset me-1"></i> NEED ASSISTANCE?
+                    </span>
+
+                    <h2>
+                        Campus Support & Inquiry Desk
+                    </h2>
+
+                    <p>
+                        Have questions about event registrations, hall reservations, student club approvals, or portal access? Our campus administration team is here to assist you.
+                    </p>
+
+                    <div class="support-meta-pills">
+                        <span><i class="bi bi-telephone-fill text-warning me-1"></i> +251 (46) 220-4528</span>
+                        <span><i class="bi bi-envelope-fill text-info me-1"></i> events@hawassauniversity.edu.et</span>
+                    </div>
+
+                </div>
+
+                <div class="col-lg-5 text-lg-end">
+
+                    <a asp-controller="Home"
+                       asp-action="Contact"
+                       class="hero-btn primary py-3 px-4 shadow">
+                        <i class="bi bi-headset fs-5"></i>
+                        <span>Open Contact & Support Desk →</span>
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================
      FINAL CTA
      ========================================= -->
 
@@ -542,13 +625,26 @@
                 Browse Events
             </a>
 
+            <a asp-controller="Home"
+               asp-action="Contact"
+               class="hero-btn outline">
+                <i class="bi bi-headset me-1"></i>
+                Contact Support Desk
+            </a>
+
         </div>
 
         <p class="small mt-3">
             <a asp-controller="Home"
                asp-action="Privacy"
-               class="text-link">
+               class="text-link me-3">
                 Privacy Policy
+            </a>
+            <span class="text-white-50">&bull;</span>
+            <a asp-controller="Home"
+               asp-action="Contact"
+               class="text-link ms-3">
+                Contact Administration
             </a>
         </p>
 

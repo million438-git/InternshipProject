@@ -197,6 +197,21 @@ h1, h2, h3, h4, h5, h6 {
     color: #ffffff;
 }
 
+.hero-btn.outline {
+    color: #ffffff;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1.5px solid #f59e0b;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+}
+
+.hero-btn.outline:hover {
+    background: #f59e0b;
+    color: #0f172a !important;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
+}
+
 .hero-info {
     display: inline-flex;
     gap: 40px;
@@ -838,5 +853,55 @@ h1, h2, h3, h4, h5, h6 {
 .dark-theme .process-card:hover {
     box-shadow: var(--shadow-hover) !important;
     border-color: var(--brand-primary) !important;
+}
+
+/* =========================================
+   SUPPORT BANNER SECTION
+   ========================================= */
+
+.support-banner-section {
+    padding: 70px 8%;
+    background: var(--bg-surface-alt);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.support-banner-card {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+    border-radius: 24px;
+    padding: clamp(32px, 4.5vw, 48px);
+    color: #ffffff;
+    box-shadow: 0 16px 40px rgba(30, 27, 75, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.support-banner-card h2 {
+    color: #ffffff;
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    margin: 12px 0 14px;
+}
+
+.support-banner-card p {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1.05rem;
+    max-width: 620px;
+    margin-bottom: 20px;
+    line-height: 1.7;
+}
+
+.support-meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 0.92rem;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.support-meta-pills span {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.12);
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
 }
 

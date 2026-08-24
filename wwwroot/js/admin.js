@@ -1,25 +1,91 @@
 /**
  * Hawassa Unified Campus Event Management System
- * Admin Console JavaScript Helper
+ * Admin Console JavaScript Helper - Full Responsive & Collapsible Sidebar Engine
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Mobile Sidebar Toggle
     const sidebar = document.getElementById('adminSidebar');
     const toggleBtn = document.getElementById('adminSidebarToggle');
     const closeBtn = document.getElementById('adminCloseSidebar');
 
-    if (toggleBtn && sidebar) {
-        toggleBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('show');
+    // Create backdrop for mobile if not exists
+    let backdrop = document.getElementById('adminSidebarBackdrop');
+    if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.id = 'adminSidebarBackdrop';
+        backdrop.className = 'admin-sidebar-backdrop';
+        document.body.appendChild(backdrop);
+    }
+
+    function isDesktop() {
+        return window.innerWidth >= 992;
+    }
+
+    // Initialize desktop collapsed state from localStorage
+    if (isDesktop() && localStorage.getItem('hucems-admin-sidebar-collapsed') === 'true') {
+        document.body.classList.add('sidebar-collapsed');
+    }
+
+    function closeMobileSidebar() {
+        if (sidebar) sidebar.classList.remove('show');
+        if (backdrop) backdrop.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function toggleSidebar() {
+        if (isDesktop()) {
+            // Desktop: toggle collapsed mode (expand to full page)
+            const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('hucems-admin-sidebar-collapsed', isCollapsed ? 'true' : 'false');
+        } else {
+            // Mobile: slide-in drawer with backdrop
+            if (sidebar) {
+                const isOpen = sidebar.classList.toggle('show');
+                if (backdrop) backdrop.classList.toggle('active', isOpen);
+                document.body.style.overflow = isOpen ? 'hidden' : '';
+            }
+        }
+    }
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleSidebar();
         });
     }
 
-    if (closeBtn && sidebar) {
-        closeBtn.addEventListener('click', () => {
-            sidebar.classList.remove('show');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeMobileSidebar();
         });
     }
+
+    if (backdrop) {
+        backdrop.addEventListener('click', () => {
+            closeMobileSidebar();
+        });
+    }
+
+    // Keyboard shortcut to collapse/expand sidebar: Ctrl+B or Alt+M
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey && e.key.toLowerCase() === 'b') || (e.altKey && e.key.toLowerCase() === 'm')) {
+            e.preventDefault();
+            toggleSidebar();
+        }
+    });
+
+    // Window Resize cleanup
+    window.addEventListener('resize', () => {
+        if (isDesktop()) {
+            closeMobileSidebar();
+            if (localStorage.getItem('hucems-admin-sidebar-collapsed') === 'true') {
+                document.body.classList.add('sidebar-collapsed');
+            } else {
+                document.body.classList.remove('sidebar-collapsed');
+            }
+        }
+    });
 
     // 2. Table Live Search Filtering
     const searchInputs = document.querySelectorAll('[data-table-filter]');

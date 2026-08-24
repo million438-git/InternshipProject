@@ -225,7 +225,7 @@
 
                         <!-- CAMPUS HUB DROPDOWN -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle @(currentController == "Community" || currentAction == "Search" || currentAction == "About" ? "active" : "")"
+                            <a class="nav-link dropdown-toggle @(currentController == "Community" || currentController == "Announcements" || currentAction == "Contact" || currentAction == "Search" || currentAction == "About" || currentAction == "Privacy" ? "active" : "")"
                                href="#"
                                role="button"
                                data-bs-toggle="dropdown"
@@ -233,20 +233,36 @@
                                 <i class="bi bi-grid"></i>
                                 <span>More</span>
                             </a>
-                            <ul class="dropdown-menu shadow-sm rounded-3">
+                            <ul class="dropdown-menu shadow-lg rounded-4 p-2 mt-2">
                                 <li>
-                                    <a class="dropdown-item" asp-controller="Community" asp-action="Index">
-                                        <i class="bi bi-people me-2 text-primary"></i>Student Community
+                                    <a class="dropdown-item py-2 rounded-3 fw-semibold text-warning-emphasis" asp-controller="Home" asp-action="Contact">
+                                        <i class="bi bi-headset me-2 text-warning fs-6"></i>Contact & Support
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" asp-controller="Events" asp-action="Search">
-                                        <i class="bi bi-search me-2 text-info"></i>Search Events
+                                    <a class="dropdown-item py-2 rounded-3" asp-controller="Announcements" asp-action="Index">
+                                        <i class="bi bi-megaphone me-2 text-danger fs-6"></i>Campus Bulletins
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" asp-controller="Home" asp-action="About">
-                                        <i class="bi bi-info-circle me-2 text-secondary"></i>About HUCEMS
+                                    <a class="dropdown-item py-2 rounded-3" asp-controller="Community" asp-action="Index">
+                                        <i class="bi bi-people me-2 text-primary fs-6"></i>Student Community
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 rounded-3" asp-controller="Events" asp-action="Search">
+                                        <i class="bi bi-search me-2 text-info fs-6"></i>Search Events
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider my-1" /></li>
+                                <li>
+                                    <a class="dropdown-item py-2 rounded-3" asp-controller="Home" asp-action="About">
+                                        <i class="bi bi-info-circle me-2 text-secondary fs-6"></i>About HUCEMS
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 rounded-3" asp-controller="Home" asp-action="Privacy">
+                                        <i class="bi bi-shield-check me-2 text-success fs-6"></i>Privacy Policy
                                     </a>
                                 </li>
                             </ul>
@@ -287,19 +303,21 @@
                             </li>
 
                             <!-- USER ACCOUNT PROFILE PILL -->
-                            <li class="nav-item dropdown position-relative">
-                                <a class="nav-link dropdown-toggle d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill border shadow-sm"
+                            <li class="nav-item dropdown user-nav-item">
+                                <a class="nav-link dropdown-toggle d-inline-flex align-items-center gap-2 px-2 px-md-3 py-1 rounded-pill border shadow-sm user-profile-btn"
                                    style="background: var(--bg-card, #ffffff); border-color: var(--border-color, #e2e8f0); color: var(--text-main, #0f172a);"
                                    href="#"
+                                   id="userNavProfileDropdown"
                                    role="button"
                                    data-bs-toggle="dropdown"
-                                   data-bs-display="static"
+                                   data-bs-placement="bottom-end"
+                                   data-bs-auto-close="true"
                                    aria-expanded="false">
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-sm flex-shrink-0"
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-sm flex-shrink-0 user-avatar-badge"
                                          style="width: 28px; height: 28px; font-size: 12px; background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);">
                                         @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "U")
                                     </div>
-                                    <span class="fw-bold small d-none d-sm-inline text-truncate" style="max-width: 130px;">
+                                    <span class="fw-bold small d-none d-sm-inline text-truncate user-name-display" style="max-width: 110px;">
                                         @(User.Identity?.Name ?? "My Account")
                                     </span>
                                     @{
@@ -313,17 +331,18 @@
                                             _ => "bg-primary text-white"
                                         };
                                     }
-                                    <span class="badge @roleBadgeBg small rounded-pill px-2 py-1" style="font-size: 10px;">@roleVal</span>
+                                    <span class="badge @roleBadgeBg small rounded-pill px-2 py-1 user-role-pill" style="font-size: 10px;">@roleVal</span>
                                 </a>
 
-                                <ul class="dropdown-menu dropdown-menu-end shadow-lg rounded-4 p-2 mt-2" 
-                                    style="right: 0 !important; left: auto !important; min-width: 260px; max-width: 92vw; z-index: 1060;">
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg rounded-4 p-2 mt-2 user-profile-dropdown" 
+                                    aria-labelledby="userNavProfileDropdown"
+                                    style="right: 0 !important; left: auto !important; min-width: 260px; max-width: min(320px, calc(100vw - 20px)); z-index: 1060;">
                                     <li class="dropdown-header small text-muted px-3 py-2">
                                         <div class="d-flex justify-content-between align-items-center mb-1">
                                             <span><i class="bi bi-person-check me-1"></i>Logged in as</span>
                                             <span class="badge @roleBadgeBg small" style="font-size: 10px;">@roleVal</span>
                                         </div>
-                                        <div class="text-dark fw-bold fs-6 text-truncate">@(User.Identity?.Name ?? "Student")</div>
+                                        <div class="text-dark fw-bold fs-6 text-truncate" style="max-width: 220px;">@(User.Identity?.Name ?? "Student")</div>
                                     </li>
                                     <li><hr class="dropdown-divider my-1" /></li>
                                     <li>
@@ -340,8 +359,8 @@
                                             <a class="dropdown-item text-warning-emphasis fw-bold py-2 rounded-3"
                                                asp-controller="SuperAdmin"
                                                asp-action="Index">
-                                                <i class="bi bi-cpu-fill me-2 text-warning"></i>
-                                                SuperAdmin Master Console
+                                               <i class="bi bi-cpu-fill me-2 text-warning"></i>
+                                               SuperAdmin Master Console
                                             </a>
                                         </li>
                                     }
@@ -611,16 +630,27 @@
 
 
                         <li class="mb-2">
+                            <a asp-controller="Home"
+                               asp-action="Contact">
+                                <i class="bi bi-headset me-1 text-warning"></i>
+                                Contact & Support
+                            </a>
+                        </li>
 
+                        <li class="mb-2">
+                            <a asp-controller="Announcements"
+                               asp-action="Index">
+                                <i class="bi bi-megaphone me-1 text-danger"></i>
+                                Announcements
+                            </a>
+                        </li>
+
+                        <li class="mb-2">
                             <a asp-controller="Home"
                                asp-action="About">
-
                                 <i class="bi bi-info-circle me-1"></i>
-
-                                About
-
+                                About HUCEMS
                             </a>
-
                         </li>
 
                     </ul>
@@ -853,29 +883,12 @@
 
 
                 <!-- LEGAL -->
-
                 <div class="footer-legal">
-
-                    <a asp-controller="Home"
-                       asp-action="About">
-
-                        About
-
-                    </a>
-
-
-                    <span>
-                        •
-                    </span>
-
-
-                    <a asp-controller="Home"
-                       asp-action="Privacy">
-
-                        Privacy
-
-                    </a>
-
+                    <a asp-controller="Home" asp-action="About">About</a>
+                    <span>•</span>
+                    <a asp-controller="Home" asp-action="Contact">Contact & Support</a>
+                    <span>•</span>
+                    <a asp-controller="Home" asp-action="Privacy">Privacy Policy</a>
                 </div>
 
             </div>

@@ -434,4 +434,45 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    /* =====================================================
+       DYNAMIC VIEWPORT SAFE DROPDOWN POSITIONING GUARD
+       ===================================================== */
+    function adjustDropdownPosition(dropdown) {
+        if (!dropdown || window.innerWidth < 992) return;
+        
+        // Reset any inline overrides first to calculate natural layout
+        dropdown.style.removeProperty('right');
+        dropdown.style.removeProperty('left');
+
+        var rect = dropdown.getBoundingClientRect();
+        var windowWidth = document.documentElement.clientWidth || window.innerWidth;
+        var padding = 12; // Safety margin in pixels
+
+        if (rect.right > windowWidth - padding) {
+            var diff = rect.right - (windowWidth - padding);
+            dropdown.style.setProperty('left', 'auto', 'important');
+            dropdown.style.setProperty('right', '0px', 'important');
+        }
+        
+        if (rect.left < padding) {
+            dropdown.style.setProperty('left', '0px', 'important');
+            dropdown.style.setProperty('right', 'auto', 'important');
+        }
+    }
+
+    document.addEventListener('shown.bs.dropdown', function (event) {
+        var toggle = event.target;
+        var menu = toggle.nextElementSibling || toggle.parentElement.querySelector('.dropdown-menu');
+        if (menu) {
+            adjustDropdownPosition(menu);
+        }
+    });
+
+    window.addEventListener('resize', function () {
+        var openMenus = document.querySelectorAll('.dropdown-menu.show');
+        openMenus.forEach(function (m) {
+            adjustDropdownPosition(m);
+        });
+    });
+
 });

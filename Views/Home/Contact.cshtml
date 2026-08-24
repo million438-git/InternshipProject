@@ -1,156 +1,384 @@
 @model HawassaUnifiedCampusEventManagementSystem.Models.ContactViewModel
 
 @{
-    ViewData["Title"] = "Contact Campus Administration";
+    ViewData["Title"] = "Contact & Campus Support Hub | HUCEMS";
     Layout = "_Layout";
 }
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <!-- PAGE HEADER -->
-            <div class="text-center mb-5">
-                <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-semibold mb-2">
-                    <i class="bi bi-headset me-1"></i> SUPPORT & INQUIRIES
-                </span>
-                <h1 class="display-6 fw-bold text-dark">Contact Campus Administration</h1>
-                <p class="text-muted lead fs-6">Have questions regarding campus events, venue reservations, student organizations, or system access? Reach out to our campus coordinators.</p>
-            </div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/contact.css" asp-append-version="true" />
+}
 
-            <!-- SUCCESS MESSAGE ALERT -->
-            @if (TempData["SuccessMessage"] != null)
-            {
-                <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4 rounded-3 p-3" role="alert">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+<div class="contact-page">
+
+    <!-- =====================================================
+         HERO SECTION
+         ===================================================== -->
+    <section class="contact-hero">
+        <div class="container">
+            <div class="contact-hero-badge mb-2">
+                <i class="bi bi-headset text-warning"></i>
+                <span>Hawassa University Campus Help & Inquiries</span>
+            </div>
+            <h1 class="contact-hero-title">How Can We Support You?</h1>
+            <p class="contact-hero-desc">
+                Have questions regarding upcoming campus events, venue reservations, student club activities, QR entry passes, or system access? Reach out to our campus administration team.
+            </p>
+
+            <div class="contact-quick-stats">
+                <span class="stat-pill"><i class="bi bi-lightning-charge-fill text-warning"></i> Avg. Response: &lt; 24h</span>
+                <span class="stat-pill"><i class="bi bi-buildings-fill text-info"></i> 4 Unified Campuses</span>
+                <span class="stat-pill"><i class="bi bi-shield-lock-fill text-success"></i> Direct Dean Escalations</span>
+                <span class="stat-pill"><i class="bi bi-clock-history text-primary-subtle"></i> 24/7 Digital Portal</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- =====================================================
+         MAIN INQUIRY & INFORMATION SECTION
+         ===================================================== -->
+    <div class="container py-5">
+
+        <!-- SUCCESS ALERT -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4 rounded-4 p-4" role="alert">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-success text-white p-2 d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px;">
+                        <i class="bi bi-check2-all fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="alert-heading fw-bold mb-1">Inquiry Dispatched Successfully!</h5>
+                        <p class="mb-0 text-success-emphasis">@TempData["SuccessMessage"]</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="row g-4 g-lg-5">
+
+            <!-- LEFT COLUMN: CAMPUS LOCATIONS & DIRECT DESKS -->
+            <div class="col-lg-5">
+                <div class="contact-sidebar-card">
+                    <span class="section-label">Direct Contacts</span>
+                    <h2 class="h4 fw-bold mb-3">Campus Coordinators</h2>
+
+                    <!-- Live Office Hours Indicator -->
+                    <div class="status-card">
+                        <span class="pulse-dot"></span>
                         <div>
-                            <strong>Inquiry Dispatched!</strong>
-                            <p class="mb-0 small">@TempData["SuccessMessage"]</p>
+                            <strong class="d-block small fw-bold">Live Support Active</strong>
+                            <span class="small opacity-75">Mon – Fri: 8:30 AM – 5:30 PM (EAT)</span>
                         </div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
 
-            <div class="row g-4">
-                <!-- CAMPUS INFORMATION CARDS -->
-                <div class="col-md-5">
-                    <div class="card border-0 shadow-sm rounded-4 h-100 p-4 bg-light">
-                        <h2 class="h5 fw-bold mb-4 text-dark"><i class="bi bi-geo-alt-fill text-primary me-2"></i>Campus Locations</h2>
-
-                        <div class="d-flex gap-3 mb-4">
-                            <div class="bg-white p-3 rounded-3 shadow-sm text-primary fs-4 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                <i class="bi bi-building"></i>
-                            </div>
-                            <div>
-                                <h3 class="h6 fw-bold mb-1 text-dark">Main Campus</h3>
-                                <p class="small text-muted mb-0">Hawassa University Main Admin Complex, Student Affairs Directorate, Hawassa, Ethiopia</p>
-                            </div>
+                    <!-- Main Campus Location -->
+                    <div class="location-item">
+                        <div class="location-icon-wrapper bg-primary-subtle text-primary">
+                            <i class="bi bi-building"></i>
                         </div>
-
-                        <div class="d-flex gap-3 mb-4">
-                            <div class="bg-white p-3 rounded-3 shadow-sm text-success fs-4 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                <i class="bi bi-cpu"></i>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <strong class="text-dark d-block">Main Campus Directorate</strong>
+                                <span class="badge bg-primary-subtle text-primary small">HQ</span>
                             </div>
-                            <div>
-                                <h3 class="h6 fw-bold mb-1 text-dark">IoT Campus</h3>
-                                <p class="small text-muted mb-0">Institute of Technology (IoT), College of Informatics, ICT Server Operations Room</p>
-                            </div>
-                        </div>
-
-                        <div class="d-flex gap-3 mb-4">
-                            <div class="bg-white p-3 rounded-3 shadow-sm text-danger fs-4 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                <i class="bi bi-envelope-at"></i>
-                            </div>
-                            <div>
-                                <h3 class="h6 fw-bold mb-1 text-dark">Email Dispatch</h3>
-                                <p class="small text-muted mb-0">events@hawassauniversity.edu.et<br />ict-support@hu.edu.et</p>
-                            </div>
-                        </div>
-
-                        <div class="d-flex gap-3">
-                            <div class="bg-white p-3 rounded-3 shadow-sm text-warning fs-4 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                <i class="bi bi-telephone-fill"></i>
-                            </div>
-                            <div>
-                                <h3 class="h6 fw-bold mb-1 text-dark">Helpdesk Hotline</h3>
-                                <p class="small text-muted mb-0">+251 (46) 220-4528 / +251 (46) 220-6677<br /><span class="text-success fw-semibold">Mon - Fri: 8:30 AM - 5:30 PM EAT</span></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CONTACT INQUIRY FORM -->
-                <div class="col-md-7">
-                    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
-                        <h2 class="h5 fw-bold mb-3 text-dark"><i class="bi bi-send-fill text-primary me-2"></i>Send an Inquiry</h2>
-
-                        <form asp-controller="Home" asp-action="Contact" method="post" novalidate>
-                            @Html.AntiForgeryToken()
-
-                            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
-
-                            <div class="mb-3">
-                                <label asp-for="FullName" class="form-label fw-semibold small text-dark"></label> <span class="text-danger">*</span>
-                                <input asp-for="FullName" class="form-control form-control-lg fs-6" placeholder="e.g. Abebe Bekele" />
-                                <span asp-validation-for="FullName" class="text-danger small"></span>
-                            </div>
-
-                            <div class="row g-2 mb-3">
-                                <div class="col-sm-6">
-                                    <label asp-for="Email" class="form-label fw-semibold small text-dark"></label> <span class="text-danger">*</span>
-                                    <input asp-for="Email" class="form-control form-control-lg fs-6" placeholder="name@hu.edu.et" />
-                                    <span asp-validation-for="Email" class="text-danger small"></span>
-                                </div>
-                                <div class="col-sm-6">
-                                    <label asp-for="Phone" class="form-label fw-semibold small text-dark"></label>
-                                    <input asp-for="Phone" class="form-control form-control-lg fs-6" placeholder="+251 91 234 5678" />
-                                    <span asp-validation-for="Phone" class="text-danger small"></span>
-                                </div>
-                            </div>
-
-                            <div class="row g-2 mb-3">
-                                <div class="col-sm-6">
-                                    <label asp-for="Subject" class="form-label fw-semibold small text-dark"></label> <span class="text-danger">*</span>
-                                    <select asp-for="Subject" class="form-select form-control-lg fs-6">
-                                        <option value="Event Organization & Approval">Event Organization & Approval</option>
-                                        <option value="Venue & Equipment Booking">Venue & Equipment Booking</option>
-                                        <option value="Student Account / Portal Access">Student Account / Portal Access</option>
-                                        <option value="Career & Job Posting Verification">Career & Job Posting</option>
-                                        <option value="General Campus Question">General Campus Question</option>
-                                    </select>
-                                    <span asp-validation-for="Subject" class="text-danger small"></span>
-                                </div>
-                                <div class="col-sm-6">
-                                    <label asp-for="Department" class="form-label fw-semibold small text-dark"></label>
-                                    <select asp-for="Department" class="form-select form-control-lg fs-6">
-                                        <option value="Main Campus">Main Campus</option>
-                                        <option value="IoT Campus">IoT Campus (Informatics)</option>
-                                        <option value="College of Health Sciences">College of Health Sciences</option>
-                                        <option value="College of Agriculture">College of Agriculture</option>
-                                        <option value="College of Business & Economics">College of Business & Economics</option>
-                                    </select>
-                                    <span asp-validation-for="Department" class="text-danger small"></span>
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label asp-for="Message" class="form-label fw-semibold small text-dark"></label> <span class="text-danger">*</span>
-                                <textarea asp-for="Message" class="form-control" rows="4" placeholder="Please describe your inquiry or issue in detail..."></textarea>
-                                <span asp-validation-for="Message" class="text-danger small"></span>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm fw-semibold">
-                                <i class="bi bi-send me-2"></i>Submit Inquiry
+                            <p class="small text-muted mb-1">Main Admin Complex, Student Affairs Directorate, Hawassa</p>
+                            <button type="button" class="copy-btn" onclick="copyToClipboard('+251462204528', 'Phone number copied!')">
+                                <i class="bi bi-telephone-fill"></i> +251 (46) 220-4528 <i class="bi bi-clipboard ms-1"></i>
                             </button>
-                        </form>
+                        </div>
                     </div>
+
+                    <!-- IoT Campus -->
+                    <div class="location-item">
+                        <div class="location-icon-wrapper bg-info-subtle text-info">
+                            <i class="bi bi-cpu-fill"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <strong class="text-dark d-block">IoT Tech Campus</strong>
+                                <span class="badge bg-info-subtle text-info small">Informatics</span>
+                            </div>
+                            <p class="small text-muted mb-1">Institute of Technology, Tech Hall B & Server Operations</p>
+                            <button type="button" class="copy-btn" onclick="copyToClipboard('iot-events@hu.edu.et', 'Email copied!')">
+                                <i class="bi bi-envelope-fill"></i> iot-events@hu.edu.et <i class="bi bi-clipboard ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Health Sciences -->
+                    <div class="location-item">
+                        <div class="location-icon-wrapper bg-success-subtle text-success">
+                            <i class="bi bi-hospital-fill"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <strong class="text-dark d-block">College of Medicine & Health</strong>
+                                <span class="badge bg-success-subtle text-success small">Health</span>
+                            </div>
+                            <p class="small text-muted mb-1">Referral Hospital Campus, Auditorium A & Academic Hall</p>
+                            <button type="button" class="copy-btn" onclick="copyToClipboard('+251462206677', 'Phone number copied!')">
+                                <i class="bi bi-telephone-fill"></i> +251 (46) 220-6677 <i class="bi bi-clipboard ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Emergency & ICT Support -->
+                    <div class="location-item border-danger-subtle bg-danger-subtle bg-opacity-10">
+                        <div class="location-icon-wrapper bg-danger text-white">
+                            <i class="bi bi-shield-exclamation"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <strong class="text-danger d-block">Campus Security & Emergency</strong>
+                            <p class="small text-muted mb-1">24/7 Security Operations Room for all campus branches</p>
+                            <span class="fw-bold text-danger small"><i class="bi bi-telephone-outbound-fill me-1"></i> Emergency: 991 / +251 (46) 220-9999</span>
+                        </div>
+                    </div>
+
                 </div>
             </div>
+
+            <!-- RIGHT COLUMN: INTERACTIVE INQUIRY FORM -->
+            <div class="col-lg-7">
+                <div class="contact-main-card">
+                    <span class="section-label">Dispatch Desk</span>
+                    <h2 class="h3 fw-bold mb-2">Send an Inquiry to Campus Admin</h2>
+                    <p class="text-muted small mb-4">Select an inquiry category or fill in the details below. Our coordination team will follow up via your registered institutional email.</p>
+
+                    <!-- QUICK TOPIC SELECTOR CHIPS -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted mb-2">Choose Topic Quick Preset:</label>
+                        <div class="topic-chips">
+                            <span class="topic-chip active" onclick="setTopic('General Campus Question')"><i class="bi bi-chat-dots me-1"></i>General Question</span>
+                            <span class="topic-chip" onclick="setTopic('Event Organization & Approval')"><i class="bi bi-calendar-check me-1"></i>Event Approval</span>
+                            <span class="topic-chip" onclick="setTopic('Venue & Equipment Booking')"><i class="bi bi-building me-1"></i>Venue Booking</span>
+                            <span class="topic-chip" onclick="setTopic('Student Account / Portal Access')"><i class="bi bi-person-badge me-1"></i>Account Access</span>
+                            <span class="topic-chip" onclick="setTopic('Career & Job Posting Verification')"><i class="bi bi-briefcase me-1"></i>Career Postings</span>
+                        </div>
+                    </div>
+
+                    <form asp-controller="Home" asp-action="Contact" method="post" id="contactForm" novalidate>
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                        <!-- FULL NAME -->
+                        <div class="mb-3">
+                            <label asp-for="FullName" class="form-label fw-bold small"></label> <span class="text-danger">*</span>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-person text-muted"></i></span>
+                                <input asp-for="FullName" class="form-control contact-form-control border-start-0 ps-0" placeholder="e.g. Dr. Ermias or Dawit Bekele" />
+                            </div>
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+
+                        <!-- EMAIL & PHONE -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="form-label fw-bold small"></label> <span class="text-danger">*</span>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-envelope text-muted"></i></span>
+                                    <input asp-for="Email" type="email" class="form-control contact-form-control border-start-0 ps-0" placeholder="name@hu.edu.et" />
+                                </div>
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Phone" class="form-label fw-bold small"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-telephone text-muted"></i></span>
+                                    <input asp-for="Phone" type="tel" class="form-control contact-form-control border-start-0 ps-0" placeholder="+251 91 123 4567" />
+                                </div>
+                                <span asp-validation-for="Phone" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- SUBJECT & DEPARTMENT -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Subject" class="form-label fw-bold small"></label> <span class="text-danger">*</span>
+                                <select asp-for="Subject" class="form-select contact-form-control" id="subjectDropdown">
+                                    <option value="General Campus Question">General Campus Question</option>
+                                    <option value="Event Organization & Approval">Event Organization & Approval</option>
+                                    <option value="Venue & Equipment Booking">Venue & Equipment Booking</option>
+                                    <option value="Student Account / Portal Access">Student Account / Portal Access</option>
+                                    <option value="Career & Job Posting Verification">Career & Job Posting Verification</option>
+                                    <option value="Feedback & Campus Life Suggestion">Feedback & Campus Life Suggestion</option>
+                                </select>
+                                <span asp-validation-for="Subject" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Department" class="form-label fw-bold small"></label>
+                                <select asp-for="Department" class="form-select contact-form-control">
+                                    <option value="Main Campus">Main Campus (Central Admin)</option>
+                                    <option value="IoT Campus">IoT Campus (Informatics & Engineering)</option>
+                                    <option value="College of Health Sciences">College of Health Sciences</option>
+                                    <option value="College of Agriculture">College of Agriculture</option>
+                                    <option value="College of Business & Economics">College of Business & Economics</option>
+                                    <option value="Wondo Genet College of Forestry">Wondo Genet College of Forestry</option>
+                                </select>
+                                <span asp-validation-for="Department" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- MESSAGE -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label asp-for="Message" class="form-label fw-bold small mb-0"></label> <span class="text-danger">*</span>
+                                <span class="char-counter" id="charCounter">0 / 2000 chars</span>
+                            </div>
+                            <textarea asp-for="Message" class="form-control contact-form-control" rows="5" id="messageBox" placeholder="Please provide specific details regarding your inquiry, event date, venue, or reference number..." oninput="updateCharCount()"></textarea>
+                            <span asp-validation-for="Message" class="text-danger small"></span>
+                        </div>
+
+                        <!-- SUBMIT BUTTON -->
+                        <button type="submit" class="btn btn-primary btn-lg w-100 py-3 rounded-pill fw-bold shadow d-flex align-items-center justify-content-center gap-2" id="submitInquiryBtn">
+                            <i class="bi bi-send-fill"></i>
+                            <span>Submit Official Inquiry</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- =====================================================
+             CAMPUS FAQ & HELP ACCORDION
+             ===================================================== -->
+        <div class="row justify-content-center mt-5 pt-4">
+            <div class="col-lg-10">
+                <div class="text-center mb-4">
+                    <span class="section-label">Instant Solutions</span>
+                    <h2 class="h3 fw-bold">Frequently Answered Questions</h2>
+                    <p class="text-muted small">Find quick answers to common questions about ticketing, venue bookings, and club events.</p>
+                </div>
+
+                <div class="accordion faq-accordion" id="contactFaqAccordion">
+                    
+                    <!-- FAQ 1 -->
+                    <div class="accordion-item shadow-sm">
+                        <h2 class="accordion-header" id="faqHeading1">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse1" aria-expanded="false" aria-controls="faqCollapse1">
+                                <i class="bi bi-qr-code-scan text-primary me-3 fs-5"></i>
+                                How do I receive and show my digital Event QR Pass?
+                            </button>
+                        </h2>
+                        <div id="faqCollapse1" class="accordion-collapse collapse" aria-labelledby="faqHeading1" data-bs-parent="#contactFaqAccordion">
+                            <div class="accordion-body">
+                                After clicking <strong>"Register"</strong> on any upcoming event, your verified digital QR Ticket is immediately generated. You can access it anytime under <a asp-controller="Events" asp-action="MyEvents" class="fw-bold text-primary">My Events</a> or via the <strong>"My QR Pass"</strong> tab on your profile page. Present the QR code on your phone at the venue entrance for automated check-in.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAQ 2 -->
+                    <div class="accordion-item shadow-sm">
+                        <h2 class="accordion-header" id="faqHeading2">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse2" aria-expanded="false" aria-controls="faqCollapse2">
+                                <i class="bi bi-building-check text-success me-3 fs-5"></i>
+                                How do campus clubs or student societies book university auditoriums?
+                            </button>
+                        </h2>
+                        <div id="faqCollapse2" class="accordion-collapse collapse" aria-labelledby="faqHeading2" data-bs-parent="#contactFaqAccordion">
+                            <div class="accordion-body">
+                                Verified student organization leaders and faculty members can submit an event proposal using the <a asp-controller="Events" asp-action="Create" class="fw-bold text-primary">Create Event</a> builder. During submission, select your desired campus venue (e.g. IoT Hall B or Main Auditorium). Campus administrators will review the schedule and approve the reservation within 24 hours.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAQ 3 -->
+                    <div class="accordion-item shadow-sm">
+                        <h2 class="accordion-header" id="faqHeading3">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse3" aria-expanded="false" aria-controls="faqCollapse3">
+                                <i class="bi bi-person-lock text-warning me-3 fs-5"></i>
+                                I forgot my login credentials. How do I recover my account?
+                            </button>
+                        </h2>
+                        <div id="faqCollapse3" class="accordion-collapse collapse" aria-labelledby="faqHeading3" data-bs-parent="#contactFaqAccordion">
+                            <div class="accordion-body">
+                                Navigate to the <a asp-controller="Account" asp-action="ForgotPassword" class="fw-bold text-primary">Forgot Password</a> page and input your university email. A secure password reset link will be sent. If you no longer have access to your institutional mailbox, submit an inquiry above choosing <em>"Student Account / Portal Access"</em>.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAQ 4 -->
+                    <div class="accordion-item shadow-sm">
+                        <h2 class="accordion-header" id="faqHeading4">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse4" aria-expanded="false" aria-controls="faqCollapse4">
+                                <i class="bi bi-shield-check text-info me-3 fs-5"></i>
+                                Can external guests and non-university participants register for campus conferences?
+                            </button>
+                        </h2>
+                        <div id="faqCollapse4" class="accordion-collapse collapse" aria-labelledby="faqHeading4" data-bs-parent="#contactFaqAccordion">
+                            <div class="accordion-body">
+                                Yes! Public academic conferences, hackathons, and career fairs allow guest registration. External participants can create an "External Guest" account through the <a asp-controller="Account" asp-action="Register" class="fw-bold text-primary">Registration Portal</a> to register and receive digital guest passes.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- TOAST FOR COPY FEEDBACK -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+    <div id="copyToast" class="toast align-items-center text-bg-dark border-0 rounded-4 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body d-flex align-items-center gap-2">
+                <i class="bi bi-clipboard-check-fill text-success fs-5"></i>
+                <span id="toastMessage">Copied to clipboard!</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function setTopic(topicName) {
+            var dropdown = document.getElementById('subjectDropdown');
+            if (dropdown) {
+                dropdown.value = topicName;
+            }
+            var chips = document.querySelectorAll('.topic-chip');
+            chips.forEach(function (c) {
+                if (c.textContent.trim().includes(topicName)) {
+                    c.classList.add('active');
+                } else {
+                    c.classList.remove('active');
+                }
+            });
+        }
+
+        function updateCharCount() {
+            var box = document.getElementById('messageBox');
+            var counter = document.getElementById('charCounter');
+            if (box && counter) {
+                var len = box.value.length;
+                counter.textContent = len + " / 2000 chars";
+                if (len < 15) {
+                    counter.classList.add('text-danger');
+                    counter.classList.remove('text-muted');
+                } else {
+                    counter.classList.remove('text-danger');
+                    counter.classList.add('text-muted');
+                }
+            }
+        }
+
+        function copyToClipboard(text, message) {
+            navigator.clipboard.writeText(text).then(function () {
+                var toastEl = document.getElementById('copyToast');
+                var msgEl = document.getElementById('toastMessage');
+                if (msgEl) msgEl.textContent = message || "Copied to clipboard!";
+                if (toastEl && typeof bootstrap !== 'undefined') {
+                    var toast = new bootstrap.Toast(toastEl);
+                    toast.show();
+                }
+            });
+        }
+    </script>
 }
