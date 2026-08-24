@@ -35,6 +35,7 @@ services:
       - "3306:3306"
     volumes:
       - hucems_mysql_data:/var/lib/mysql
+      - ./Database/university_event_management.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - hucems-network
 
