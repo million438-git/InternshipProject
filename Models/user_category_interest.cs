@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -28,5 +28,5 @@ public partial class user_category_interest
 
     [ForeignKey("user_id")]
     [InverseProperty("user_category_interests")]
-    public virtual user user { get; set; } = null!;
+    public virtual User user { get; set; } = null!;
 }

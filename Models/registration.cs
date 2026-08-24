@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -12,7 +12,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models;
 [Index("registration_code", Name = "uq_registration_code", IsUnique = true)]
 [Index("event_id", "user_id", Name = "uq_registration_event_user", IsUnique = true)]
 [Index("qr_token", Name = "uq_registration_qr_token", IsUnique = true)]
-public partial class registration
+public partial class Registration
 {
     [Key]
     public ulong id { get; set; }
@@ -50,5 +50,5 @@ public partial class registration
 
     [ForeignKey("user_id")]
     [InverseProperty("registrations")]
-    public virtual user user { get; set; } = null!;
+    public virtual User user { get; set; } = null!;
 }

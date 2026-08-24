@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -45,5 +45,5 @@ public partial class audit_log
 
     [ForeignKey("user_id")]
     [InverseProperty("audit_logs")]
-    public virtual user? user { get; set; }
+    public virtual User? user { get; set; }
 }

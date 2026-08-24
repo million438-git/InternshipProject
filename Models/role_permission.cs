@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -21,9 +21,9 @@ public partial class role_permission
 
     [ForeignKey("permission_id")]
     [InverseProperty("role_permissions")]
-    public virtual permission permission { get; set; } = null!;
+    public virtual Permission permission { get; set; } = null!;
 
     [ForeignKey("role_id")]
     [InverseProperty("role_permissions")]
-    public virtual role role { get; set; } = null!;
+    public virtual Role role { get; set; } = null!;
 }

@@ -61,7 +61,6 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 StudentId = studentId ?? "HU/2026/CS-883",
                 RegisteredEventsCount = 4,
                 AttendedEventsCount = 12,
-                JoinedStudyGroupsCount = 3,
                 EarnedCertificatesCount = 5,
                 UpcomingWorkshopsCount = 2
             };
@@ -74,24 +73,6 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             // Student-specific data
             vm.MyRegisteredEvents = vm.UpcomingEvents.Take(3).ToList();
             foreach (var ev in vm.MyRegisteredEvents) ev.IsRegistered = true;
-
-            vm.MyStudyGroups = new List<DashboardStudyGroupItem>
-            {
-                new() { Id = 1, Name = "Ethical Hacking & Cyber Defense Group", Subject = "Cybersecurity", MemberCount = 18, NextMeeting = "Today, 4:30 PM", Location = "CS Lab 2" },
-                new() { Id = 2, Name = "Full-Stack Web & Mobile Devs", Subject = "Software Engineering", MemberCount = 24, NextMeeting = "Wednesday, 2:00 PM", Location = "Tech Library Hub" },
-                new() { Id = 3, Name = "Machine Learning & AI Explorers", Subject = "Artificial Intelligence", MemberCount = 15, NextMeeting = "Saturday, 10:00 AM", Location = "Innovation Center" }
-            };
-
-            vm.RecommendedCampusJobs = new List<DashboardJobItem>
-            {
-                new() { Id = 1, Title = "Junior Frontend Dev Intern", Employer = "Hawassa IT Center", JobType = "Campus Internship", Location = "Main Admin Complex", Deadline = DateTime.Today.AddDays(7) },
-                new() { Id = 2, Title = "Event AV & Streaming Assistant", Employer = "Student Affairs Directorate", JobType = "Part-Time", Location = "Auditorium Hall A", Deadline = DateTime.Today.AddDays(12) }
-            };
-
-            vm.ActivePolls = new List<DashboardPollItem>
-            {
-                new() { Id = 1, Question = "Should the campus library extend 24/7 hours through the weekend before finals?", TotalVotes = 482, HasVoted = false, EndsAt = DateTime.Today.AddDays(3) }
-            };
 
             vm.RecommendedClubs = new List<DashboardClubItem>
             {
@@ -228,7 +209,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 TotalAttendeesCount = 420,
                 ActiveMembersCount = 48,
                 BoothReservationsCount = 2,
-                PublishedJobPostingsCount = 3
+                
             };
 
             await PopulateSharedStatsAsync(vm);
@@ -246,11 +227,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 new() { Id = 4, FullName = "Hanna Mesfin", RoleInOrg = "Finance & Sponsorship Lead", Email = "hanna.m@hawassauniversity.edu.et", JoinedAt = DateTime.Today.AddMonths(-3) }
             };
 
-            vm.ActiveRecruitments = new List<DashboardJobItem>
-            {
-                new() { Id = 1, Title = "Hackathon Volunteer Stage Host", Employer = "Hawassa Tech Society", JobType = "Volunteer Position", Location = "Main Auditorium", Deadline = DateTime.Today.AddDays(5) },
-                new() { Id = 2, Title = "Club Graphic Designer & Media Lead", Employer = "Hawassa Tech Society", JobType = "Student Committee", Location = "Campus / Hybrid", Deadline = DateTime.Today.AddDays(10) }
-            };
+            
 
             vm.AttendanceAnalytics = new List<DashboardRegistrationStatItem>
             {

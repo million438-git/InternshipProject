@@ -1,0 +1,150 @@
+.account-page {
+    min-height: 85vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+}
+
+.account-card {
+    width: 100%;
+    max-width: 480px;
+    background: white;
+    padding: 36px;
+    border-radius: 20px;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+    border: 1px solid #e2e8f0;
+}
+
+.account-icon {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef2ff;
+    border-radius: 50%;
+    font-size: 32px;
+}
+
+.account-card h1 {
+    text-align: center;
+    color: #1e1b4b;
+    font-weight: 800;
+    font-size: 26px;
+    margin-bottom: 6px;
+}
+
+.account-description {
+    text-align: center;
+    color: #64748b;
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #334155;
+}
+
+.form-group input[type="email"],
+.form-group input[type="password"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    outline: none;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.password-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.password-row a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.account-button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.account-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+
+.demo-roles-panel {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+}
+
+.demo-pill {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.15s;
+}
+
+.demo-pill:hover {
+    transform: translateY(-1px);
+}
+
+.error-message {
+    padding: 12px;
+    margin-bottom: 18px;
+    background: #fee2e2;
+    color: #b91c1c;
+    border-radius: 10px;
+    font-size: 13px;
+    border: 1px solid #fecaca;
+}
+
+.account-footer {
+    text-align: center;
+    margin-top: 20px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.account-footer a {
+    color: #2563eb;
+    font-weight: 700;
+    text-decoration: none;
+}

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -51,5 +51,5 @@ public partial class class_schedule
 
     [ForeignKey("department_id")]
     [InverseProperty("class_schedules")]
-    public virtual department department { get; set; } = null!;
+    public virtual Department department { get; set; } = null!;
 }

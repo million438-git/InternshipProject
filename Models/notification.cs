@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,7 +9,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models;
 [Index("expires_at", Name = "idx_notifications_expires")]
 [Index("user_id", "is_read", Name = "idx_notifications_unread")]
 [Index("user_id", Name = "idx_notifications_user")]
-public partial class notification
+public partial class Notification
 {
     [Key]
     public ulong id { get; set; }
@@ -46,5 +46,5 @@ public partial class notification
 
     [ForeignKey("user_id")]
     [InverseProperty("notifications")]
-    public virtual user user { get; set; } = null!;
+    public virtual User user { get; set; } = null!;
 }

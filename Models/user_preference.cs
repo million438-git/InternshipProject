@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -50,5 +50,5 @@ public partial class user_preference
 
     [ForeignKey("user_id")]
     [InverseProperty("user_preference")]
-    public virtual user user { get; set; } = null!;
+    public virtual User user { get; set; } = null!;
 }

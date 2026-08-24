@@ -9,11 +9,24 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
-    <!-- Google Fonts Inter -->
+    <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
+    <!-- Theme Initialization Script (Prevents FOUC) -->
+    <script>
+        (function() {
+            var saved = localStorage.getItem('hucems-theme');
+            var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var theme = saved ? saved : (prefersDark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+            if (theme === 'dark') document.documentElement.classList.add('dark-theme');
+        })();
+    </script>
+
+    <!-- Global Site CSS (Tokens & Theme Styles) -->
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <!-- Admin CSS -->
     <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
@@ -47,100 +60,103 @@
                     var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
                 }
 
-                <div class="nav-section-title">MAIN</div>
+                <!-- 1. EVENTS & OPERATIONS HUB -->
+                <div class="nav-section-title">1. EVENTS & OPERATIONS</div>
                 <a asp-controller="Admin" asp-action="Index" class="admin-nav-item @(currentAction == "Index" ? "active" : "")">
                     <i class="bi bi-speedometer2"></i>
-                    <span>1. Dashboard Overview</span>
-                </a>
-
-                <div class="nav-section-title">MANAGEMENT</div>
-                <a asp-controller="Admin" asp-action="Users" class="admin-nav-item @(currentAction == "Users" ? "active" : "")">
-                    <i class="bi bi-people"></i>
-                    <span>2. User Management</span>
+                    <span>Dashboard Overview</span>
                 </a>
                 <a asp-controller="Admin" asp-action="Events" class="admin-nav-item @(currentAction == "Events" ? "active" : "")">
                     <i class="bi bi-calendar-event"></i>
-                    <span>4. Event Management</span>
+                    <span>Event Approvals & Lifecycle</span>
+                    <span class="badge bg-warning-subtle text-warning-emphasis ms-auto py-1 px-2 fw-semibold" style="font-size: 10px;">Approvals</span>
                 </a>
-                <a asp-controller="Admin" asp-action="Announcements" class="admin-nav-item @(currentAction == "Announcements" ? "active" : "")">
-                    <i class="bi bi-megaphone"></i>
-                    <span>5. Announcements</span>
-                </a>
-                <a asp-controller="Admin" asp-action="Organizations" class="admin-nav-item @(currentAction == "Organizations" ? "active" : "")">
-                    <i class="bi bi-building"></i>
-                    <span>6. Organizations</span>
-                </a>
-                <a asp-controller="Admin" asp-action="Faculties" class="admin-nav-item @(currentAction == "Faculties" ? "active" : "")">
-                    <i class="bi bi-bank"></i>
-                    <span>7. Faculties</span>
-                </a>
-                <a asp-controller="Admin" asp-action="Departments" class="admin-nav-item @(currentAction == "Departments" ? "active" : "")">
-                    <i class="bi bi-mortarboard"></i>
-                    <span>8. Departments</span>
-                </a>
-                <a asp-controller="Admin" asp-action="Venues" class="admin-nav-item @(currentAction == "Venues" ? "active" : "")">
-                    <i class="bi bi-geo-alt"></i>
-                    <span>9. Venues</span>
-                </a>
-                <a asp-controller="Admin" asp-action="Jobs" class="admin-nav-item @(currentAction == "Jobs" ? "active" : "")">
-                    <i class="bi bi-briefcase"></i>
-                    <span>10. Job & Careers</span>
-                </a>
-
-                <div class="nav-section-title">COMMUNITY & ACCESS</div>
                 <a asp-controller="Admin" asp-action="Registrations" class="admin-nav-item @(currentAction == "Registrations" ? "active" : "")">
                     <i class="bi bi-ticket-perforated"></i>
-                    <span>11. Registrations</span>
-                </a>
-                <a asp-controller="Admin" asp-action="Comments" class="admin-nav-item @(currentAction == "Comments" ? "active" : "")">
-                    <i class="bi bi-chat-dots"></i>
-                    <span>12. Comments & Feedback</span>
-                </a>
-                <a asp-controller="Admin" asp-action="StudyGroups" class="admin-nav-item @(currentAction == "StudyGroups" ? "active" : "")">
-                    <i class="bi bi-book"></i>
-                    <span>16. Study Groups</span>
-                </a>
-                <a asp-controller="Admin" asp-action="Roles" class="admin-nav-item @(currentAction == "Roles" ? "active" : "")">
-                    <i class="bi bi-key"></i>
-                    <span>3. Roles & Permissions</span>
-                </a>
-
-                <div class="nav-section-title">COMMUNICATION & SCHEDULE</div>
-                <a asp-controller="Admin" asp-action="Notifications" class="admin-nav-item @(currentAction == "Notifications" ? "active" : "")">
-                    <i class="bi bi-bell"></i>
-                    <span>14. Notifications</span>
-                </a>
-                <a asp-controller="Admin" asp-action="Calendar" class="admin-nav-item @(currentAction == "Calendar" ? "active" : "")">
-                    <i class="bi bi-calendar3"></i>
-                    <span>15. Campus Calendar</span>
+                    <span>Event Registrations</span>
                 </a>
                 <a asp-controller="Admin" asp-action="Categories" class="admin-nav-item @(currentAction == "Categories" ? "active" : "")">
                     <i class="bi bi-tags"></i>
-                    <span>17. Categories & Tags</span>
+                    <span>Event Categories</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Venues" class="admin-nav-item @(currentAction == "Venues" ? "active" : "")">
+                    <i class="bi bi-geo-alt"></i>
+                    <span>Campus Venues & Halls</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Calendar" class="admin-nav-item @(currentAction == "Calendar" ? "active" : "")">
+                    <i class="bi bi-calendar3"></i>
+                    <span>Unified Event Calendar</span>
                 </a>
 
-                <div class="nav-section-title">ANALYTICS & SECURITY</div>
+                <!-- 2. PEOPLE & ACCESS HUB -->
+                <div class="nav-section-title">2. PEOPLE & ACCESS</div>
+                <a asp-controller="Admin" asp-action="Users" class="admin-nav-item @(currentAction == "Users" ? "active" : "")">
+                    <i class="bi bi-people"></i>
+                    <span>User Directory & Accounts</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Organizations" class="admin-nav-item @(currentAction == "Organizations" ? "active" : "")">
+                    <i class="bi bi-building"></i>
+                    <span>Clubs & Student Societies</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Faculties" class="admin-nav-item @(currentAction == "Faculties" ? "active" : "")">
+                    <i class="bi bi-bank"></i>
+                    <span>Academic Faculties</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Departments" class="admin-nav-item @(currentAction == "Departments" ? "active" : "")">
+                    <i class="bi bi-mortarboard"></i>
+                    <span>Academic Departments</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Roles" class="admin-nav-item @(currentAction == "Roles" ? "active" : "")">
+                    <i class="bi bi-shield-check"></i>
+                    <span>Roles & Permissions</span>
+                    <span class="badge bg-secondary-subtle text-secondary ms-auto py-1 px-2 fw-semibold" style="font-size: 10px;">RBAC</span>
+                </a>
+
+                <!-- 3. COMMUNICATION & FEEDBACK HUB -->
+                <div class="nav-section-title">3. COMMUNICATION & FEEDBACK</div>
+                <a asp-controller="Admin" asp-action="Announcements" class="admin-nav-item @(currentAction == "Announcements" ? "active" : "")">
+                    <i class="bi bi-megaphone"></i>
+                    <span>Campus Broadcasts</span>
+                    <span class="badge bg-info-subtle text-info-emphasis ms-auto py-1 px-2 fw-semibold" style="font-size: 10px;">Live</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Notifications" class="admin-nav-item @(currentAction == "Notifications" ? "active" : "")">
+                    <i class="bi bi-bell"></i>
+                    <span>Push Broadcasts</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Comments" class="admin-nav-item @(currentAction == "Comments" ? "active" : "")">
+                    <i class="bi bi-chat-heart"></i>
+                    <span>Attendee Feedback & Reviews</span>
+                </a>
+
+                <!-- 4. SYSTEM & SECURITY HUB -->
+                <div class="nav-section-title">4. SYSTEM & SECURITY</div>
                 <a asp-controller="Admin" asp-action="Reports" class="admin-nav-item @(currentAction == "Reports" ? "active" : "")">
                     <i class="bi bi-graph-up-arrow"></i>
-                    <span>13. Reports & Analytics</span>
+                    <span>Reports & Analytics</span>
                 </a>
                 <a asp-controller="Admin" asp-action="AuditLogs" class="admin-nav-item @(currentAction == "AuditLogs" ? "active" : "")">
                     <i class="bi bi-shield-lock"></i>
-                    <span>18. Security Audit Logs</span>
+                    <span>Security Audit Logs</span>
+                </a>
+                <a asp-controller="Admin" asp-action="DatabaseManagement" class="admin-nav-item @(currentAction == "DatabaseManagement" ? "active" : "")">
+                    <i class="bi bi-database-check"></i>
+                    <span>Database Vault</span>
+                    <span class="badge bg-primary-subtle text-primary ms-auto py-1 px-2 fw-semibold" style="font-size: 10px;">SuperAdmin</span>
                 </a>
                 <a asp-controller="Admin" asp-action="Sessions" class="admin-nav-item @(currentAction == "Sessions" ? "active" : "")">
                     <i class="bi bi-phone"></i>
-                    <span>19. Sessions & Devices</span>
+                    <span>Active Sessions</span>
                 </a>
-
-                <div class="nav-section-title">SYSTEM</div>
                 <a asp-controller="Admin" asp-action="Settings" class="admin-nav-item @(currentAction == "Settings" ? "active" : "")">
                     <i class="bi bi-gear"></i>
-                    <span>20. System Settings</span>
+                    <span>System Settings</span>
+                    <span class="badge bg-primary-subtle text-primary ms-auto py-1 px-2 fw-semibold" style="font-size: 10px;">SuperAdmin</span>
                 </a>
+
+                <div class="nav-section-title">SESSION</div>
                 <a asp-controller="Account" asp-action="Logout" class="admin-nav-item text-danger logout-item">
                     <i class="bi bi-box-arrow-right"></i>
-                    <span>21. Secure Logout</span>
+                    <span>Secure Logout</span>
                 </a>
             </nav>
         </aside>
@@ -152,22 +168,53 @@
 
             <!-- TOP NAVBAR -->
             <header class="admin-topbar">
+                <!-- LEFT SECTION: TOGGLE & SEARCH -->
                 <div class="d-flex align-items-center gap-3">
-                    <button type="button" class="admin-toggle-btn" id="adminSidebarToggle">
+                    <button type="button" class="admin-toggle-btn" id="adminSidebarToggle" title="Toggle Sidebar">
                         <i class="bi bi-list fs-4"></i>
                     </button>
-                    <div class="system-status-indicator d-none d-sm-flex align-items-center gap-2">
+                    
+                    <div class="admin-topbar-search d-none d-md-flex align-items-center">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" class="form-control form-control-sm admin-search-input" id="adminGlobalSearch" placeholder="Search events, registrations, users..." />
+                    </div>
+
+                    <div class="system-status-indicator d-none d-xl-flex align-items-center gap-2">
                         <span class="status-dot online"></span>
                         <span class="status-label">Hawassa Hub Online</span>
                     </div>
                 </div>
 
-                <div class="d-flex align-items-center gap-3">
+                <!-- RIGHT SECTION: QUICK ACTIONS & PROFILE -->
+                <div class="d-flex align-items-center gap-2 gap-sm-3">
+                    <!-- CREATE EVENT QUICK ACTION -->
+                    <a asp-controller="Events" asp-action="Create" class="btn btn-sm btn-primary d-none d-sm-inline-flex align-items-center gap-1 fw-semibold shadow-sm">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>New Event</span>
+                    </a>
+
+                    <!-- DATABASE VAULT QUICK ACTION -->
+                    <a asp-controller="Admin" asp-action="DatabaseManagement" class="btn btn-sm btn-outline-secondary d-none d-lg-inline-flex align-items-center gap-1" title="Database Snapshot Vault">
+                        <i class="bi bi-database-check"></i>
+                        <span>DB Vault</span>
+                    </a>
+
                     <!-- SWITCH TO USER PORTAL -->
-                    <a asp-controller="Dashboard" asp-action="Index" class="btn btn-sm btn-outline-secondary d-none d-md-inline-flex align-items-center gap-1">
+                    <a asp-controller="Dashboard" asp-action="Index" class="btn btn-sm btn-outline-secondary d-none d-md-inline-flex align-items-center gap-1" title="Go to User Dashboard">
                         <i class="bi bi-person-workspace"></i>
                         <span>User Portal</span>
                     </a>
+
+                    <!-- THEME TOGGLE (DARK / LIGHT MODE) -->
+                    <button type="button"
+                            class="theme-toggle-btn admin-theme-toggle"
+                            id="themeToggleBtnAdmin"
+                            aria-label="Toggle Dark / Light Mode"
+                            title="Toggle Dark / Light Mode">
+                        <i class="bi bi-moon-stars-fill theme-icon-dark"></i>
+                        <i class="bi bi-sun-fill theme-icon-light"></i>
+                        <span class="visually-hidden">Toggle Theme</span>
+                    </button>
 
                     <!-- NOTIFICATIONS BELL -->
                     <a asp-controller="Admin" asp-action="Notifications" class="admin-icon-btn position-relative" title="Notifications">
@@ -234,6 +281,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Global Site JS (Theme & Helpers) -->
+    <script src="~/js/site.js" asp-append-version="true"></script>
     <!-- Admin JS -->
     <script src="~/js/admin.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)

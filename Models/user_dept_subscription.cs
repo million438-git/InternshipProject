@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -21,9 +21,9 @@ public partial class user_dept_subscription
 
     [ForeignKey("department_id")]
     [InverseProperty("user_dept_subscriptions")]
-    public virtual department department { get; set; } = null!;
+    public virtual Department department { get; set; } = null!;
 
     [ForeignKey("user_id")]
     [InverseProperty("user_dept_subscriptions")]
-    public virtual user user { get; set; } = null!;
+    public virtual User user { get; set; } = null!;
 }

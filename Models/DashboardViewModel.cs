@@ -36,14 +36,10 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     {
         public int RegisteredEventsCount { get; set; }
         public int AttendedEventsCount { get; set; }
-        public int JoinedStudyGroupsCount { get; set; }
         public int EarnedCertificatesCount { get; set; }
         public int UpcomingWorkshopsCount { get; set; }
 
         public List<DashboardEventItem> MyRegisteredEvents { get; set; } = new();
-        public List<DashboardStudyGroupItem> MyStudyGroups { get; set; } = new();
-        public List<DashboardJobItem> RecommendedCampusJobs { get; set; } = new();
-        public List<DashboardPollItem> ActivePolls { get; set; } = new();
         public List<DashboardClubItem> RecommendedClubs { get; set; } = new();
     }
 
@@ -90,11 +86,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public int TotalAttendeesCount { get; set; }
         public int ActiveMembersCount { get; set; }
         public int BoothReservationsCount { get; set; }
-        public int PublishedJobPostingsCount { get; set; }
 
         public List<DashboardEventItem> HostedEvents { get; set; } = new();
         public List<DashboardMemberItem> OrganizationMembers { get; set; } = new();
-        public List<DashboardJobItem> ActiveRecruitments { get; set; } = new();
         public List<DashboardRegistrationStatItem> AttendanceAnalytics { get; set; } = new();
     }
 
@@ -174,35 +168,6 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public string? Type { get; set; } = "Info";
         public DateTime CreatedAt { get; set; }
         public bool IsRead { get; set; }
-    }
-
-    public class DashboardStudyGroupItem
-    {
-        public ulong Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Subject { get; set; } = string.Empty;
-        public int MemberCount { get; set; }
-        public string NextMeeting { get; set; } = "Tomorrow, 4:00 PM";
-        public string Location { get; set; } = "Campus Library Lab 2";
-    }
-
-    public class DashboardJobItem
-    {
-        public ulong Id { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string Employer { get; set; } = string.Empty;
-        public string JobType { get; set; } = "Part-Time / Internship";
-        public string Location { get; set; } = "Hawassa Tech Park";
-        public DateTime Deadline { get; set; }
-    }
-
-    public class DashboardPollItem
-    {
-        public ulong Id { get; set; }
-        public string Question { get; set; } = string.Empty;
-        public int TotalVotes { get; set; }
-        public bool HasVoted { get; set; }
-        public DateTime EndsAt { get; set; }
     }
 
     public class DashboardClubItem

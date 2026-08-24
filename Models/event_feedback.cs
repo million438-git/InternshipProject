@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -38,5 +38,5 @@ public partial class event_feedback
 
     [ForeignKey("user_id")]
     [InverseProperty("event_feedbacks")]
-    public virtual user user { get; set; } = null!;
+    public virtual User user { get; set; } = null!;
 }

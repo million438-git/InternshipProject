@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # ==============================================================================
+  # HUCEMS APPLICATION WEB SERVICE
+  # ==============================================================================
+  hucems-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hucems_app
+    restart: always
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - DATABASE_CONNECTION_STRING=Server=hucems-mysql;Port=3306;Database=university_event_management;Uid=root;Pwd=Hawassa@Root2026!;
+      - JWT_SECRET_KEY=HawassaUnifiedCampusEventManagementSystem_Production_Secret_Key_2026!
+    depends_on:
+      - hucems-mysql
+    networks:
+      - hucems-network
+
+  # ==============================================================================
+  # MYSQL 8.0 PRODUCTION DATABASE ENGINE
+  # ==============================================================================
+  hucems-mysql:
+    image: mysql:8.0
+    container_name: hucems_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Hawassa@Root2026!
+      MYSQL_DATABASE: university_event_management
+    ports:
+      - "3306:3306"
+    volumes:
+      - hucems_mysql_data:/var/lib/mysql
+    networks:
+      - hucems-network
+
+networks:
+  hucems-network:
+    driver: bridge
+
+volumes:
+  hucems_mysql_data:

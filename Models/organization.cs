@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,7 +9,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models;
 [Index("department_id", Name = "idx_organizations_department")]
 [Index("organization_type", Name = "idx_organizations_type")]
 [Index("name", Name = "uq_organizations_name", IsUnique = true)]
-public partial class organization
+public partial class Organization
 {
     [Key]
     public ulong id { get; set; }
@@ -51,7 +51,7 @@ public partial class organization
 
     [ForeignKey("department_id")]
     [InverseProperty("organizations")]
-    public virtual department? department { get; set; }
+    public virtual Department? department { get; set; }
 
     [InverseProperty("organization")]
     public virtual ICollection<organization_member> organization_members { get; set; } = new List<organization_member>();

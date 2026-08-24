@@ -64,7 +64,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             return _passwordHasher.HashPassword(dummyUser, password);
         }
 
-        private static bool VerifyPassword(User dbUser, string inputPassword, string storedHash)
+        public static bool VerifyPassword(User dbUser, string inputPassword, string storedHash)
         {
             if (string.IsNullOrWhiteSpace(storedHash) || string.IsNullOrWhiteSpace(inputPassword))
                 return false;
@@ -473,6 +473,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         public async Task<IActionResult> Profile()
         {
             ViewData["Title"] = "My Profile";
+            ViewBag.Departments = await _db.departments.Where(d => d.is_active == true).OrderBy(d => d.name).ToListAsync();
 
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
@@ -488,6 +489,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     if (dbUser != null)
                     {
                         ViewData["UserName"] = $"{dbUser.first_name} {dbUser.last_name}".Trim();
+                        ViewData["FirstName"] = dbUser.first_name;
+                        ViewData["LastName"] = dbUser.last_name;
+                        ViewData["Phone"] = dbUser.phone ?? "";
+                        ViewData["Bio"] = dbUser.bio ?? "";
+                        ViewData["DepartmentId"] = dbUser.department_id;
                         ViewData["Email"] = dbUser.email;
                         ViewData["Role"] = dbUser.account_type ?? "Student";
                         ViewData["Department"] = dbUser.department?.name ?? "Computer Cyber Security";
@@ -503,6 +509,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             }
 
             ViewData["UserName"] = User.Identity?.Name ?? "Campus Member";
+            ViewData["FirstName"] = "Campus";
+            ViewData["LastName"] = "Member";
             ViewData["Email"] = userEmail ?? "student@hawassauniversity.edu.et";
             ViewData["Role"] = User.FindFirstValue(ClaimTypes.Role) ?? "Student";
             ViewData["Department"] = "Computer Cyber Security";
@@ -513,9 +521,77 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         }
 
         [Authorize]
-        [HttpGet]
-        public IActionResult EditProfile()
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateProfile(string firstName, string lastName, string? phone, string? bio, ulong? departmentId)
         {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !ulong.TryParse(userIdStr, out ulong uid))
+            {
+                return Unauthorized();
+            }
+
+            var user = await _db.users.FindAsync(uid);
+            if (user == null) return NotFound();
+
+            user.first_name = !string.IsNullOrWhiteSpace(firstName) ? firstName.Trim() : user.first_name;
+            user.last_name = !string.IsNullOrWhiteSpace(lastName) ? lastName.Trim() : user.last_name;
+            user.phone = phone?.Trim();
+            user.bio = bio?.Trim();
+            if (departmentId.HasValue && departmentId.Value > 0)
+            {
+                user.department_id = departmentId.Value;
+            }
+            user.updated_at = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Your profile information has been updated successfully!";
+            return RedirectToAction(nameof(Profile));
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(string currentPassword, string newPassword, string confirmPassword)
+        {
+            if (string.IsNullOrWhiteSpace(currentPassword) || string.IsNullOrWhiteSpace(newPassword))
+            {
+                TempData["ErrorMessage"] = "Please provide both current and new passwords.";
+                return RedirectToAction(nameof(Profile));
+            }
+
+            if (newPassword != confirmPassword)
+            {
+                TempData["ErrorMessage"] = "New password and confirmation do not match.";
+                return RedirectToAction(nameof(Profile));
+            }
+
+            if (newPassword.Length < 6)
+            {
+                TempData["ErrorMessage"] = "New password must be at least 6 characters long.";
+                return RedirectToAction(nameof(Profile));
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !ulong.TryParse(userIdStr, out ulong uid))
+            {
+                return Unauthorized();
+            }
+
+            var user = await _db.users.FindAsync(uid);
+            if (user == null) return NotFound();
+
+            if (!VerifyPassword(user, currentPassword, user.password_hash))
+            {
+                TempData["ErrorMessage"] = "Current password is incorrect.";
+                return RedirectToAction(nameof(Profile));
+            }
+
+            user.password_hash = HashPassword(newPassword);
+            user.updated_at = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Your account password has been changed successfully!";
             return RedirectToAction(nameof(Profile));
         }
 

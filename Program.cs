@@ -4,38 +4,36 @@ using HawassaUnifiedCampusEventManagementSystem.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ======================================================
-// SERVICES & EMAIL SENDER
+// 1. SERVICES & EMAIL SENDER
 // ======================================================
-
 builder.Services.AddScoped<IEmailSender, CampusEmailSender>();
 
 // ======================================================
-// DATABASE
+// 2. DATABASE & CONNECTION RESILIENCY
 // ======================================================
-
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-if (string.IsNullOrWhiteSpace(connectionString))
-{
-    throw new InvalidOperationException(
-        "DefaultConnection was not found in appsettings.json.");
-}
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING")
+    ?? "Server=localhost;Port=3306;Database=university_event_management;User=root;Password=@root;";
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySQL(connectionString));
+{
+    options.UseMySQL(connectionString);
+});
 
 // ======================================================
-// AUTHENTICATION & AUTHORIZATION (DUAL COOKIE + JWT)
+// 3. AUTHENTICATION & AUTHORIZATION (DUAL COOKIE + JWT)
 // ======================================================
-
 var jwtConfig = builder.Configuration.GetSection("Jwt");
-var jwtSecret = jwtConfig["SecretKey"] ?? "HawassaUnifiedCampusEventManagementSystem_SecretKey_2026_Secure_JWT_Token_Key!";
+var jwtSecret = jwtConfig["SecretKey"] 
+    ?? Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
+    ?? "HawassaUnifiedCampusEventManagementSystem_SecretKey_2026_Secure_JWT_Token_Key!";
 var jwtIssuer = jwtConfig["Issuer"] ?? "HawassaUnifiedCampusEventManagementSystem";
 var jwtAudience = jwtConfig["Audience"] ?? "HawassaUnifiedCampusEventManagementSystem_Clients";
 
@@ -85,9 +83,8 @@ builder.Services.AddAuthorization(options =>
 });
 
 // ======================================================
-// ANTI-FORGERY SECURITY CONFIGURATION
+// 4. ANTI-FORGERY SECURITY CONFIGURATION
 // ======================================================
-
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "RequestVerificationToken";
@@ -97,16 +94,26 @@ builder.Services.AddAntiforgery(options =>
 });
 
 // ======================================================
-// MVC & API CONTROLLERS
+// 5. FORWARDED HEADERS (FOR NGINX / IIS / DOCKER / CLOUD)
 // ======================================================
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
+// ======================================================
+// 6. MVC & API CONTROLLERS
+// ======================================================
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
 // ======================================================
-// HTTP REQUEST PIPELINE & SECURITY
+// 7. HTTP REQUEST PIPELINE & SECURITY HEADERS
 // ======================================================
+app.UseForwardedHeaders();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -118,7 +125,15 @@ app.UseStatusCodePagesWithReExecute("/Home/Error", "?statusCode={0}");
 
 app.UseHttpsRedirection();
 
-app.UseStaticFiles();
+// Cache static files in production for optimal performance
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // 30 days cache for static assets with cache-busting tokens
+        ctx.Context.Response.Headers.Append("Cache-Control", "public, max-age=2592000");
+    }
+});
 
 app.UseRouting();
 
@@ -126,9 +141,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // ======================================================
-// ROUTING
+// 8. ROUTING CONFIGURATION
 // ======================================================
-
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

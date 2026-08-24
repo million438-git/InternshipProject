@@ -13,7 +13,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models;
 [Index("employee_id", Name = "uq_users_employee_id", IsUnique = true)]
 [Index("student_id", Name = "uq_users_student_id", IsUnique = true)]
 [Index("username", Name = "uq_users_username", IsUnique = true)]
-public partial class user
+public partial class User
 {
     [Key]
     public ulong id { get; set; }
@@ -78,7 +78,7 @@ public partial class user
     public virtual ICollection<_event> _eventorganizers { get; set; } = new List<_event>();
 
     [InverseProperty("author")]
-    public virtual ICollection<announcement> announcements { get; set; } = new List<announcement>();
+    public virtual ICollection<Announcement> announcements { get; set; } = new List<Announcement>();
 
     [InverseProperty("user")]
     public virtual ICollection<audit_log> audit_logs { get; set; } = new List<audit_log>();
@@ -86,18 +86,9 @@ public partial class user
     [InverseProperty("user")]
     public virtual ICollection<auth_token> auth_tokens { get; set; } = new List<auth_token>();
 
-    [InverseProperty("user")]
-    public virtual ICollection<calendar_sync> calendar_syncs { get; set; } = new List<calendar_sync>();
-
     [ForeignKey("department_id")]
     [InverseProperty("users")]
-    public virtual department? department { get; set; }
-
-    [InverseProperty("user")]
-    public virtual ICollection<device_token> device_tokens { get; set; } = new List<device_token>();
-
-    [InverseProperty("created_byNavigation")]
-    public virtual ICollection<employer> employers { get; set; } = new List<employer>();
+    public virtual Department? department { get; set; }
 
     [InverseProperty("user")]
     public virtual ICollection<event_comment> event_comments { get; set; } = new List<event_comment>();
@@ -106,34 +97,16 @@ public partial class user
     public virtual ICollection<event_feedback> event_feedbacks { get; set; } = new List<event_feedback>();
 
     [InverseProperty("user")]
-    public virtual ICollection<interview_booking> interview_bookings { get; set; } = new List<interview_booking>();
-
-    [InverseProperty("created_byNavigation")]
-    public virtual ICollection<job_posting> job_postings { get; set; } = new List<job_posting>();
-
-    [InverseProperty("user")]
-    public virtual ICollection<notification> notifications { get; set; } = new List<notification>();
+    public virtual ICollection<Notification> notifications { get; set; } = new List<Notification>();
 
     [InverseProperty("user")]
     public virtual ICollection<organization_member> organization_members { get; set; } = new List<organization_member>();
 
     [InverseProperty("user")]
-    public virtual ICollection<poll_response> poll_responses { get; set; } = new List<poll_response>();
-
-    [InverseProperty("created_byNavigation")]
-    public virtual ICollection<poll> polls { get; set; } = new List<poll>();
+    public virtual ICollection<Registration> registrations { get; set; } = new List<Registration>();
 
     [InverseProperty("user")]
-    public virtual ICollection<registration> registrations { get; set; } = new List<registration>();
-
-    [InverseProperty("user")]
-    public virtual ICollection<session> sessions { get; set; } = new List<session>();
-
-    [InverseProperty("user")]
-    public virtual ICollection<study_group_member> study_group_members { get; set; } = new List<study_group_member>();
-
-    [InverseProperty("created_byNavigation")]
-    public virtual ICollection<study_group> study_groups { get; set; } = new List<study_group>();
+    public virtual ICollection<Session> sessions { get; set; } = new List<Session>();
 
     [InverseProperty("user")]
     public virtual ICollection<user_category_interest> user_category_interests { get; set; } = new List<user_category_interest>();

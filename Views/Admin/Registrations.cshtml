@@ -10,9 +10,12 @@
         <h1 class="h3 fw-bold text-dark mb-1">🎟️ Registration & Attendee Management</h1>
         <p class="text-muted small mb-0">Track attendee enrollments, verify ticket codes, confirm bookings, and export attendee rosters.</p>
     </div>
-    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportTableToCSV('registrationsTable', 'hawassa_event_registrations.csv')">
-        <i class="bi bi-download me-1"></i>Export CSV
-    </button>
+    <div class="d-flex gap-2">
+        <a asp-controller="Admin" asp-action="ExportRegistrationsCsv" asp-route-eventId="@Model.SelectedEventId" asp-route-status="@Model.StatusFilter" class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1">
+            <i class="bi bi-file-earmark-spreadsheet"></i>
+            <span>Download CSV Roster</span>
+        </a>
+    </div>
 </div>
 
 <!-- =======================================================
@@ -58,11 +61,11 @@
 </div>
 
 <!-- =======================================================
-     FILTERS
+     FILTERS & RAPID TICKET SCANNER
      ======================================================= -->
 <div class="admin-card p-3 mb-4">
     <form method="get" class="row g-2 align-items-center">
-        <div class="col-md-7">
+        <div class="col-md-4">
             <select name="eventId" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="">All Events</option>
                 @foreach (var ev in Model.Events)
@@ -71,13 +74,19 @@
                 }
             </select>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="ALL" selected="@(Model.StatusFilter == null || Model.StatusFilter == "ALL")">All Statuses</option>
                 <option value="CONFIRMED" selected="@(Model.StatusFilter == "CONFIRMED")">Confirmed</option>
                 <option value="WAITLISTED" selected="@(Model.StatusFilter == "WAITLISTED")">Waitlisted</option>
                 <option value="CANCELLED" selected="@(Model.StatusFilter == "CANCELLED")">Cancelled</option>
             </select>
+        </div>
+        <div class="col-md-4">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" id="ticketLiveSearch" class="form-control" placeholder="Scan ticket code or search attendee..." onkeyup="filterLiveRegistrations()">
+            </div>
         </div>
         <div class="col-md-1">
             <a asp-controller="Admin" asp-action="Registrations" class="btn btn-sm btn-light border w-100" title="Reset"><i class="bi bi-arrow-counterclockwise"></i></a>
@@ -158,3 +167,16 @@
         </table>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function filterLiveRegistrations() {
+            const query = document.getElementById("ticketLiveSearch").value.toLowerCase();
+            const rows = document.querySelectorAll("#registrationsTable tbody tr");
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? "" : "none";
+            });
+        }
+    </script>
+}

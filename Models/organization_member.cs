@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -30,9 +30,9 @@ public partial class organization_member
 
     [ForeignKey("organization_id")]
     [InverseProperty("organization_members")]
-    public virtual organization organization { get; set; } = null!;
+    public virtual Organization organization { get; set; } = null!;
 
     [ForeignKey("user_id")]
     [InverseProperty("organization_members")]
-    public virtual user user { get; set; } = null!;
+    public virtual User user { get; set; } = null!;
 }

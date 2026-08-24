@@ -1,0 +1,593 @@
+/* =========================================================
+   HUCEMS - ACCOUNT PAGES
+   Login | Register | Profile | Account
+   ========================================================= */
+
+:root {
+    --account-primary: #6f42c1;
+    --account-primary-dark: #56319a;
+    --account-secondary: #0d6efd;
+    --account-success: #198754;
+    --account-danger: #dc3545;
+    --account-warning: #ffc107;
+    --account-dark: #212529;
+    --account-text: #343a40;
+    --account-muted: #6c757d;
+    --account-light: #f8f9fa;
+    --account-border: #dee2e6;
+    --account-white: #ffffff;
+    --account-shadow: 0 15px 40px rgba(0, 0, 0, 0.10);
+    --account-radius: 18px;
+}
+
+/* =========================================================
+   GLOBAL ACCOUNT AREA
+   ========================================================= */
+
+.account-page {
+    min-height: calc(100vh - 70px);
+    padding: 50px 20px;
+    background: radial-gradient(circle at top left, rgba(111, 66, 193, 0.10), transparent 35%), radial-gradient(circle at bottom right, rgba(13, 110, 253, 0.08), transparent 35%), #f6f7fb;
+}
+
+.account-container {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+/* =========================================================
+   AUTH CARD
+   ========================================================= */
+
+.account-card {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    background: var(--account-white);
+    border-radius: var(--account-radius);
+    box-shadow: var(--account-shadow);
+    padding: 40px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.account-card-wide {
+    max-width: 900px;
+}
+
+.account-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.account-logo {
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 auto 18px;
+    display: block;
+    border: 4px solid rgba(111, 66, 193, 0.12);
+    box-shadow: 0 8px 20px rgba(111, 66, 193, 0.15);
+}
+
+.account-header h1,
+.account-header h2 {
+    margin: 0 0 8px;
+    color: var(--account-dark);
+    font-weight: 700;
+}
+
+.account-header p {
+    margin: 0;
+    color: var(--account-muted);
+}
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.account-form-group {
+    margin-bottom: 20px;
+}
+
+.account-form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--account-text);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.account-input-wrapper {
+    position: relative;
+}
+
+.account-input {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 15px;
+    border: 1px solid var(--account-border);
+    border-radius: 10px;
+    outline: none;
+    background: #fff;
+    color: var(--account-text);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+    .account-input:focus {
+        border-color: var(--account-primary);
+        box-shadow: 0 0 0 4px rgba(111, 66, 193, 0.10);
+    }
+
+    .account-input::placeholder {
+        color: #adb5bd;
+    }
+
+    .account-input.input-error {
+        border-color: var(--account-danger);
+    }
+
+    .account-input.input-success {
+        border-color: var(--account-success);
+    }
+
+/* =========================================================
+   PASSWORD INPUT
+   ========================================================= */
+
+.password-wrapper {
+    position: relative;
+}
+
+    .password-wrapper .account-input {
+        padding-right: 50px;
+    }
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    color: var(--account-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 7px;
+}
+
+    .password-toggle:hover {
+        color: var(--account-primary);
+    }
+
+/* =========================================================
+   CHECKBOX
+   ========================================================= */
+
+.account-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 15px 0 22px;
+}
+
+.account-checkbox {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--account-primary);
+    cursor: pointer;
+}
+
+.account-checkbox-row label {
+    color: var(--account-text);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.account-btn {
+    width: 100%;
+    min-height: 48px;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.account-btn-primary {
+    color: white;
+    background: linear-gradient( 135deg, var(--account-primary), var(--account-primary-dark) );
+}
+
+    .account-btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(111, 66, 193, 0.25);
+    }
+
+.account-btn-secondary {
+    color: white;
+    background: var(--account-secondary);
+}
+
+.account-btn-success {
+    color: white;
+    background: var(--account-success);
+}
+
+.account-btn-danger {
+    color: white;
+    background: var(--account-danger);
+}
+
+.account-btn-outline {
+    color: var(--account-primary);
+    background: white;
+    border: 1px solid var(--account-primary);
+}
+
+    .account-btn-outline:hover {
+        color: white;
+        background: var(--account-primary);
+    }
+
+/* =========================================================
+   LINKS
+   ========================================================= */
+
+.account-links {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    margin-top: 18px;
+}
+
+.account-link {
+    color: var(--account-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+    .account-link:hover {
+        color: var(--account-primary-dark);
+        text-decoration: underline;
+    }
+
+.account-footer {
+    text-align: center;
+    margin-top: 25px;
+    color: var(--account-muted);
+    font-size: 0.9rem;
+}
+
+/* =========================================================
+   VALIDATION
+   ========================================================= */
+
+.field-validation-error,
+.account-validation-error {
+    display: block;
+    margin-top: 6px;
+    color: var(--account-danger);
+    font-size: 0.82rem;
+}
+
+.validation-summary-errors {
+    background: rgba(220, 53, 69, 0.08);
+    border: 1px solid rgba(220, 53, 69, 0.2);
+    color: var(--account-danger);
+    border-radius: 10px;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+}
+
+    .validation-summary-errors ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+
+/* =========================================================
+   ALERTS
+   ========================================================= */
+
+.account-alert {
+    border-radius: 10px;
+    padding: 13px 16px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+}
+
+.account-alert-success {
+    color: #146c43;
+    background: #d1e7dd;
+    border: 1px solid #badbcc;
+}
+
+.account-alert-danger {
+    color: #842029;
+    background: #f8d7da;
+    border: 1px solid #f5c2c7;
+}
+
+.account-alert-warning {
+    color: #664d03;
+    background: #fff3cd;
+    border: 1px solid #ffecb5;
+}
+
+.account-alert-info {
+    color: #055160;
+    background: #cff4fc;
+    border: 1px solid #b6effb;
+}
+
+/* =========================================================
+   DIVIDER
+   ========================================================= */
+
+.account-divider {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 25px 0;
+    color: var(--account-muted);
+    font-size: 0.85rem;
+}
+
+    .account-divider::before,
+    .account-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--account-border);
+    }
+
+/* =========================================================
+   PROFILE
+   ========================================================= */
+
+.profile-card {
+    background: white;
+    border-radius: var(--account-radius);
+    box-shadow: var(--account-shadow);
+    overflow: hidden;
+}
+
+.profile-cover {
+    height: 180px;
+    background: linear-gradient( 135deg, var(--account-primary), var(--account-secondary) );
+    position: relative;
+}
+
+.profile-avatar-container {
+    position: absolute;
+    left: 40px;
+    bottom: -55px;
+}
+
+.profile-avatar {
+    width: 115px;
+    height: 115px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: white;
+    padding: 5px;
+    border: 1px solid #ddd;
+}
+
+.profile-content {
+    padding: 75px 40px 40px;
+}
+
+.profile-name {
+    margin: 0;
+    color: var(--account-dark);
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.profile-role {
+    color: var(--account-muted);
+    margin-top: 5px;
+}
+
+.profile-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    margin-top: 30px;
+}
+
+.profile-info {
+    background: var(--account-light);
+    border-radius: 12px;
+    padding: 18px;
+    border: 1px solid #eee;
+}
+
+.profile-info-label {
+    display: block;
+    color: var(--account-muted);
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+}
+
+.profile-info-value {
+    color: var(--account-dark);
+    font-weight: 600;
+}
+
+/* =========================================================
+   ACCOUNT DASHBOARD
+   ========================================================= */
+
+.account-dashboard {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 25px;
+}
+
+.account-sidebar {
+    background: white;
+    border-radius: var(--account-radius);
+    box-shadow: var(--account-shadow);
+    padding: 20px;
+    height: fit-content;
+}
+
+.account-sidebar-title {
+    font-weight: 700;
+    color: var(--account-dark);
+    margin-bottom: 15px;
+}
+
+.account-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+    .account-menu li {
+        margin-bottom: 5px;
+    }
+
+    .account-menu a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 12px;
+        color: var(--account-text);
+        text-decoration: none;
+        border-radius: 8px;
+        transition: 0.2s;
+    }
+
+        .account-menu a:hover,
+        .account-menu a.active {
+            background: rgba(111, 66, 193, 0.1);
+            color: var(--account-primary);
+        }
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+.account-btn.loading {
+    pointer-events: none;
+    opacity: 0.75;
+}
+
+.account-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.5);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: accountSpin 0.7s linear infinite;
+}
+
+@keyframes accountSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* =========================================================
+   PASSWORD STRENGTH
+   ========================================================= */
+
+.password-strength {
+    margin-top: 8px;
+}
+
+.password-strength-bar {
+    width: 100%;
+    height: 5px;
+    background: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.password-strength-fill {
+    height: 100%;
+    width: 0;
+    transition: width 0.25s ease;
+}
+
+.password-strength-text {
+    margin-top: 5px;
+    font-size: 0.78rem;
+    color: var(--account-muted);
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    .account-page {
+        padding: 30px 15px;
+    }
+
+    .account-card {
+        padding: 28px 22px;
+    }
+
+    .account-dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-cover {
+        height: 150px;
+    }
+
+    .profile-avatar-container {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .profile-content {
+        padding: 75px 22px 30px;
+        text-align: center;
+    }
+
+    .profile-info-grid {
+        grid-template-columns: 1fr;
+        text-align: left;
+    }
+
+    .account-links {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .account-card {
+        padding: 24px 17px;
+        border-radius: 14px;
+    }
+
+    .account-header h1 {
+        font-size: 1.6rem;
+    }
+
+    .profile-name {
+        font-size: 1.5rem;
+    }
+}

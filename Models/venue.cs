@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,7 +9,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models;
 [Index("status", Name = "idx_venues_status")]
 [Index("venue_type", Name = "idx_venues_type")]
 [Index("name", Name = "uq_venues_name", IsUnique = true)]
-public partial class venue
+public partial class Venue
 {
     [Key]
     public ulong id { get; set; }
@@ -51,7 +51,4 @@ public partial class venue
 
     [InverseProperty("venue")]
     public virtual ICollection<_event> _events { get; set; } = new List<_event>();
-
-    [InverseProperty("venue")]
-    public virtual ICollection<interview_slot> interview_slots { get; set; } = new List<interview_slot>();
 }

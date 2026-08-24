@@ -24,15 +24,9 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<auth_token> auth_tokens { get; set; }
 
-    public virtual DbSet<calendar_sync> calendar_syncs { get; set; }
-
     public virtual DbSet<class_schedule> class_schedules { get; set; }
 
     public virtual DbSet<Department> departments { get; set; }
-
-    public virtual DbSet<device_token> device_tokens { get; set; }
-
-    public virtual DbSet<Employer> employers { get; set; }
 
     public virtual DbSet<event_category> event_categories { get; set; }
 
@@ -44,12 +38,6 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Faculty> faculties { get; set; }
 
-    public virtual DbSet<interview_booking> interview_bookings { get; set; }
-
-    public virtual DbSet<interview_slot> interview_slots { get; set; }
-
-    public virtual DbSet<job_posting> job_postings { get; set; }
-
     public virtual DbSet<Notification> notifications { get; set; }
 
     public virtual DbSet<Organization> organizations { get; set; }
@@ -58,12 +46,6 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Permission> permissions { get; set; }
 
-    public virtual DbSet<Poll> polls { get; set; }
-
-    public virtual DbSet<poll_option> poll_options { get; set; }
-
-    public virtual DbSet<poll_response> poll_responses { get; set; }
-
     public virtual DbSet<Registration> registrations { get; set; }
 
     public virtual DbSet<Role> roles { get; set; }
@@ -71,10 +53,6 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<role_permission> role_permissions { get; set; }
 
     public virtual DbSet<Session> sessions { get; set; }
-
-    public virtual DbSet<study_group> study_groups { get; set; }
-
-    public virtual DbSet<study_group_member> study_group_members { get; set; }
 
     public virtual DbSet<User> users { get; set; }
 
@@ -101,8 +79,6 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<UserSuspension> user_suspensions { get; set; }
 
     public virtual DbSet<user_relationship> user_relationships { get; set; }
-
-    public virtual DbSet<job_application> job_applications { get; set; }
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -282,24 +258,6 @@ public partial class ApplicationDbContext : DbContext
         // CALENDAR SYNCS
         // ============================================================
 
-        modelBuilder.Entity<calendar_sync>(entity =>
-        {
-            entity.HasKey(e => e.id).HasName("PRIMARY");
-
-            entity.Property(e => e.created_at)
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.Property(e => e.sync_enabled)
-                .HasDefaultValueSql("'1'");
-
-            entity.Property(e => e.updated_at)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.HasOne(d => d.user)
-                .WithMany(p => p.calendar_syncs)
-                .HasConstraintName("fk_calendar_syncs_user");
-        });
 
 
         // ============================================================
@@ -353,52 +311,12 @@ public partial class ApplicationDbContext : DbContext
         // DEVICE TOKENS
         // ============================================================
 
-        modelBuilder.Entity<device_token>(entity =>
-        {
-            entity.HasKey(e => e.id).HasName("PRIMARY");
-
-            entity.Property(e => e.created_at)
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.Property(e => e.is_active)
-                .HasDefaultValueSql("'1'");
-
-            entity.Property(e => e.platform)
-                .HasDefaultValueSql("'WEB'");
-
-            entity.Property(e => e.updated_at)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.HasOne(d => d.user)
-                .WithMany(p => p.device_tokens)
-                .HasConstraintName("fk_device_tokens_user");
-        });
 
 
         // ============================================================
         // EMPLOYERS
         // ============================================================
 
-        modelBuilder.Entity<Employer>(entity =>
-        {
-            entity.HasKey(e => e.id).HasName("PRIMARY");
-
-            entity.Property(e => e.created_at)
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.Property(e => e.status)
-                .HasDefaultValueSql("'PENDING'");
-
-            entity.Property(e => e.updated_at)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.HasOne(d => d.created_byNavigation)
-                .WithMany(p => p.employers)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("fk_employers_created_by");
-        });
 
 
         // ============================================================
@@ -513,94 +431,18 @@ public partial class ApplicationDbContext : DbContext
         // INTERVIEW BOOKINGS
         // ============================================================
 
-        modelBuilder.Entity<interview_booking>(entity =>
-        {
-            entity.HasKey(e => e.id).HasName("PRIMARY");
-
-            entity.Property(e => e.booked_at)
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.Property(e => e.status)
-                .HasDefaultValueSql("'BOOKED'");
-
-            entity.HasOne(d => d.interview_slot)
-                .WithMany(p => p.interview_bookings)
-                .HasConstraintName("fk_interview_bookings_slot");
-
-            entity.HasOne(d => d.user)
-                .WithMany(p => p.interview_bookings)
-                .HasConstraintName("fk_interview_bookings_user");
-        });
 
 
         // ============================================================
         // INTERVIEW SLOTS
         // ============================================================
 
-        modelBuilder.Entity<interview_slot>(entity =>
-        {
-            entity.HasKey(e => e.id).HasName("PRIMARY");
-
-            entity.Property(e => e.capacity)
-                .HasDefaultValueSql("'1'");
-
-            entity.Property(e => e.created_at)
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.Property(e => e.status)
-                .HasDefaultValueSql("'AVAILABLE'");
-
-            entity.Property(e => e.updated_at)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.HasOne(d => d.job_posting)
-                .WithMany(p => p.interview_slots)
-                .HasConstraintName("fk_interview_slots_job");
-
-            entity.HasOne(d => d.venue)
-                .WithMany(p => p.interview_slots)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("fk_interview_slots_venue");
-        });
 
 
         // ============================================================
         // JOB POSTINGS
         // ============================================================
 
-        modelBuilder.Entity<job_posting>(entity =>
-        {
-            entity.HasKey(e => e.id).HasName("PRIMARY");
-
-            entity.Property(e => e.created_at)
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.Property(e => e.job_type)
-                .HasDefaultValueSql("'FULL_TIME'");
-
-            entity.Property(e => e.salary_currency)
-                .HasDefaultValueSql("'ETB'");
-
-            entity.Property(e => e.status)
-                .HasDefaultValueSql("'DRAFT'");
-
-            entity.Property(e => e.updated_at)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.Property(e => e.workplace_type)
-                .HasDefaultValueSql("'ON_SITE'");
-
-            entity.HasOne(d => d.created_byNavigation)
-                .WithMany(p => p.job_postings)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("fk_jobs_created_by");
-
-            entity.HasOne(d => d.employer)
-                .WithMany(p => p.job_postings)
-                .HasConstraintName("fk_jobs_employer");
-        });
 
 
         // ============================================================
@@ -703,67 +545,18 @@ public partial class ApplicationDbContext : DbContext
         // POLLS
         // ============================================================
 
-        modelBuilder.Entity<Poll>(entity =>
-        {
-            entity.HasKey(e => e.id).HasName("PRIMARY");
-
-            entity.Property(e => e.created_at)
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.Property(e => e.status)
-                .HasDefaultValueSql("'DRAFT'");
-
-            entity.Property(e => e.updated_at)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.HasOne(d => d.created_byNavigation)
-                .WithMany(p => p.polls)
-                .OnDelete(DeleteBehavior.Restrict)
-                .HasConstraintName("fk_polls_creator");
-        });
 
 
         // ============================================================
         // POLL OPTIONS
         // ============================================================
 
-        modelBuilder.Entity<poll_option>(entity =>
-        {
-            entity.HasKey(e => e.id).HasName("PRIMARY");
-
-            entity.Property(e => e.created_at)
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.HasOne(d => d.poll)
-                .WithMany(p => p.poll_options)
-                .HasConstraintName("fk_poll_options_poll");
-        });
 
 
         // ============================================================
         // POLL RESPONSES
         // ============================================================
 
-        modelBuilder.Entity<poll_response>(entity =>
-        {
-            entity.HasKey(e => e.id).HasName("PRIMARY");
-
-            entity.Property(e => e.responded_at)
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.HasOne(d => d.option)
-                .WithMany(p => p.poll_responses)
-                .HasConstraintName("fk_poll_responses_option");
-
-            entity.HasOne(d => d.poll)
-                .WithMany(p => p.poll_responses)
-                .HasConstraintName("fk_poll_responses_poll");
-
-            entity.HasOne(d => d.user)
-                .WithMany(p => p.poll_responses)
-                .HasConstraintName("fk_poll_responses_user");
-        });
 
 
         // ============================================================
@@ -859,64 +652,12 @@ public partial class ApplicationDbContext : DbContext
         // STUDY GROUPS
         // ============================================================
 
-        modelBuilder.Entity<study_group>(entity =>
-        {
-            entity.HasKey(e => e.id).HasName("PRIMARY");
-
-            entity.Property(e => e.created_at)
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.Property(e => e.group_type)
-                .HasDefaultValueSql("'PUBLIC'");
-
-            entity.Property(e => e.status)
-                .HasDefaultValueSql("'ACTIVE'");
-
-            entity.Property(e => e.updated_at)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.HasOne(d => d.created_byNavigation)
-                .WithMany(p => p.study_groups)
-                .OnDelete(DeleteBehavior.Restrict)
-                .HasConstraintName("fk_study_groups_creator");
-
-            entity.HasOne(d => d.department)
-                .WithMany(p => p.study_groups)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("fk_study_groups_department");
-        });
 
 
         // ============================================================
         // STUDY GROUP MEMBERS
         // ============================================================
 
-        modelBuilder.Entity<study_group_member>(entity =>
-        {
-            entity.HasKey(e => new
-            {
-                e.study_group_id,
-                e.user_id
-            }).HasName("PRIMARY");
-
-            entity.Property(e => e.is_active)
-                .HasDefaultValueSql("'1'");
-
-            entity.Property(e => e.joined_at)
-                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
-
-            entity.Property(e => e.member_role)
-                .HasDefaultValueSql("'MEMBER'");
-
-            entity.HasOne(d => d.study_group)
-                .WithMany(p => p.study_group_members)
-                .HasConstraintName("fk_study_group_members_group");
-
-            entity.HasOne(d => d.user)
-                .WithMany(p => p.study_group_members)
-                .HasConstraintName("fk_study_group_members_user");
-        });
 
 
         // ============================================================

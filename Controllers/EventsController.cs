@@ -47,7 +47,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var isRegistered = false;
             if (currentUserId.HasValue && e.registrations != null && e.registrations.Any())
             {
-                isRegistered = e.registrations.Any(r => r.user_id == currentUserId.Value && r.status == "REGISTERED");
+                isRegistered = e.registrations.Any(r => r.user_id == currentUserId.Value && (r.status == "REGISTERED" || r.status == "CONFIRMED"));
             }
 
             var vm = new Event
@@ -69,12 +69,58 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 ApprovalStatus = e.approval_status ?? "APPROVED",
                 Status = e.status ?? "PUBLISHED",
                 IsUserRegistered = isRegistered,
-                RegisteredCount = e.registrations != null ? e.registrations.Count(r => r.status == "REGISTERED") : 0,
+                RegisteredCount = e.registrations != null ? e.registrations.Count(r => r.status == "REGISTERED" || r.status == "CONFIRMED") : 0,
                 ShortDescription = e.short_description,
                 ImageUrl = e.image_url,
                 Slug = e.slug,
                 CreatedAt = e.created_at
             };
+
+            // Map Discussions
+            if (e.event_comments != null)
+            {
+                vm.Comments = e.event_comments
+                    .Where(c => !c.is_deleted)
+                    .OrderByDescending(c => c.created_at)
+                    .Select(c => new EventCommentItemViewModel
+                    {
+                        Id = c.id,
+                        UserId = c.user_id,
+                        UserName = c.user != null ? $"{c.user.first_name} {c.user.last_name}".Trim() : "Campus Attendee",
+                        CommentText = c.comment,
+                        CreatedAt = c.created_at,
+                        CanDelete = currentUserId.HasValue && (currentUserId.Value == c.user_id || currentUserId.Value == e.organizer_id || IsAdminOrSuperAdmin())
+                    }).ToList();
+            }
+
+            // Map Feedback & Ratings
+            if (e.event_feedbacks != null && e.event_feedbacks.Any())
+            {
+                vm.Feedbacks = e.event_feedbacks
+                    .OrderByDescending(f => f.created_at)
+                    .Select(f => new EventFeedbackItemViewModel
+                    {
+                        Id = f.id,
+                        UserName = f.is_anonymous ? "Anonymous Attendee" : (f.user != null ? $"{f.user.first_name} {f.user.last_name}".Trim() : "Campus Attendee"),
+                        Rating = f.rating,
+                        Comment = f.comment,
+                        IsAnonymous = f.is_anonymous,
+                        CreatedAt = f.created_at
+                    }).ToList();
+
+                vm.TotalRatings = e.event_feedbacks.Count;
+                vm.AverageRating = Math.Round(e.event_feedbacks.Average(f => (double)f.rating), 1);
+
+                if (currentUserId.HasValue)
+                {
+                    var myRating = e.event_feedbacks.FirstOrDefault(f => f.user_id == currentUserId.Value);
+                    if (myRating != null)
+                    {
+                        vm.HasUserRated = true;
+                        vm.UserRating = myRating.rating;
+                    }
+                }
+            }
 
             return vm;
         }
@@ -92,6 +138,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 .Include(x => x.venue)
                 .Include(x => x.organizer)
                 .Include(x => x.registrations)
+                .Include(x => x.event_feedbacks)
                 .AsQueryable();
 
             // Normal users and guests see published & approved events. Admins see all events.
@@ -126,6 +173,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 .Include(x => x.venue)
                 .Include(x => x.organizer)
                 .Include(x => x.registrations)
+                .Include(x => x.event_comments).ThenInclude(c => c.user)
+                .Include(x => x.event_feedbacks).ThenInclude(f => f.user)
                 .FirstOrDefaultAsync(x => x.id == id.Value);
 
             if (e == null) return NotFound();
@@ -207,8 +256,40 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             ulong? venueId = null;
             if (!string.IsNullOrWhiteSpace(model.Venue))
             {
-                var matchingVenue = await _db.venues.FirstOrDefaultAsync(v => v.name.ToLower().Contains(model.Venue.ToLower()));
-                if (matchingVenue != null) venueId = matchingVenue.id;
+                var mv = model.Venue.Trim().ToLower();
+                var matchingVenue = await _db.venues.FirstOrDefaultAsync(v => v.name.ToLower() == mv || v.name.ToLower().Contains(mv) || mv.Contains(v.name.ToLower()));
+                if (matchingVenue != null)
+                {
+                    venueId = matchingVenue.id;
+                }
+                else
+                {
+                    var firstVenue = await _db.venues.FirstOrDefaultAsync();
+                    if (firstVenue != null) venueId = firstVenue.id;
+                }
+            }
+            else
+            {
+                var firstVenue = await _db.venues.FirstOrDefaultAsync();
+                if (firstVenue != null) venueId = firstVenue.id;
+            }
+
+            // Venue Overlap & Double-Booking Conflict Prevention
+            if (venueId.HasValue)
+            {
+                var conflictingEvent = await _db.events
+                    .Include(e => e.venue)
+                    .FirstOrDefaultAsync(e => e.venue_id == venueId.Value &&
+                                              (e.status != "CANCELLED" && e.approval_status != "REJECTED") &&
+                                              (startAt < e.end_at && endAt > e.start_at));
+
+                if (conflictingEvent != null)
+                {
+                    ModelState.AddModelError("Venue", $"The venue '{conflictingEvent.venue?.name ?? "Selected Venue"}' is already reserved for '{conflictingEvent.title}' on {conflictingEvent.start_at:MMM dd} from {conflictingEvent.start_at:hh:mm tt} to {conflictingEvent.end_at:hh:mm tt}. Please select a different time or venue.");
+                    ViewBag.Categories = await _db.event_categories.Where(c => c.is_active == true).ToListAsync();
+                    ViewBag.Venues = await _db.venues.Where(v => v.status == "AVAILABLE").ToListAsync();
+                    return View(model);
+                }
             }
 
             // Generate unique slug
@@ -326,6 +407,25 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 ? model.EventDate.Date + model.EndTime.Value
                 : startAt.AddHours(2);
 
+            // Venue Overlap & Double-Booking Conflict Prevention
+            if (e.venue_id.HasValue)
+            {
+                var conflictingEvent = await _db.events
+                    .Include(ev => ev.venue)
+                    .FirstOrDefaultAsync(ev => ev.id != id &&
+                                              ev.venue_id == e.venue_id.Value &&
+                                              (ev.status != "CANCELLED" && ev.approval_status != "REJECTED") &&
+                                              (startAt < ev.end_at && endAt > ev.start_at));
+
+                if (conflictingEvent != null)
+                {
+                    ModelState.AddModelError("Venue", $"The venue '{conflictingEvent.venue?.name ?? "Selected Venue"}' is already reserved for '{conflictingEvent.title}' on {conflictingEvent.start_at:MMM dd} from {conflictingEvent.start_at:hh:mm tt} to {conflictingEvent.end_at:hh:mm tt}. Please select a different time or venue.");
+                    ViewBag.Categories = await _db.event_categories.Where(c => c.is_active == true).ToListAsync();
+                    ViewBag.Venues = await _db.venues.Where(v => v.status == "AVAILABLE").ToListAsync();
+                    return View(model);
+                }
+            }
+
             // update fields
             e.title = model.Title ?? e.title;
             e.description = model.Description;
@@ -435,6 +535,31 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
             _db.registrations.Add(newReg);
             await _db.SaveChangesAsync();
+
+            // Dispatch in-app attendee notification & ticket confirmation
+            try
+            {
+                var notification = new Notification
+                {
+                    user_id = currentUserId.Value,
+                    title = regStatus == "REGISTERED" ? "Event Registration Confirmed" : "Added to Event Waitlist",
+                    message = regStatus == "REGISTERED"
+                        ? $"You have successfully registered for '{e.title}'. Your ticket code is {regCode}."
+                        : $"You have been placed on the waitlist for '{e.title}'. We will notify you if a slot opens.",
+                    notification_type = "REGISTRATION",
+                    related_entity_type = "EVENT",
+                    related_entity_id = e.id,
+                    action_url = $"/Events/Details/{e.id}",
+                    is_read = false,
+                    created_at = DateTime.UtcNow
+                };
+                _db.notifications.Add(notification);
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception notifEx)
+            {
+                _logger.LogWarning(notifEx, "Failed to dispatch registration confirmation notification.");
+            }
 
             TempData["SuccessMessage"] = regStatus == "REGISTERED"
                 ? $"Registration confirmed! Your ticket code is {regCode}."
@@ -546,6 +671,149 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 _logger.LogError(ex, "Error fetching event categories summary from database.");
                 return View(new List<EventCategorySummaryViewModel>());
             }
+        }
+
+        // =========================================================
+        // POST: /Events/AddComment
+        // =========================================================
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddComment(ulong eventId, string comment)
+        {
+            if (string.IsNullOrWhiteSpace(comment))
+            {
+                TempData["ErrorMessage"] = "Comment cannot be empty.";
+                return RedirectToAction(nameof(Details), new { id = eventId });
+            }
+
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue) return Unauthorized();
+
+            var ev = await _db.events.FindAsync(eventId);
+            if (ev == null) return NotFound();
+
+            var newComment = new event_comment
+            {
+                event_id = eventId,
+                user_id = currentUserId.Value,
+                comment = comment.Trim(),
+                is_edited = false,
+                is_deleted = false,
+                created_at = DateTime.UtcNow,
+                updated_at = DateTime.UtcNow
+            };
+
+            _db.event_comments.Add(newComment);
+            await _db.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Your comment has been posted!";
+            return RedirectToAction(nameof(Details), new { id = eventId });
+        }
+
+        // =========================================================
+        // POST: /Events/DeleteComment
+        // =========================================================
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteComment(ulong commentId, ulong eventId)
+        {
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue) return Unauthorized();
+
+            var c = await _db.event_comments.FindAsync(commentId);
+            if (c == null) return NotFound();
+
+            var ev = await _db.events.FindAsync(eventId);
+            var isOrganizer = ev != null && ev.organizer_id == currentUserId.Value;
+            var isAuthor = c.user_id == currentUserId.Value;
+            var isAdmin = IsAdminOrSuperAdmin();
+
+            if (!isAuthor && !isOrganizer && !isAdmin)
+            {
+                return Forbid();
+            }
+
+            c.is_deleted = true;
+            c.deleted_at = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Comment deleted.";
+            return RedirectToAction(nameof(Details), new { id = eventId });
+        }
+
+        // =========================================================
+        // POST: /Events/AddFeedback
+        // =========================================================
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddFeedback(ulong eventId, byte rating, string? comment, bool isAnonymous = false)
+        {
+            if (rating < 1 || rating > 5)
+            {
+                TempData["ErrorMessage"] = "Rating must be between 1 and 5 stars.";
+                return RedirectToAction(nameof(Details), new { id = eventId });
+            }
+
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue) return Unauthorized();
+
+            var existingFeedback = await _db.event_feedbacks
+                .FirstOrDefaultAsync(f => f.event_id == eventId && f.user_id == currentUserId.Value);
+
+            if (existingFeedback != null)
+            {
+                existingFeedback.rating = rating;
+                existingFeedback.comment = comment?.Trim();
+                existingFeedback.is_anonymous = isAnonymous;
+                existingFeedback.updated_at = DateTime.UtcNow;
+                TempData["SuccessMessage"] = "Your event review and star rating have been updated!";
+            }
+            else
+            {
+                var newFeedback = new event_feedback
+                {
+                    event_id = eventId,
+                    user_id = currentUserId.Value,
+                    rating = rating,
+                    comment = comment?.Trim(),
+                    is_anonymous = isAnonymous,
+                    created_at = DateTime.UtcNow,
+                    updated_at = DateTime.UtcNow
+                };
+                _db.event_feedbacks.Add(newFeedback);
+                TempData["SuccessMessage"] = "Thank you for submitting your event rating and feedback!";
+            }
+
+            await _db.SaveChangesAsync();
+            return RedirectToAction(nameof(Details), new { id = eventId });
+        }
+
+        // =========================================================
+        // GET: /Events/ExportIcs/5
+        // =========================================================
+        [HttpGet]
+        public async Task<IActionResult> ExportIcs(ulong id)
+        {
+            var e = await _db.events
+                .Include(ev => ev.venue)
+                .Include(ev => ev.organizer)
+                .FirstOrDefaultAsync(ev => ev.id == id);
+
+            if (e == null) return NotFound();
+
+            var startUtc = e.start_at.ToUniversalTime().ToString("yyyyMMddTHHmmssZ");
+            var endUtc = e.end_at.ToUniversalTime().ToString("yyyyMMddTHHmmssZ");
+            var title = (e.title ?? "Campus Event").Replace("\r", "").Replace("\n", " ");
+            var desc = (e.description ?? "").Replace("\r", "").Replace("\n", "\\n");
+            var venue = (e.venue?.name ?? "Hawassa University").Replace("\r", "").Replace("\n", " ");
+
+            var ics = $"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Hawassa University//HUCEMS Event//EN\r\nBEGIN:VEVENT\r\nUID:event-{e.id}@hawassa.edu.et\r\nDTSTAMP:{DateTime.UtcNow:yyyyMMddTHHmmssZ}\r\nDTSTART:{startUtc}\r\nDTEND:{endUtc}\r\nSUMMARY:{title}\r\nDESCRIPTION:{desc}\r\nLOCATION:{venue}\r\nSTATUS:CONFIRMED\r\nEND:VEVENT\r\nEND:VCALENDAR";
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(ics);
+            return File(bytes, "text/calendar", $"{e.slug ?? "campus_event"}.ics");
         }
     }
 }

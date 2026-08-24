@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -24,13 +24,13 @@ public partial class user_role
 
     [ForeignKey("assigned_by")]
     [InverseProperty("user_roleassigned_byNavigations")]
-    public virtual user? assigned_byNavigation { get; set; }
+    public virtual User? assigned_byNavigation { get; set; }
 
     [ForeignKey("role_id")]
     [InverseProperty("user_roles")]
-    public virtual role role { get; set; } = null!;
+    public virtual Role role { get; set; } = null!;
 
     [ForeignKey("user_id")]
     [InverseProperty("user_roleusers")]
-    public virtual user user { get; set; } = null!;
+    public virtual User user { get; set; } = null!;
 }

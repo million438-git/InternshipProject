@@ -1,7 +1,6 @@
-@model HawassaUnifiedCampusEventManagementSystem.Models.JobFilterViewModel
-
+@model JobListViewModel
 @{
-    ViewData["Title"] = "Find Campus Jobs & Internships";
+    ViewData["Title"] = "Campus Career & Student Employment";
 }
 
 @section Styles {
@@ -10,801 +9,172 @@
 
 <div class="jobs-page">
 
-    <!-- =========================================================
-         1. HERO SECTION (FIND YOUR NEXT OPPORTUNITY)
-         ========================================================= -->
+    <!-- =======================================================
+         HERO BANNER
+         ======================================================= -->
     <section class="jobs-hero">
-        <div class="container">
-
+        <div class="container text-center">
             <div class="jobs-hero-badge">
-                <i class="bi bi-mortarboard-fill"></i> Hawassa University Career Center
+                <i class="bi bi-briefcase-fill me-1"></i> Hawassa University Career & Employment Hub
             </div>
-
             <h1 class="jobs-hero-title">
-                FIND YOUR NEXT OPPORTUNITY
+                Explore Student Jobs & Internships
             </h1>
-
-            <p class="jobs-hero-subtitle">
-                Discover internships, graduate jobs, and career opportunities for Hawassa University students.
+            <p class="jobs-hero-subtitle mx-auto">
+                Discover on-campus work-study positions, graduate assistantships, industry research internships, and department job openings across Hawassa University.
             </p>
 
-            <!-- SEARCH BAR -->
-            <form asp-controller="Jobs" asp-action="Index" method="get" class="jobs-search-wrapper" id="jobsSearchForm">
-                <div class="jobs-search-box">
-                    <i class="bi bi-search jobs-search-icon"></i>
-                    
-                    <input type="text"
-                           name="search"
-                           id="jobsSearchInput"
-                           value="@Model.Search"
-                           placeholder="Search jobs, companies, or keywords..."
-                           class="jobs-search-input"
-                           autocomplete="off" />
-
-                    <div class="jobs-search-divider"></div>
-
-                    <select name="location" id="jobsLocationSelect" class="jobs-location-select" aria-label="Select location">
-                        <option value="all">📍 All Locations</option>
-                        <option value="Hawassa" selected="@(Model.Location == "Hawassa")">📍 Hawassa, Ethiopia</option>
-                        <option value="Addis Ababa" selected="@(Model.Location == "Addis Ababa")">📍 Addis Ababa</option>
-                        <option value="IoT Campus" selected="@(Model.Location == "IoT Campus")">📍 Hawassa IoT Campus</option>
-                        <option value="Remote" selected="@(Model.Location == "Remote")">🌐 Remote (Anywhere)</option>
-                    </select>
-
-                    <input type="hidden" name="type" id="hiddenJobType" value="@(Model.JobType ?? "all")" />
-                    <input type="hidden" name="sort" id="hiddenJobSort" value="@(Model.SortBy ?? "newest")" />
-
-                    <button type="submit" class="jobs-search-btn">
-                        <i class="bi bi-search"></i>
-                        <span>Search Jobs</span>
-                    </button>
+            @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("Faculty") || User.IsInRole("Staff") ||
+                 User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN") || User.IsInRole("FACULTY") || User.IsInRole("STAFF"))
+            {
+                <div class="mt-4">
+                    <a asp-action="Create" class="btn btn-primary px-4 py-2 fw-semibold rounded-pill shadow-sm">
+                        <i class="bi bi-plus-circle me-1"></i> Post New Campus Opening
+                    </a>
                 </div>
-            </form>
-
-            <!-- QUICK FILTER PILLS -->
-            <div class="jobs-quick-pills">
-                <a asp-controller="Jobs" asp-action="Index" asp-route-type="all" asp-route-search="@Model.Search" asp-route-location="@Model.Location"
-                   class="job-pill-btn @(string.IsNullOrEmpty(Model.JobType) || Model.JobType.Equals("all", StringComparison.OrdinalIgnoreCase) ? "active" : "")"
-                   data-type="all">
-                    <span>All Jobs</span>
-                    <span class="job-pill-badge">@(Model.JobTypeCounts.GetValueOrDefault("All", 24))</span>
-                </a>
-
-                <a asp-controller="Jobs" asp-action="Index" asp-route-type="Internship" asp-route-search="@Model.Search" asp-route-location="@Model.Location"
-                   class="job-pill-btn @(Model.JobType?.Equals("Internship", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")"
-                   data-type="Internship">
-                    <i class="bi bi-mortarboard"></i>
-                    <span>Internship</span>
-                    <span class="job-pill-badge">@(Model.JobTypeCounts.GetValueOrDefault("Internship", 10))</span>
-                </a>
-
-                <a asp-controller="Jobs" asp-action="Index" asp-route-type="Full-Time" asp-route-search="@Model.Search" asp-route-location="@Model.Location"
-                   class="job-pill-btn @(Model.JobType?.Equals("Full-Time", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")"
-                   data-type="Full-Time">
-                    <i class="bi bi-briefcase"></i>
-                    <span>Full-Time</span>
-                    <span class="job-pill-badge">@(Model.JobTypeCounts.GetValueOrDefault("Full-Time", 8))</span>
-                </a>
-
-                <a asp-controller="Jobs" asp-action="Index" asp-route-type="Part-Time" asp-route-search="@Model.Search" asp-route-location="@Model.Location"
-                   class="job-pill-btn @(Model.JobType?.Equals("Part-Time", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")"
-                   data-type="Part-Time">
-                    <i class="bi bi-clock-history"></i>
-                    <span>Part-Time</span>
-                    <span class="job-pill-badge">@(Model.JobTypeCounts.GetValueOrDefault("Part-Time", 4))</span>
-                </a>
-
-                <a asp-controller="Jobs" asp-action="Index" asp-route-type="Remote" asp-route-search="@Model.Search" asp-route-location="@Model.Location"
-                   class="job-pill-btn @(Model.JobType?.Equals("Remote", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")"
-                   data-type="Remote">
-                    <i class="bi bi-laptop"></i>
-                    <span>Remote</span>
-                    <span class="job-pill-badge">@(Model.JobTypeCounts.GetValueOrDefault("Remote", 4))</span>
-                </a>
-            </div>
-
+            }
         </div>
     </section>
 
+    <div class="container py-5">
 
-    <!-- =========================================================
-         2. AVAILABLE JOBS SECTION
-         ========================================================= -->
-    <section class="jobs-main-section">
-        <div class="container">
+        <!-- ALERTS -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
 
-            @if (TempData["SuccessMessage"] != null)
-            {
-                <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-check-circle-fill fs-5 text-success"></i>
-                        <div>
-                            <strong>Application Submitted!</strong> @TempData["SuccessMessage"]
-                        </div>
+        <!-- =======================================================
+             SEARCH & FILTER BAR
+             ======================================================= -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-5" style="background: var(--bg-card, #ffffff);">
+            <form method="get" asp-action="Index" class="row g-3 align-items-center">
+                <div class="col-lg-5 col-md-12">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 text-muted">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" name="search" class="form-control border-start-0" 
+                               placeholder="Search job title, skills, department..." value="@Model.SearchQuery" />
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
-
-            <!-- SECTION HEADER -->
-            <div class="jobs-section-header">
-                <div>
-                    <span class="jobs-section-eyebrow">EXPLORE OPPORTUNITIES</span>
-                    <h2 class="jobs-section-title">AVAILABLE JOBS</h2>
-                    <p class="jobs-section-desc">Find opportunities that match your skills and interests.</p>
                 </div>
 
-                <div class="jobs-controls-wrap">
-                    <button type="button" class="jobs-filter-toggle-btn" id="toggleFilterDrawerBtn">
-                        <i class="bi bi-sliders"></i>
-                        <span>Filter</span>
-                        <i class="bi bi-chevron-down" id="filterChevronIcon"></i>
-                    </button>
-
-                    <div class="jobs-count-badge" id="jobsCountBadge">
-                        <i class="bi bi-briefcase-fill"></i>
-                        <span>Showing @Model.TotalJobs Jobs</span>
-                    </div>
-
-                    <select id="clientSortSelect" class="jobs-sort-select" aria-label="Sort jobs">
-                        <option value="newest" selected="@(Model.SortBy == "newest")">Sort: Newest</option>
-                        <option value="deadline" selected="@(Model.SortBy == "deadline")">Sort: Deadline (Soonest)</option>
-                        <option value="popular" selected="@(Model.SortBy == "popular")">Sort: Most Popular</option>
-                        <option value="title" selected="@(Model.SortBy == "title")">Sort: Job Title (A-Z)</option>
+                <div class="col-lg-3 col-md-6">
+                    <select name="jobType" class="form-select">
+                        <option value="">All Employment Types</option>
+                        <option value="INTERNSHIP" selected="@(Model.SelectedJobType == "INTERNSHIP")">Internship</option>
+                        <option value="PART_TIME" selected="@(Model.SelectedJobType == "PART_TIME")">Part-Time / Student Job</option>
+                        <option value="FULL_TIME" selected="@(Model.SelectedJobType == "FULL_TIME")">Full-Time Staff</option>
+                        <option value="VOLUNTEER" selected="@(Model.SelectedJobType == "VOLUNTEER")">Volunteer / Community</option>
                     </select>
                 </div>
-            </div>
 
-            <!-- COLLAPSIBLE ADVANCED FILTER DRAWER -->
-            <div class="jobs-filter-drawer d-none" id="jobsFilterDrawer">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="filter-group-label" for="drawerWorkplace">Workplace Type</label>
-                        <select class="form-select form-select-sm rounded-3" id="drawerWorkplace">
-                            <option value="all">All Workplaces</option>
-                            <option value="On-site">🏢 On-site</option>
-                            <option value="Hybrid">🔄 Hybrid</option>
-                            <option value="Remote">🌐 Remote</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="filter-group-label" for="drawerIndustry">Industry / Sector</label>
-                        <select class="form-select form-select-sm rounded-3" id="drawerIndustry">
-                            <option value="all">All Industries</option>
-                            <option value="Software & IT">💻 Software & IT</option>
-                            <option value="Telecommunications">📡 Telecommunications</option>
-                            <option value="Banking & Finance">🏦 Banking & Finance</option>
-                            <option value="Education & ICT">🎓 Education & ICT</option>
-                            <option value="Cybersecurity">🛡️ Cybersecurity</option>
-                            <option value="Artificial Intelligence">🤖 Artificial Intelligence</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="filter-group-label" for="drawerExperience">Experience Level</label>
-                        <select class="form-select form-select-sm rounded-3" id="drawerExperience">
-                            <option value="all">All Levels</option>
-                            <option value="Student">🎓 Student / Internship</option>
-                            <option value="Fresh Graduate">🌟 Fresh Graduate</option>
-                            <option value="Junior">💼 Junior (1-2 yrs)</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-3 d-flex align-items-end gap-2">
-                        <button type="button" class="btn btn-primary btn-sm flex-grow-1 rounded-3" id="applyDrawerFiltersBtn">
-                            <i class="bi bi-funnel-fill me-1"></i> Apply Filters
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-3" id="resetDrawerFiltersBtn" title="Reset all filters">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                        </button>
-                    </div>
+                <div class="col-lg-2 col-md-6">
+                    <select name="workplaceType" class="form-select">
+                        <option value="">All Locations</option>
+                        <option value="ON_SITE" selected="@(Model.SelectedWorkplaceType == "ON_SITE")">On-Site Campus</option>
+                        <option value="HYBRID" selected="@(Model.SelectedWorkplaceType == "HYBRID")">Hybrid</option>
+                        <option value="REMOTE" selected="@(Model.SelectedWorkplaceType == "REMOTE")">Remote</option>
+                    </select>
                 </div>
-            </div>
 
-            <!-- =======================================================
-                 3. JOBS GRID
-                 ======================================================= -->
-            <div class="row g-4" id="jobsContainer">
-                @if (Model.Jobs.Any())
+                <div class="col-lg-2 col-md-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                        <i class="bi bi-funnel me-1"></i> Filter
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary" title="Reset Filters">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- =======================================================
+             RESULTS HEADER
+             ======================================================= -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h5 fw-bold mb-0">
+                <span class="text-primary fw-extrabold">@Model.TotalActiveOpportunities</span> Active Opportunities Available
+            </h2>
+            <span class="text-muted small">Updated daily by university faculties</span>
+        </div>
+
+        <!-- =======================================================
+             JOB CARDS GRID
+             ======================================================= -->
+        @if (Model.Jobs.Any())
+        {
+            <div class="row g-4">
+                @foreach (var job in Model.Jobs)
                 {
-                    @foreach (var job in Model.Jobs)
-                    {
-                        <div class="col-lg-6 col-md-12 job-item-col"
-                             data-job-id="@job.Id"
-                             data-type="@job.JobType"
-                             data-workplace="@job.WorkplaceType"
-                             data-location="@job.Location"
-                             data-industry="@job.Industry"
-                             data-title="@job.Title.ToLower()"
-                             data-company="@job.CompanyName.ToLower()"
-                             data-skills="@string.Join(" ", job.Skills ?? new List<string>()).ToLower()">
-
-                            <div class="job-card @(job.IsFeatured ? "featured-card" : "")">
-
+                    <div class="col-lg-6 col-12">
+                        <div class="card h-100 border rounded-4 p-4 shadow-sm transition-hover" 
+                             style="background: var(--bg-card, #ffffff); border-color: var(--border-color, #e2e8f0);">
+                            <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                                 <div>
-                                    <!-- COMPANY HEADER -->
-                                    <div class="job-card-header">
-                                        <div class="job-company-info">
-                                            <div class="job-company-avatar" style="background: @job.CompanyColor;">
-                                                @job.CompanyInitials
-                                            </div>
-                                            <div>
-                                                <div class="job-company-name">
-                                                    <span class="building-emoji">🏢</span>
-                                                    <span>@job.CompanyName</span>
-                                                    @if (job.IsVerifiedEmployer)
-                                                    {
-                                                        <i class="bi bi-patch-check-fill job-verified-badge" title="Verified Employer"></i>
-                                                    }
-                                                </div>
-                                                <div class="job-card-location">
-                                                    <i class="bi bi-geo-alt-fill text-danger"></i>
-                                                    <span>@job.Location</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <button type="button"
-                                                class="job-bookmark-btn bookmark-btn-@job.Id"
-                                                onclick="toggleBookmark(@job.Id, '@Html.Raw(job.Title.Replace("'", "\\'"))')"
-                                                title="Save Job"
-                                                aria-label="Save Job">
-                                            <i class="bi bi-bookmark"></i>
-                                        </button>
-                                    </div>
-
-                                    <!-- JOB TITLE -->
-                                    <h3 class="job-card-title">
-                                        <a asp-controller="Jobs" asp-action="Details" asp-route-id="@job.Id" class="text-decoration-none text-dark">
+                                    <span class="badge @(job.JobType == "INTERNSHIP" ? "bg-primary-subtle text-primary" : "bg-success-subtle text-success") rounded-pill px-3 py-1 fw-bold mb-2">
+                                        @job.JobType.Replace("_", " ")
+                                    </span>
+                                    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 mb-2">
+                                        @job.WorkplaceType.Replace("_", " ")
+                                    </span>
+                                    <h3 class="h5 fw-bold mb-1">
+                                        <a asp-action="Details" asp-route-id="@job.Id" class="text-decoration-none text-dark hover-primary">
                                             @job.Title
                                         </a>
                                     </h3>
-
-                                    <!-- METADATA PILLS -->
-                                    <div class="job-meta-pills">
-                                        <!-- Job Type Badge -->
-                                        @{
-                                            var typeClass = job.JobType switch
-                                             {
-                                                 "Internship" => "tag-internship",
-                                                 "Full-Time" => "tag-fulltime",
-                                                 "Part-Time" => "tag-parttime",
-                                                 _ => "tag-internship"
-                                             };
-                                        }
-                                        <span class="job-meta-tag @typeClass">
-                                            <i class="bi bi-clock"></i> @job.JobType
-                                        </span>
-
-                                        <!-- Workplace Badge -->
-                                        @{
-                                            var workplaceClass = job.WorkplaceType switch
-                                            {
-                                                "On-site" => "tag-onsite",
-                                                "Hybrid" => "tag-hybrid",
-                                                "Remote" => "tag-remote",
-                                                _ => "tag-onsite"
-                                            };
-                                        }
-                                        <span class="job-meta-tag @workplaceClass">
-                                            <i class="bi bi-geo-alt"></i> @job.WorkplaceType
-                                        </span>
-
-                                        <!-- Industry Badge -->
-                                        <span class="job-meta-tag" style="background: #f1f5f9; color: #475569;">
-                                            <i class="bi bi-tag"></i> @job.Industry
-                                        </span>
-                                    </div>
-
-                                    <!-- DESCRIPTION SNIPPET -->
-                                    <p class="job-card-desc">
-                                        @job.ShortDescription
+                                    <p class="text-primary fw-semibold small mb-0">
+                                        <i class="bi bi-building me-1"></i> @job.CompanyOrDepartment
                                     </p>
-
-                                    <!-- SKILL CHIPS -->
-                                    @if (job.Skills != null && job.Skills.Any())
+                                </div>
+                                <div class="text-end">
+                                    @if (job.SalaryMin.HasValue && job.SalaryMax.HasValue)
                                     {
-                                        <div class="job-skills-wrap">
-                                            @foreach (var skill in job.Skills.Take(4))
-                                            {
-                                                <span class="job-skill-chip">@skill</span>
-                                            }
-                                            @if (job.Skills.Count > 4)
-                                            {
-                                                <span class="job-skill-chip text-muted">+@(job.Skills.Count - 4) more</span>
-                                            }
+                                        <div class="fw-bold text-success fs-6">
+                                            @job.SalaryMin.Value.ToString("N0") - @job.SalaryMax.Value.ToString("N0") <small class="text-muted fs-7">@job.SalaryCurrency/mo</small>
                                         </div>
                                     }
                                 </div>
-
-                                <!-- CARD FOOTER -->
-                                <div class="job-card-footer">
-                                    <div class="job-deadline-wrap">
-                                        <span class="job-deadline-text @(job.IsClosingSoon ? "closing-soon" : "")">
-                                            <i class="bi bi-calendar-check"></i>
-                                            Deadline: @job.DeadlineString
-                                        </span>
-
-                                        @if (!string.IsNullOrWhiteSpace(job.SalaryDisplay))
-                                        {
-                                            <span class="job-salary-badge">
-                                                @job.SalaryDisplay
-                                            </span>
-                                        }
-                                    </div>
-
-                                    <div class="job-card-actions">
-                                        <button type="button"
-                                                class="btn-job-details"
-                                                onclick="openJobDetailsModal(@job.Id)">
-                                            <i class="bi bi-eye"></i>
-                                            <span>View Details</span>
-                                        </button>
-
-                                        <a asp-controller="Jobs" asp-action="Apply" asp-route-id="@job.Id" class="btn-job-apply">
-                                            <i class="bi bi-send-fill"></i>
-                                            <span>Apply Now</span>
-                                        </a>
-                                    </div>
-                                </div>
-
                             </div>
 
+                            <p class="text-muted small mb-4 flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.6;">
+                                @job.Description
+                            </p>
+
+                            <hr class="my-3 opacity-25" />
+
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <div class="small text-muted d-flex align-items-center gap-3">
+                                    <span><i class="bi bi-geo-alt me-1"></i> @job.Location</span>
+                                    <span><i class="bi bi-people me-1"></i> @job.TotalApplicants Applicants</span>
+                                </div>
+                                <a asp-action="Details" asp-route-id="@job.Id" class="btn btn-sm btn-outline-primary px-3 rounded-pill fw-semibold">
+                                    View Details & Apply <i class="bi bi-arrow-right ms-1"></i>
+                                </a>
+                            </div>
                         </div>
-                    }
-                }
-                else
-                {
-                    <div class="col-12">
-                        <div class="jobs-empty-state">
-                            <i class="bi bi-search jobs-empty-icon"></i>
-                            <h4 class="fw-bold">No jobs matching your criteria</h4>
-                            <p class="text-muted">Try clearing some search terms or adjusting the filters above.</p>
-                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-primary px-4 py-2 rounded-pill mt-2">
-                                <i class="bi bi-arrow-clockwise me-1"></i> Reset All Filters
-                            </a>
-                        </div>
                     </div>
                 }
             </div>
-
-            <div id="noResultsClientMessage" class="jobs-empty-state d-none">
-                <i class="bi bi-search jobs-empty-icon"></i>
-                <h4 class="fw-bold">No matching jobs found</h4>
-                <p class="text-muted">Try searching with a different keyword or relaxing your filter selections.</p>
-                <button type="button" class="btn btn-primary px-4 py-2 rounded-pill mt-2" onclick="resetAllClientFilters()">
-                    <i class="bi bi-arrow-clockwise me-1"></i> View All 24 Jobs
-                </button>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-briefcase text-muted" style="font-size: 3.5rem;"></i>
+                <h3 class="fw-bold mt-3">No Opportunities Found</h3>
+                <p class="text-muted">Try adjusting your search criteria or explore other employment categories.</p>
+                <a asp-action="Index" class="btn btn-primary rounded-pill px-4">View All Jobs</a>
             </div>
-
-
-            <!-- =======================================================
-                 4. HAWASSA CAREER CENTER RESOURCE BANNER
-                 ======================================================= -->
-            <div class="jobs-career-banner">
-                <div class="row align-items-center">
-                    <div class="col-lg-8">
-                        <span class="badge bg-white text-dark fw-bold px-3 py-2 rounded-pill mb-3">🎓 Career Guidance & Support</span>
-                        <h3 class="fw-bold text-white mb-2">Need help preparing your CV or interview prep?</h3>
-                        <p class="text-white-50 mb-4 mb-lg-0" style="max-width: 600px;">
-                            The Hawassa University Career Development Center offers free resume reviews, mock interviews, and career mentoring for undergraduate and graduating students.
-                        </p>
-                    </div>
-                    <div class="col-lg-4 text-lg-end">
-                        <a asp-controller="Community" asp-action="Index" class="btn btn-light btn-lg rounded-pill fw-bold text-primary px-4 shadow-sm">
-                            <i class="bi bi-chat-heart me-1"></i> Connect on Community
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-
-            <!-- =======================================================
-                 5. TOP HIRING PARTNERS SPOTLIGHT
-                 ======================================================= -->
-            <div class="jobs-partners-section">
-                <div class="jobs-partners-title">
-                    Trusted Campus Hiring Partners & Employers
-                </div>
-                <div class="jobs-partners-grid">
-                    <div class="partner-logo-chip">🏢 ABC Technology</div>
-                    <div class="partner-logo-chip">📡 Ethio Telecom</div>
-                    <div class="partner-logo-chip">📱 Safaricom Ethiopia</div>
-                    <div class="partner-logo-chip">🏦 Commercial Bank of Ethiopia</div>
-                    <div class="partner-logo-chip">🛡️ INSA Ethiopia</div>
-                    <div class="partner-logo-chip">🤖 EAII (AI Institute)</div>
-                    <div class="partner-logo-chip">⚡ Ethiopian Electric Power</div>
-                    <div class="partner-logo-chip">🌾 Hawassa College of Agri</div>
-                </div>
-            </div>
-
-        </div>
-    </section>
-</div>
-
-
-<!-- =========================================================
-     6. QUICK VIEW DETAILS MODAL
-     ========================================================= -->
-<div class="modal fade job-modal" id="jobDetailsModal" tabindex="-1" aria-labelledby="jobModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="d-flex align-items-center gap-3">
-                    <div id="modalCompanyAvatar" class="job-company-avatar" style="width: 48px; height: 48px; font-size: 1.1rem;">HU</div>
-                    <div>
-                        <h4 class="modal-title fw-bold text-dark mb-0" id="jobModalTitle">Job Title</h4>
-                        <div class="text-muted small" id="jobModalSubtitle">Company Name • Location</div>
-                    </div>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-
-            <div class="modal-body">
-                <!-- Meta stats bar -->
-                <div class="d-flex flex-wrap gap-2 mb-4 p-3 bg-light rounded-3 border">
-                    <div class="me-3">
-                        <small class="text-muted d-block">Job Type</small>
-                        <strong id="modalJobType" class="text-primary">Internship</strong>
-                    </div>
-                    <div class="me-3 border-start ps-3">
-                        <small class="text-muted d-block">Workplace</small>
-                        <strong id="modalWorkplace">On-site</strong>
-                    </div>
-                    <div class="me-3 border-start ps-3">
-                        <small class="text-muted d-block">Salary / Stipend</small>
-                        <strong id="modalSalary" class="text-success">Paid</strong>
-                    </div>
-                    <div class="border-start ps-3">
-                        <small class="text-muted d-block">Application Deadline</small>
-                        <strong id="modalDeadline" class="text-danger">Aug 30, 2026</strong>
-                    </div>
-                </div>
-
-                <!-- Description -->
-                <div class="mb-4">
-                    <h6 class="fw-bold text-dark text-uppercase small letter-spacing-1">About the Role</h6>
-                    <p id="modalDescription" class="text-secondary leading-relaxed mb-0"></p>
-                </div>
-
-                <!-- Responsibilities -->
-                <div class="mb-4" id="modalRespContainer">
-                    <h6 class="fw-bold text-dark text-uppercase small letter-spacing-1">Key Responsibilities</h6>
-                    <ul id="modalResponsibilities" class="text-secondary ps-3 mb-0"></ul>
-                </div>
-
-                <!-- Requirements -->
-                <div class="mb-4" id="modalReqContainer">
-                    <h6 class="fw-bold text-dark text-uppercase small letter-spacing-1">Requirements & Qualifications</h6>
-                    <ul id="modalRequirements" class="text-secondary ps-3 mb-0"></ul>
-                </div>
-
-                <!-- Skills -->
-                <div class="mb-3">
-                    <h6 class="fw-bold text-dark text-uppercase small letter-spacing-1">Required Skills & Tools</h6>
-                    <div id="modalSkills" class="d-flex flex-wrap gap-1"></div>
-                </div>
-            </div>
-
-            <div class="modal-footer d-flex justify-content-between">
-                <a id="modalFullDetailsLink" href="#" class="btn btn-outline-secondary rounded-pill px-4">
-                    <i class="bi bi-box-arrow-up-right me-1"></i> Full Page View
-                </a>
-
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Close</button>
-                    <a id="modalApplyBtn" href="#" class="btn btn-primary rounded-pill px-4 shadow-sm">
-                        <i class="bi bi-send-fill me-1"></i> Apply for this Job
-                    </a>
-                </div>
-            </div>
-        </div>
+        }
     </div>
 </div>
-
-
-@Html.AntiForgeryToken()
-
-<!-- =========================================================
-     7. JAVASCRIPT LOGIC (CLIENT SEARCH, FILTERING, MODAL)
-     ========================================================= -->
-@section Scripts {
-<script>
-    // Anti-Forgery Token Provider for AJAX requests
-    function getAntiforgeryToken() {
-        return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
-    }
-
-    // Saved Bookmarks management in localStorage
-    const SAVED_JOBS_KEY = 'hucems_saved_jobs';
-
-    function getSavedJobs() {
-        try {
-            return JSON.parse(localStorage.getItem(SAVED_JOBS_KEY) || '[]');
-        } catch {
-            return [];
-        }
-    }
-
-    function toggleBookmark(jobId, jobTitle) {
-        let saved = getSavedJobs();
-        const index = saved.indexOf(jobId);
-        const btns = document.querySelectorAll('.bookmark-btn-' + jobId);
-
-        if (index > -1) {
-            saved.splice(index, 1);
-            btns.forEach(btn => {
-                btn.classList.remove('saved');
-                btn.innerHTML = '<i class="bi bi-bookmark"></i>';
-            });
-        } else {
-            saved.push(jobId);
-            btns.forEach(btn => {
-                btn.classList.add('saved');
-                btn.innerHTML = '<i class="bi bi-bookmark-fill"></i>';
-            });
-        }
-        localStorage.setItem(SAVED_JOBS_KEY, JSON.stringify(saved));
-    }
-
-    function initSavedBookmarks() {
-        const saved = getSavedJobs();
-        saved.forEach(id => {
-            const btns = document.querySelectorAll('.bookmark-btn-' + id);
-            btns.forEach(btn => {
-                btn.classList.add('saved');
-                btn.innerHTML = '<i class="bi bi-bookmark-fill"></i>';
-            });
-        });
-    }
-
-    // Modal Details Fetcher
-    function openJobDetailsModal(jobId) {
-        fetch('/Jobs/GetJobJson/' + jobId)
-            .then(res => res.json())
-            .then(data => {
-                if (!data.success) return;
-
-                document.getElementById('jobModalTitle').textContent = data.title;
-                document.getElementById('jobModalSubtitle').textContent = data.companyName + ' • ' + data.location;
-                
-                const avatar = document.getElementById('modalCompanyAvatar');
-                avatar.textContent = data.companyInitials;
-                avatar.style.background = data.companyColor;
-
-                document.getElementById('modalJobType').textContent = data.jobType;
-                document.getElementById('modalWorkplace').textContent = data.workplaceType;
-                document.getElementById('modalSalary').textContent = data.salary || 'Competitive';
-                document.getElementById('modalDeadline').textContent = data.deadline;
-                document.getElementById('modalDescription').textContent = data.description;
-
-                // Responsibilities
-                const respList = document.getElementById('modalResponsibilities');
-                respList.innerHTML = '';
-                if (data.responsibilities && data.responsibilities.length > 0) {
-                    data.responsibilities.forEach(r => {
-                        const li = document.createElement('li');
-                        li.textContent = r;
-                        respList.appendChild(li);
-                    });
-                    document.getElementById('modalRespContainer').classList.remove('d-none');
-                } else {
-                    document.getElementById('modalRespContainer').classList.add('d-none');
-                }
-
-                // Requirements
-                const reqList = document.getElementById('modalRequirements');
-                reqList.innerHTML = '';
-                if (data.requirements && data.requirements.length > 0) {
-                    data.requirements.forEach(r => {
-                        const li = document.createElement('li');
-                        li.textContent = r;
-                        reqList.appendChild(li);
-                    });
-                    document.getElementById('modalReqContainer').classList.remove('d-none');
-                } else {
-                    document.getElementById('modalReqContainer').classList.add('d-none');
-                }
-
-                // Skills
-                const skillsWrap = document.getElementById('modalSkills');
-                skillsWrap.innerHTML = '';
-                if (data.skills && data.skills.length > 0) {
-                    data.skills.forEach(s => {
-                        const span = document.createElement('span');
-                        span.className = 'job-skill-chip';
-                        span.textContent = s;
-                        skillsWrap.appendChild(span);
-                    });
-                }
-
-                // Links
-                document.getElementById('modalFullDetailsLink').href = '/Jobs/Details/' + data.id;
-                document.getElementById('modalApplyBtn').href = '/Jobs/Apply/' + data.id;
-
-                const modal = new bootstrap.Modal(document.getElementById('jobDetailsModal'));
-                modal.show();
-            })
-            .catch(err => {
-                console.error("Error fetching job details:", err);
-                window.location.href = '/Jobs/Details/' + jobId;
-            });
-    }
-
-    // Client-side Instant Filter & Search
-    function filterJobsClient() {
-        const query = (document.getElementById('jobsSearchInput')?.value || '').trim().toLowerCase();
-        const locVal = document.getElementById('jobsLocationSelect')?.value || 'all';
-        const typePill = document.querySelector('.job-pill-btn.active')?.getAttribute('data-type') || 'all';
-        
-        const workplaceVal = document.getElementById('drawerWorkplace')?.value || 'all';
-        const industryVal = document.getElementById('drawerIndustry')?.value || 'all';
-
-        const cards = document.querySelectorAll('.job-item-col');
-        let visibleCount = 0;
-
-        cards.forEach(card => {
-            const title = card.getAttribute('data-title') || '';
-            const company = card.getAttribute('data-company') || '';
-            const skills = card.getAttribute('data-skills') || '';
-            const type = card.getAttribute('data-type') || '';
-            const workplace = card.getAttribute('data-workplace') || '';
-            const location = card.getAttribute('data-location') || '';
-            const industry = card.getAttribute('data-industry') || '';
-
-            // Match Query
-            let matchesQuery = true;
-            if (query) {
-                matchesQuery = title.includes(query) || company.includes(query) || skills.includes(query) || location.toLowerCase().includes(query);
-            }
-
-            // Match Location
-            let matchesLoc = true;
-            if (locVal !== 'all') {
-                matchesLoc = location.toLowerCase().includes(locVal.toLowerCase());
-            }
-
-            // Match Type Pill
-            let matchesType = true;
-            if (typePill !== 'all') {
-                if (typePill.toLowerCase() === 'remote') {
-                    matchesType = workplace.toLowerCase() === 'remote' || type.toLowerCase() === 'remote';
-                } else {
-                    matchesType = type.toLowerCase() === typePill.toLowerCase();
-                }
-            }
-
-            // Match Workplace Drawer
-            let matchesWorkplace = true;
-            if (workplaceVal !== 'all') {
-                matchesWorkplace = workplace.toLowerCase() === workplaceVal.toLowerCase();
-            }
-
-            // Match Industry Drawer
-            let matchesIndustry = true;
-            if (industryVal !== 'all') {
-                matchesIndustry = industry.toLowerCase().includes(industryVal.toLowerCase());
-            }
-
-            if (matchesQuery && matchesLoc && matchesType && matchesWorkplace && matchesIndustry) {
-                card.classList.remove('d-none');
-                visibleCount++;
-            } else {
-                card.classList.add('d-none');
-            }
-        });
-
-        // Update count badge
-        const countBadge = document.getElementById('jobsCountBadge');
-        if (countBadge) {
-            countBadge.innerHTML = `<i class="bi bi-briefcase-fill"></i> <span>Showing ${visibleCount} Jobs</span>`;
-        }
-
-        // Empty state message
-        const noMsg = document.getElementById('noResultsClientMessage');
-        if (noMsg) {
-            if (visibleCount === 0) {
-                noMsg.classList.remove('d-none');
-            } else {
-                noMsg.classList.add('d-none');
-            }
-        }
-    }
-
-    function resetAllClientFilters() {
-        if (document.getElementById('jobsSearchInput')) document.getElementById('jobsSearchInput').value = '';
-        if (document.getElementById('jobsLocationSelect')) document.getElementById('jobsLocationSelect').value = 'all';
-        if (document.getElementById('drawerWorkplace')) document.getElementById('drawerWorkplace').value = 'all';
-        if (document.getElementById('drawerIndustry')) document.getElementById('drawerIndustry').value = 'all';
-
-        document.querySelectorAll('.job-pill-btn').forEach(btn => {
-            if (btn.getAttribute('data-type') === 'all') {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
-        });
-
-        filterJobsClient();
-    }
-
-    // Client Sort Logic
-    function sortJobsClient(sortBy) {
-        const container = document.getElementById('jobsContainer');
-        const cards = Array.from(document.querySelectorAll('.job-item-col'));
-
-        cards.sort((a, b) => {
-            const idA = parseInt(a.getAttribute('data-job-id') || '0');
-            const idB = parseInt(b.getAttribute('data-job-id') || '0');
-            const titleA = a.getAttribute('data-title') || '';
-            const titleB = b.getAttribute('data-title') || '';
-
-            if (sortBy === 'title') {
-                return titleA.localeCompare(titleB);
-            } else if (sortBy === 'deadline') {
-                return idA - idB; // simulated deadline order
-            } else {
-                return idA - idB; // newest
-            }
-        });
-
-        cards.forEach(card => container.appendChild(card));
-    }
-
-    // DOM Ready Listeners
-    document.addEventListener('DOMContentLoaded', function () {
-        initSavedBookmarks();
-
-        // Search typing live filter
-        const searchInput = document.getElementById('jobsSearchInput');
-        if (searchInput) {
-            searchInput.addEventListener('input', filterJobsClient);
-        }
-
-        // Location dropdown change live filter
-        const locSelect = document.getElementById('jobsLocationSelect');
-        if (locSelect) {
-            locSelect.addEventListener('change', filterJobsClient);
-        }
-
-        // Filter drawer toggle
-        const toggleDrawerBtn = document.getElementById('toggleFilterDrawerBtn');
-        const drawer = document.getElementById('jobsFilterDrawer');
-        const chevron = document.getElementById('filterChevronIcon');
-        if (toggleDrawerBtn && drawer) {
-            toggleDrawerBtn.addEventListener('click', function () {
-                drawer.classList.toggle('d-none');
-                toggleDrawerBtn.classList.toggle('active');
-                if (chevron) {
-                    chevron.classList.toggle('bi-chevron-up');
-                    chevron.classList.toggle('bi-chevron-down');
-                }
-            });
-        }
-
-        // Drawer filter events
-        document.getElementById('applyDrawerFiltersBtn')?.addEventListener('click', filterJobsClient);
-        document.getElementById('resetDrawerFiltersBtn')?.addEventListener('click', resetAllClientFilters);
-
-        // Sort change listener
-        document.getElementById('clientSortSelect')?.addEventListener('change', function () {
-            sortJobsClient(this.value);
-        });
-
-        // Pill clicks client interaction
-        document.querySelectorAll('.job-pill-btn').forEach(pill => {
-            pill.addEventListener('click', function (e) {
-                // If JS is active, toggle smoothly on client
-                e.preventDefault();
-                document.querySelectorAll('.job-pill-btn').forEach(p => p.classList.remove('active'));
-                this.classList.add('active');
-                const type = this.getAttribute('data-type');
-                const hiddenInput = document.getElementById('hiddenJobType');
-                if (hiddenInput) hiddenInput.value = type;
-                filterJobsClient();
-            });
-        });
-    });
-</script>
-}

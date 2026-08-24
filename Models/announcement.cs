@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -10,7 +10,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models;
 [Index("department_id", Name = "idx_announcements_department")]
 [Index("status", Name = "idx_announcements_status")]
 [Index("slug", Name = "uq_announcements_slug", IsUnique = true)]
-public partial class announcement
+public partial class Announcement
 {
     [Key]
     public ulong id { get; set; }
@@ -57,9 +57,9 @@ public partial class announcement
 
     [ForeignKey("author_id")]
     [InverseProperty("announcements")]
-    public virtual user? author { get; set; }
+    public virtual User? author { get; set; }
 
     [ForeignKey("department_id")]
     [InverseProperty("announcements")]
-    public virtual department? department { get; set; }
+    public virtual Department? department { get; set; }
 }

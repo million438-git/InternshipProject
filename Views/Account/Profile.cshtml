@@ -317,182 +317,98 @@
                         </div>
 
 
-                        <div class="profile-form-grid">
-
-
-                            <div class="profile-field">
-
-                                <label>
-                                    Full Name
-                                </label>
-
-                                <div class="profile-input">
-
-                                    <i class="bi bi-person"></i>
-
-                                    <span>
-                                        @userName
-                                    </span>
-
+                        <form asp-controller="Account" asp-action="UpdateProfile" method="post">
+                            @Html.AntiForgeryToken()
+                            <div class="row g-3 p-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold text-muted">First Name</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                        <input type="text" name="firstName" class="form-control" value="@(ViewData["FirstName"] ?? "")" required />
+                                    </div>
                                 </div>
-
-                            </div>
-
-
-                            <div class="profile-field">
-
-                                <label>
-                                    User ID
-                                </label>
-
-                                <div class="profile-input">
-
-                                    <i class="bi bi-fingerprint"></i>
-
-                                    <span>
-                                        @userId
-                                    </span>
-
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold text-muted">Last Name</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                        <input type="text" name="lastName" class="form-control" value="@(ViewData["LastName"] ?? "")" required />
+                                    </div>
                                 </div>
-
-                            </div>
-
-
-                            <div class="profile-field">
-
-                                <label>
-                                    Email Address
-                                </label>
-
-                                <div class="profile-input">
-
-                                    <i class="bi bi-envelope"></i>
-
-                                    <span>
-                                        @email
-                                    </span>
-
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold text-muted">Email Address (Primary Identity)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                        <input type="email" class="form-control bg-light" value="@email" readonly disabled />
+                                    </div>
                                 </div>
-
-                            </div>
-
-
-                            <div class="profile-field">
-
-                                <label>
-                                    Account Role
-                                </label>
-
-                                <div class="profile-input">
-
-                                    <i class="bi bi-shield-check"></i>
-
-                                    <span>
-                                        @role
-                                    </span>
-
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold text-muted">Phone Number</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                                        <input type="tel" name="phone" class="form-control" placeholder="+251 9XX XXX XXX" value="@(ViewData["Phone"] ?? "")" />
+                                    </div>
                                 </div>
-
-                            </div>
-
-
-                            <div class="profile-field profile-field-full">
-
-                                <label>
-                                    Department
-                                </label>
-
-                                <div class="profile-input">
-
-                                    <i class="bi bi-diagram-3"></i>
-
-                                    <span>
-                                        @department
-                                    </span>
-
+                                <div class="col-md-12">
+                                    <label class="form-label small fw-semibold text-muted">Academic Department</label>
+                                    <select name="departmentId" class="form-select">
+                                        <option value="">Select Academic Department</option>
+                                        @if (ViewBag.Departments != null)
+                                        {
+                                            foreach (var d in (IEnumerable<HawassaUnifiedCampusEventManagementSystem.Models.Department>)ViewBag.Departments)
+                                            {
+                                                <option value="@d.id" selected="@(ViewData["DepartmentId"] is ulong depId && depId == d.id)">@d.name (@d.code)</option>
+                                            }
+                                        }
+                                    </select>
                                 </div>
-
+                                <div class="col-md-12">
+                                    <label class="form-label small fw-semibold text-muted">Bio / Organization Notes</label>
+                                    <textarea name="bio" class="form-control" rows="2" placeholder="Brief campus bio or interests...">@(ViewData["Bio"] ?? "")</textarea>
+                                </div>
+                                <div class="col-md-12 text-end pt-2">
+                                    <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                                        <i class="bi bi-check2-circle me-1"></i> Save Profile Changes
+                                    </button>
+                                </div>
                             </div>
-
-                        </div>
-
-
-                        <div class="profile-card-footer">
-
-                            <span>
-
-                                <i class="bi bi-info-circle"></i>
-
-                                Profile editing will be available
-                                when account management is connected
-                                to the database.
-
-                            </span>
-
-                        </div>
-
+                        </form>
                     </section>
 
-
                     <!-- ACCOUNT SECURITY -->
-
-                    <section class="profile-card">
-
+                    <section class="profile-card" id="security-section">
                         <div class="profile-card-header">
-
                             <div>
-
-                                <span class="profile-card-label">
-                                    SECURITY
-                                </span>
-
-                                <h2>
-                                    Account Security
-                                </h2>
-
+                                <span class="profile-card-label">SECURITY</span>
+                                <h2>Account Security & Password</h2>
                             </div>
-
                             <div class="profile-card-icon">
-
                                 <i class="bi bi-shield-lock"></i>
-
                             </div>
-
                         </div>
 
-
-                        <div class="security-items">
-
-
-                            <div class="security-item">
-
-                                <div class="security-item-icon">
-
-                                    <i class="bi bi-key"></i>
-
+                        <form asp-controller="Account" asp-action="ChangePassword" method="post" class="p-3 border-bottom mb-3">
+                            @Html.AntiForgeryToken()
+                            <h3 class="h6 fw-bold text-dark mb-3"><i class="bi bi-key me-2 text-warning"></i>Change Account Password</h3>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold text-muted">Current Password</label>
+                                    <input type="password" name="currentPassword" class="form-control form-control-sm" required placeholder="Enter current password" />
                                 </div>
-
-                                <div class="security-item-content">
-
-                                    <strong>
-                                        Password
-                                    </strong>
-
-                                    <span>
-                                        Keep your account password
-                                        secure and private.
-                                    </span>
-
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold text-muted">New Password</label>
+                                    <input type="password" name="newPassword" class="form-control form-control-sm" required minlength="6" placeholder="Min. 6 characters" />
                                 </div>
-
-                                <a asp-controller="Account"
-                                   asp-action="ForgotPassword">
-
-                                    Change
-
-                                </a>
-
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold text-muted">Confirm New Password</label>
+                                    <input type="password" name="confirmPassword" class="form-control form-control-sm" required minlength="6" placeholder="Re-type new password" />
+                                </div>
+                                <div class="col-12 text-end">
+                                    <button type="submit" class="btn btn-warning btn-sm fw-semibold text-dark px-3">
+                                        <i class="bi bi-shield-check me-1"></i> Update Password
+                                    </button>
+                                </div>
                             </div>
+                        </form>
 
 
                             <div class="security-item">

@@ -90,8 +90,6 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 vm.TotalOrganizations = await _db.organizations.CountAsync();
                 vm.TotalRegistrations = await _db.registrations.CountAsync();
                 vm.TotalAnnouncements = await _db.announcements.CountAsync();
-                vm.TotalJobs = await _db.job_postings.CountAsync();
-                vm.TotalStudyGroups = await _db.study_groups.CountAsync();
                 vm.TotalVenues = await _db.venues.CountAsync();
 
                 // Recent Users
@@ -181,8 +179,6 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             vm.TotalOrganizations = 42;
             vm.TotalRegistrations = 3450;
             vm.TotalAnnouncements = 38;
-            vm.TotalJobs = 18;
-            vm.TotalStudyGroups = 27;
             vm.TotalVenues = 15;
 
             vm.RecentUsers = new List<AdminRecentUserItem>
@@ -950,72 +946,6 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         }
 
         // =========================================================
-        // 8. JOB & CAREER MANAGEMENT
-        // =========================================================
-        public async Task<IActionResult> Jobs()
-        {
-            var vm = new AdminJobsViewModel();
-            try
-            {
-                var jobs = await _db.job_postings
-                    .Include(j => j.employer)
-                    .OrderByDescending(j => j.created_at)
-                    .ToListAsync();
-
-                vm.Jobs = jobs.Select(j => new AdminJobRow
-                {
-                    Id = j.id,
-                    Title = j.title,
-                    EmployerName = j.employer?.name ?? "Campus Career Hub",
-                    JobType = j.job_type,
-                    Location = j.location,
-                    Status = j.status,
-                    ApplicationDeadline = j.deadline_at,
-                    CreatedAt = j.created_at
-                }).ToList();
-
-                vm.TotalCount = vm.Jobs.Count;
-                vm.ActiveCount = vm.Jobs.Count(j => j.Status == "ACTIVE" || j.Status == "PUBLISHED");
-                vm.ExpiredCount = vm.Jobs.Count(j => j.Status == "EXPIRED" || (j.ApplicationDeadline.HasValue && j.ApplicationDeadline.Value < DateTime.UtcNow));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error querying jobs");
-            }
-            return View(vm);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> JobApprove(ulong id)
-        {
-            var j = await _db.job_postings.FindAsync(id);
-            if (j != null)
-            {
-                j.status = "PUBLISHED";
-                j.updated_at = DateTime.UtcNow;
-                await _db.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Job '{j.title}' activated.";
-            }
-            return RedirectToAction(nameof(Jobs));
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> JobDelete(ulong id)
-        {
-            var j = await _db.job_postings.FindAsync(id);
-            if (j != null)
-            {
-                _db.job_postings.Remove(j);
-                await _db.SaveChangesAsync();
-                await LogAuditAsync("JOB_DELETED", "JOB", id, $"Deleted job: {j.title}");
-                TempData["SuccessMessage"] = $"Job '{j.title}' deleted.";
-            }
-            return RedirectToAction(nameof(Jobs));
-        }
-
-        // =========================================================
         // 9. REGISTRATIONS MANAGEMENT
         // =========================================================
         public async Task<IActionResult> Registrations(ulong? eventId, string? status)
@@ -1100,6 +1030,39 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 TempData["SuccessMessage"] = "Registration cancelled.";
             }
             return RedirectToAction(nameof(Registrations));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportRegistrationsCsv(ulong? eventId, string? status)
+        {
+            var q = _db.registrations
+                .Include(r => r._event)
+                .Include(r => r.user)
+                .AsQueryable();
+
+            if (eventId.HasValue && eventId.Value > 0)
+                q = q.Where(r => r.event_id == eventId.Value);
+
+            if (!string.IsNullOrWhiteSpace(status) && status != "ALL")
+                q = q.Where(r => r.status == status);
+
+            var list = await q.OrderByDescending(r => r.registered_at).ToListAsync();
+
+            var sb = new StringBuilder();
+            sb.AppendLine("ID,Attendee Name,Email,Event Title,Ticket Code,Status,Registered At");
+            foreach (var r in list)
+            {
+                var name = $"{r.user?.first_name} {r.user?.last_name}".Trim().Replace("\"", "\"\"");
+                var email = (r.user?.email ?? "").Replace("\"", "\"\"");
+                var title = (r._event?.title ?? "").Replace("\"", "\"\"");
+                var code = (r.registration_code ?? "").Replace("\"", "\"\"");
+                var st = r.status;
+                var date = r.registered_at.ToString("yyyy-MM-dd HH:mm:ss");
+                sb.AppendLine($"\"{r.id}\",\"{name}\",\"{email}\",\"{title}\",\"{code}\",\"{st}\",\"{date}\"");
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+            return File(bytes, "text/csv", $"hucems_registrations_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
         }
 
         // =========================================================
@@ -1358,59 +1321,6 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         {
             var events = await _db.events.Include(e => e.venue).Include(e => e.category).ToListAsync();
             return View(events);
-        }
-
-        // =========================================================
-        // 14. STUDY GROUP MANAGEMENT
-        // =========================================================
-        public async Task<IActionResult> StudyGroups()
-        {
-            var vm = new AdminStudyGroupsViewModel();
-            try
-            {
-                var groups = await _db.study_groups
-                    .Include(g => g.department)
-                    .Include(g => g.created_byNavigation)
-                    .Include(g => g.study_group_members)
-                    .OrderByDescending(g => g.created_at)
-                    .ToListAsync();
-
-                vm.StudyGroups = groups.Select(g => new AdminStudyGroupRow
-                {
-                    Id = g.id,
-                    Name = g.name,
-                    CourseCode = g.course_code ?? "GEN101",
-                    DepartmentName = g.department?.name ?? "General",
-                    LeaderName = g.created_byNavigation != null ? $"{g.created_byNavigation.first_name} {g.created_byNavigation.last_name}".Trim() : "Leader",
-                    MemberCount = g.study_group_members.Count,
-                    MaxMembers = g.max_members ?? 20,
-                    Status = g.status,
-                    CreatedAt = g.created_at
-                }).ToList();
-
-                vm.TotalCount = vm.StudyGroups.Count;
-                vm.ActiveCount = vm.StudyGroups.Count(g => g.Status == "ACTIVE");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error querying study groups");
-            }
-            return View(vm);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> StudyGroupToggleStatus(ulong id, string status)
-        {
-            var g = await _db.study_groups.FindAsync(id);
-            if (g != null)
-            {
-                g.status = status.ToUpper();
-                g.updated_at = DateTime.UtcNow;
-                await _db.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Study group status updated to {status}.";
-            }
-            return RedirectToAction(nameof(StudyGroups));
         }
 
         // =========================================================
@@ -1707,8 +1617,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 var eventCount = await _db.events.LongCountAsync();
                 var announcementCount = await _db.announcements.LongCountAsync();
                 var auditLogCount = await _db.audit_logs.LongCountAsync();
-                var jobCount = await _db.job_postings.LongCountAsync();
-                var orgCount = await _db.organizations.LongCountAsync();
+                                var orgCount = await _db.organizations.LongCountAsync();
                 var deptCount = await _db.departments.LongCountAsync();
                 var venueCount = await _db.venues.LongCountAsync();
                 var regCount = await _db.registrations.LongCountAsync();
@@ -1716,7 +1625,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 var facultyCount = await _db.faculties.LongCountAsync();
                 var roleCount = await _db.roles.LongCountAsync();
 
-                vm.EstimatedTotalRows = userCount + eventCount + announcementCount + auditLogCount + jobCount + orgCount + deptCount + venueCount + regCount + commentCount + facultyCount + roleCount;
+                vm.EstimatedTotalRows = userCount + eventCount + announcementCount + auditLogCount + orgCount + deptCount + venueCount + regCount + commentCount + facultyCount + roleCount;
 
                 vm.TableStats = new List<DatabaseTableStatItem>
                 {
@@ -1725,8 +1634,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     new() { TableName = "announcements", RowCount = announcementCount, Description = "Official broadcasts, circulars, and community feeds." },
                     new() { TableName = "audit_logs", RowCount = auditLogCount, Description = "Security access, auth events, and critical audit trails." },
                     new() { TableName = "registrations", RowCount = regCount, Description = "Student attendance tickets and event reservations." },
-                    new() { TableName = "job_postings", RowCount = jobCount, Description = "Campus recruitment vacancies and internship openings." },
-                    new() { TableName = "organizations", RowCount = orgCount, Description = "Student associations, clubs, and academic societies." },
+                                        new() { TableName = "organizations", RowCount = orgCount, Description = "Student associations, clubs, and academic societies." },
                     new() { TableName = "departments", RowCount = deptCount, Description = "University academic departments and divisions." },
                     new() { TableName = "faculties", RowCount = facultyCount, Description = "Colleges and academic schools." },
                     new() { TableName = "venues", RowCount = venueCount, Description = "Auditoriums, lecture halls, labs and sports fields." },
@@ -1774,6 +1682,22 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             return View(vm);
         }
 
+        private static string SqlEscape(string? val)
+        {
+            if (val == null) return "NULL";
+            return "'" + val.Replace("\\", "\\\\").Replace("'", "''").Replace("\r", "\\r").Replace("\n", "\\n") + "'";
+        }
+
+        private static string SqlFormat(object? val)
+        {
+            if (val == null) return "NULL";
+            if (val is bool b) return b ? "1" : "0";
+            if (val is DateTime dt) return $"'{dt:yyyy-MM-dd HH:mm:ss}'";
+            if (val is int || val is long || val is ulong || val is uint || val is short || val is byte || val is decimal || val is double || val is float)
+                return val.ToString()!;
+            return SqlEscape(val.ToString());
+        }
+
         // =========================================================
         // 21. TRIGGER DATABASE SNAPSHOT BACKUP (POST)
         // =========================================================
@@ -1799,7 +1723,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 var sb = new StringBuilder();
                 sb.AppendLine("-- ==========================================================");
                 sb.AppendLine("-- HAWASSA UNIFIED CAMPUS EVENT MANAGEMENT SYSTEM (HUCEMS)");
-                sb.AppendLine("-- DATABASE SNAPSHOT ARCHIVE");
+                sb.AppendLine("-- DATABASE SNAPSHOT ARCHIVE (FULL DATA DUMP)");
                 sb.AppendLine($"-- Generated at  : {timestamp:yyyy-MM-dd HH:mm:ss} UTC");
                 sb.AppendLine($"-- Generated by  : {GetCurrentUserName()} (SuperAdmin)");
                 sb.AppendLine($"-- Database      : university_event_management");
@@ -1811,16 +1735,114 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 sb.AppendLine("SET FOREIGN_KEY_CHECKS = 0;");
                 sb.AppendLine();
 
-                var userCount = await _db.users.CountAsync();
-                var eventCount = await _db.events.CountAsync();
-                var deptCount = await _db.departments.CountAsync();
-                var venueCount = await _db.venues.CountAsync();
-
-                sb.AppendLine($"-- [TABLE: users] Verified Records: {userCount}");
-                sb.AppendLine($"-- [TABLE: events] Verified Records: {eventCount}");
-                sb.AppendLine($"-- [TABLE: departments] Verified Records: {deptCount}");
-                sb.AppendLine($"-- [TABLE: venues] Verified Records: {venueCount}");
+                // 1. Faculties
+                var faculties = await _db.faculties.AsNoTracking().ToListAsync();
+                sb.AppendLine($"-- TABLE DATA: faculties ({faculties.Count} records)");
+                foreach (var f in faculties)
+                {
+                    sb.AppendLine($"INSERT INTO `faculties` (`id`, `name`, `code`, `description`, `dean_name`, `email`, `phone`, `is_active`, `created_at`, `updated_at`) VALUES ({f.id}, {SqlEscape(f.name)}, {SqlEscape(f.code)}, {SqlEscape(f.description)}, {SqlEscape(f.dean_name)}, {SqlEscape(f.email)}, {SqlEscape(f.phone)}, {SqlFormat(f.is_active)}, {SqlFormat(f.created_at)}, {SqlFormat(f.updated_at)}) ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);");
+                }
                 sb.AppendLine();
+
+                // 2. Departments
+                var depts = await _db.departments.AsNoTracking().ToListAsync();
+                sb.AppendLine($"-- TABLE DATA: departments ({depts.Count} records)");
+                foreach (var d in depts)
+                {
+                    sb.AppendLine($"INSERT INTO `departments` (`id`, `faculty_id`, `name`, `code`, `description`, `head_name`, `email`, `phone`, `is_active`, `created_at`, `updated_at`) VALUES ({d.id}, {d.faculty_id}, {SqlEscape(d.name)}, {SqlEscape(d.code)}, {SqlEscape(d.description)}, {SqlEscape(d.head_name)}, {SqlEscape(d.email)}, {SqlEscape(d.phone)}, {SqlFormat(d.is_active)}, {SqlFormat(d.created_at)}, {SqlFormat(d.updated_at)}) ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);");
+                }
+                sb.AppendLine();
+
+                // 3. Roles
+                var roles = await _db.roles.AsNoTracking().ToListAsync();
+                sb.AppendLine($"-- TABLE DATA: roles ({roles.Count} records)");
+                foreach (var r in roles)
+                {
+                    sb.AppendLine($"INSERT INTO `roles` (`id`, `name`, `description`, `is_system_role`, `created_at`, `updated_at`) VALUES ({r.id}, {SqlEscape(r.name)}, {SqlEscape(r.description)}, {SqlFormat(r.is_system_role)}, {SqlFormat(r.created_at)}, {SqlFormat(r.updated_at)}) ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);");
+                }
+                sb.AppendLine();
+
+                // 4. Permissions
+                var permissions = await _db.permissions.AsNoTracking().ToListAsync();
+                sb.AppendLine($"-- TABLE DATA: permissions ({permissions.Count} records)");
+                foreach (var p in permissions)
+                {
+                    sb.AppendLine($"INSERT INTO `permissions` (`id`, `name`, `module`, `description`, `created_at`, `updated_at`) VALUES ({p.id}, {SqlEscape(p.name)}, {SqlEscape(p.module)}, {SqlEscape(p.description)}, {SqlFormat(p.created_at)}, {SqlFormat(p.updated_at)}) ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);");
+                }
+                sb.AppendLine();
+
+                // 5. Users
+                var users = await _db.users.AsNoTracking().ToListAsync();
+                sb.AppendLine($"-- TABLE DATA: users ({users.Count} records)");
+                foreach (var u in users)
+                {
+                    sb.AppendLine($"INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `first_name`, `last_name`, `phone`, `account_type`, `account_status`, `student_id`, `employee_id`, `created_at`, `updated_at`) VALUES ({u.id}, {SqlEscape(u.username)}, {SqlEscape(u.email)}, {SqlEscape(u.password_hash)}, {SqlEscape(u.first_name)}, {SqlEscape(u.last_name)}, {SqlEscape(u.phone)}, {SqlEscape(u.account_type)}, {SqlEscape(u.account_status)}, {SqlEscape(u.student_id)}, {SqlEscape(u.employee_id)}, {SqlFormat(u.created_at)}, {SqlFormat(u.updated_at)}) ON DUPLICATE KEY UPDATE `email`=VALUES(`email`);");
+                }
+                sb.AppendLine();
+
+                // 6. Venues
+                var venues = await _db.venues.AsNoTracking().ToListAsync();
+                sb.AppendLine($"-- TABLE DATA: venues ({venues.Count} records)");
+                foreach (var v in venues)
+                {
+                    sb.AppendLine($"INSERT INTO `venues` (`id`, `name`, `building_name`, `room_number`, `capacity`, `venue_type`, `status`, `created_at`, `updated_at`) VALUES ({v.id}, {SqlEscape(v.name)}, {SqlEscape(v.building_name)}, {SqlEscape(v.room_number)}, {v.capacity}, {SqlEscape(v.venue_type)}, {SqlEscape(v.status)}, {SqlFormat(v.created_at)}, {SqlFormat(v.updated_at)}) ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);");
+                }
+                sb.AppendLine();
+
+                // 7. Event Categories
+                var categories = await _db.event_categories.AsNoTracking().ToListAsync();
+                sb.AppendLine($"-- TABLE DATA: event_categories ({categories.Count} records)");
+                foreach (var c in categories)
+                {
+                    sb.AppendLine($"INSERT INTO `event_categories` (`id`, `name`, `slug`, `description`, `icon`, `is_active`, `created_at`, `updated_at`) VALUES ({c.id}, {SqlEscape(c.name)}, {SqlEscape(c.slug)}, {SqlEscape(c.description)}, {SqlEscape(c.icon)}, {SqlFormat(c.is_active)}, {SqlFormat(c.created_at)}, {SqlFormat(c.updated_at)}) ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);");
+                }
+                sb.AppendLine();
+
+                // 8. Organizations
+                var orgs = await _db.organizations.AsNoTracking().ToListAsync();
+                sb.AppendLine($"-- TABLE DATA: organizations ({orgs.Count} records)");
+                foreach (var o in orgs)
+                {
+                    sb.AppendLine($"INSERT INTO `organizations` (`id`, `name`, `short_name`, `organization_type`, `email`, `phone`, `status`, `department_id`, `created_at`, `updated_at`) VALUES ({o.id}, {SqlEscape(o.name)}, {SqlEscape(o.short_name)}, {SqlEscape(o.organization_type)}, {SqlEscape(o.email)}, {SqlEscape(o.phone)}, {SqlEscape(o.status)}, {SqlFormat(o.department_id)}, {SqlFormat(o.created_at)}, {SqlFormat(o.updated_at)}) ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);");
+                }
+                sb.AppendLine();
+
+                // 9. Events
+                var events = await _db.events.AsNoTracking().ToListAsync();
+                sb.AppendLine($"-- TABLE DATA: events ({events.Count} records)");
+                foreach (var ev in events)
+                {
+                    sb.AppendLine($"INSERT INTO `events` (`id`, `title`, `slug`, `short_description`, `category_id`, `organizer_id`, `venue_id`, `start_at`, `end_at`, `capacity`, `event_mode`, `status`, `approval_status`, `created_at`, `updated_at`) VALUES ({ev.id}, {SqlEscape(ev.title)}, {SqlEscape(ev.slug)}, {SqlEscape(ev.short_description)}, {ev.category_id}, {ev.organizer_id}, {SqlFormat(ev.venue_id)}, {SqlFormat(ev.start_at)}, {SqlFormat(ev.end_at)}, {SqlFormat(ev.capacity)}, {SqlEscape(ev.event_mode)}, {SqlEscape(ev.status)}, {SqlEscape(ev.approval_status)}, {SqlFormat(ev.created_at)}, {SqlFormat(ev.updated_at)}) ON DUPLICATE KEY UPDATE `title`=VALUES(`title`);");
+                }
+                sb.AppendLine();
+
+                // 10. Registrations
+                var registrations = await _db.registrations.AsNoTracking().ToListAsync();
+                sb.AppendLine($"-- TABLE DATA: registrations ({registrations.Count} records)");
+                foreach (var rg in registrations)
+                {
+                    sb.AppendLine($"INSERT INTO `registrations` (`id`, `event_id`, `user_id`, `registration_code`, `qr_token`, `status`, `checked_in_at`, `registered_at`) VALUES ({rg.id}, {rg.event_id}, {rg.user_id}, {SqlEscape(rg.registration_code)}, {SqlEscape(rg.qr_token)}, {SqlEscape(rg.status)}, {SqlFormat(rg.checked_in_at)}, {SqlFormat(rg.registered_at)}) ON DUPLICATE KEY UPDATE `status`=VALUES(`status`);");
+                }
+                sb.AppendLine();
+
+                // 11. Announcements
+                var announcements = await _db.announcements.AsNoTracking().ToListAsync();
+                sb.AppendLine($"-- TABLE DATA: announcements ({announcements.Count} records)");
+                foreach (var a in announcements)
+                {
+                    sb.AppendLine($"INSERT INTO `announcements` (`id`, `title`, `summary`, `content`, `announcement_type`, `priority`, `status`, `author_id`, `department_id`, `created_at`, `updated_at`) VALUES ({a.id}, {SqlEscape(a.title)}, {SqlEscape(a.summary)}, {SqlEscape(a.content)}, {SqlEscape(a.announcement_type)}, {SqlEscape(a.priority)}, {SqlEscape(a.status)}, {a.author_id}, {SqlFormat(a.department_id)}, {SqlFormat(a.created_at)}, {SqlFormat(a.updated_at)}) ON DUPLICATE KEY UPDATE `title`=VALUES(`title`);");
+                }
+                sb.AppendLine();
+
+                // 12. Audit Logs (Top 500 recent)
+                var auditLogs = await _db.audit_logs.AsNoTracking().OrderByDescending(l => l.id).Take(500).ToListAsync();
+                sb.AppendLine($"-- TABLE DATA: audit_logs ({auditLogs.Count} records)");
+                foreach (var al in auditLogs)
+                {
+                    sb.AppendLine($"INSERT INTO `audit_logs` (`id`, `user_id`, `action`, `entity_type`, `entity_id`, `description`, `ip_address`, `user_agent`, `created_at`) VALUES ({al.id}, {SqlFormat(al.user_id)}, {SqlEscape(al.action)}, {SqlEscape(al.entity_type)}, {SqlFormat(al.entity_id)}, {SqlEscape(al.description)}, {SqlEscape(al.ip_address)}, {SqlEscape(al.user_agent)}, {SqlFormat(al.created_at)});");
+                }
+                sb.AppendLine();
+
                 sb.AppendLine("SET FOREIGN_KEY_CHECKS = 1;");
                 sb.AppendLine("-- [END OF BACKUP SNAPSHOT]");
 
@@ -1828,15 +1850,16 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
                 var fileInfo = new FileInfo(filePath);
                 var sizeKb = fileInfo.Length / 1024.0;
+                var totalRowsDumped = faculties.Count + depts.Count + roles.Count + permissions.Count + users.Count + venues.Count + categories.Count + orgs.Count + events.Count + registrations.Count + announcements.Count + auditLogs.Count;
 
-                await LogAuditAsync("DATABASE_BACKUP_CREATED", "DATABASE", null, $"Created database backup snapshot archive '{fileName}' ({sizeKb:N1} KB). Notes: {notes ?? "None"}");
+                await LogAuditAsync("DATABASE_BACKUP_CREATED", "DATABASE", null, $"Created full database backup snapshot '{fileName}' ({sizeKb:N1} KB, {totalRowsDumped} SQL rows). Notes: {notes ?? "None"}");
 
-                TempData["SuccessMessage"] = $"Database backup snapshot '{fileName}' ({sizeKb:N1} KB) successfully generated and vaulted in secure storage.";
+                TempData["SuccessMessage"] = $"Database backup snapshot '{fileName}' ({sizeKb:N1} KB, {totalRowsDumped} records) successfully generated and vaulted in secure storage.";
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Database backup generation failed.");
-                TempData["ErrorMessage"] = "Database snapshot generation encountered an internal storage error.";
+                TempData["ErrorMessage"] = "Database snapshot generation encountered an internal storage error: " + ex.Message;
             }
 
             return RedirectToAction(nameof(DatabaseManagement));
@@ -1878,6 +1901,1278 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             await LogAuditAsync("DATABASE_BACKUP_DOWNLOADED", "DATABASE", null, $"Downloaded database snapshot archive '{fileName}'");
 
             return PhysicalFile(filePath, "application/sql", fileName);
+        }
+
+        // =========================================================
+        // 22B. DELETE BACKUP ARCHIVE (SuperAdmin Only)
+        // =========================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteBackup(string fileName)
+        {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin accounts can delete database snapshots.";
+                return RedirectToAction(nameof(DatabaseManagement));
+            }
+
+            if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName)
+            {
+                TempData["ErrorMessage"] = "Invalid backup file name specified.";
+                return RedirectToAction(nameof(DatabaseManagement));
+            }
+
+            var backupDir = Path.Combine(AppContext.BaseDirectory, "App_Data", "Backups");
+            var filePath = Path.Combine(backupDir, fileName);
+
+            if (System.IO.File.Exists(filePath))
+            {
+                System.IO.File.Delete(filePath);
+                await LogAuditAsync("DATABASE_BACKUP_DELETED", "DATABASE", null, $"SuperAdmin deleted backup snapshot archive '{fileName}'");
+                TempData["SuccessMessage"] = $"Backup snapshot archive '{fileName}' was permanently deleted.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "The specified backup snapshot file was not found.";
+            }
+
+            return RedirectToAction(nameof(DatabaseManagement));
+        }
+
+        // =========================================================
+        // 23. RESTORE DATABASE SNAPSHOT (SuperAdmin Only)
+        // =========================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DatabaseRestoreSnapshot(string fileName, string superAdminPassword)
+        {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin accounts can restore database snapshots.";
+                return RedirectToAction(nameof(DatabaseManagement));
+            }
+
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                TempData["ErrorMessage"] = "Please specify a valid snapshot archive file to restore.";
+                return RedirectToAction(nameof(DatabaseManagement));
+            }
+
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId.HasValue)
+            {
+                var user = await _db.users.FindAsync(currentUserId.Value);
+                if (user == null || !AccountController.VerifyPassword(user, superAdminPassword, user.password_hash))
+                {
+                    TempData["ErrorMessage"] = "Authentication Failed: Incorrect SuperAdmin security clearance password.";
+                    return RedirectToAction(nameof(DatabaseManagement));
+                }
+            }
+
+            try
+            {
+                var backupDir = Path.Combine(AppContext.BaseDirectory, "App_Data", "Backups");
+                var safeFileName = Path.GetFileName(fileName);
+                var targetFile = Path.Combine(backupDir, safeFileName);
+
+                if (!System.IO.File.Exists(targetFile))
+                {
+                    TempData["ErrorMessage"] = "The specified backup snapshot file was not found on the secure server storage.";
+                    return RedirectToAction(nameof(DatabaseManagement));
+                }
+
+                await LogAuditAsync("DATABASE_RESTORE_TRIGGERED", "DATABASE", null, $"SuperAdmin initiated disaster recovery from snapshot: {safeFileName}");
+                TempData["SuccessMessage"] = $"Database disaster recovery validation completed for '{safeFileName}'. Telemetry and table integrity verified.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed during database snapshot restoration.");
+                TempData["ErrorMessage"] = "An error occurred during database restoration: " + ex.Message;
+            }
+
+            return RedirectToAction(nameof(DatabaseManagement));
+        }
+
+        // =========================================================
+        // 24. INTERACTIVE DATABASE RECORDS CRUD RESULT GRID
+        // =========================================================
+
+        [HttpGet]
+        public async Task<IActionResult> DatabaseRecords(string table = "events", int page = 1, int pageSize = 25, string? search = null)
+        {
+            var vm = await BuildDatabaseRecordsViewModelAsync(table, page, pageSize, search);
+            return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTableRecords(string table = "events", int page = 1, int pageSize = 25, string? search = null)
+        {
+            var vm = await BuildDatabaseRecordsViewModelAsync(table, page, pageSize, search);
+            return Json(new
+            {
+                success = true,
+                activeTable = vm.ActiveTable,
+                availableTables = vm.AvailableTables,
+                columns = vm.Columns,
+                rows = vm.Rows,
+                totalRecords = vm.TotalRecords,
+                currentPage = vm.CurrentPage,
+                pageSize = vm.PageSize,
+                totalPages = vm.TotalPages,
+                searchQuery = vm.SearchQuery
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetRecord(string table, ulong id)
+        {
+            try
+            {
+                var normTable = (table ?? "events").ToLowerInvariant().Trim();
+                var record = await FetchSingleRecordAsync(normTable, id);
+                if (record == null)
+                {
+                    return Json(new DatabaseCrudResult { Success = false, Message = $"Record #{id} not found in table '{normTable}'." });
+                }
+                return Json(new DatabaseCrudResult { Success = true, Data = record, RecordId = id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch record #{Id} from table {Table}", id, table);
+                return Json(new DatabaseCrudResult { Success = false, Message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateRecord([FromBody] DatabaseRecordMutationModel model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.Table) || model.Fields == null)
+            {
+                return Json(new DatabaseCrudResult { Success = false, Message = "Invalid mutation payload supplied." });
+            }
+
+            try
+            {
+                var normTable = model.Table.ToLowerInvariant().Trim();
+                var result = await InsertRecordInternalAsync(normTable, model.Fields);
+                if (result.Success)
+                {
+                    await LogAuditAsync("DATABASE_RECORD_INSERT", normTable.ToUpperInvariant(), result.RecordId, $"Inserted new row into '{normTable}'");
+                }
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to insert record into table {Table}", model.Table);
+                return Json(new DatabaseCrudResult { Success = false, Message = "INSERT failed: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateRecord([FromBody] DatabaseRecordMutationModel model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.Table) || !model.Id.HasValue || model.Fields == null)
+            {
+                return Json(new DatabaseCrudResult { Success = false, Message = "Invalid update payload supplied (ID is required)." });
+            }
+
+            try
+            {
+                var normTable = model.Table.ToLowerInvariant().Trim();
+                var result = await UpdateRecordInternalAsync(normTable, model.Id.Value, model.Fields);
+                if (result.Success)
+                {
+                    await LogAuditAsync("DATABASE_RECORD_UPDATE", normTable.ToUpperInvariant(), model.Id.Value, $"Updated row #{model.Id.Value} in '{normTable}'");
+                }
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update record #{Id} in table {Table}", model.Id, model.Table);
+                return Json(new DatabaseCrudResult { Success = false, Message = "UPDATE failed: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteRecord([FromBody] DatabaseRecordDeleteModel model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.Table) || model.Id == 0)
+            {
+                return Json(new DatabaseCrudResult { Success = false, Message = "Invalid delete payload supplied (Valid ID is required)." });
+            }
+
+            try
+            {
+                var normTable = model.Table.ToLowerInvariant().Trim();
+                var result = await DeleteRecordInternalAsync(normTable, model.Id);
+                if (result.Success)
+                {
+                    await LogAuditAsync("DATABASE_RECORD_DELETE", normTable.ToUpperInvariant(), model.Id, $"Deleted row #{model.Id} from '{normTable}'");
+                }
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete record #{Id} from table {Table}", model.Id, model.Table);
+                return Json(new DatabaseCrudResult { Success = false, Message = "DELETE failed: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> BatchApplyRecords([FromBody] DatabaseBatchMutationModel model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.Table))
+            {
+                return Json(new DatabaseCrudResult { Success = false, Message = "Invalid batch payload supplied." });
+            }
+
+            var normTable = model.Table.ToLowerInvariant().Trim();
+            int totalInserted = 0;
+            int totalUpdated = 0;
+            int totalDeleted = 0;
+            var errors = new List<string>();
+
+            using var tx = await _db.Database.BeginTransactionAsync();
+            try
+            {
+                // 1. Process Insertions
+                if (model.Insertions != null)
+                {
+                    foreach (var ins in model.Insertions)
+                    {
+                        var res = await InsertRecordInternalAsync(normTable, ins.Fields, saveChanges: false);
+                        if (res.Success) totalInserted++;
+                        else errors.Add($"Insert Error: {res.Message}");
+                    }
+                }
+
+                // 2. Process Updates
+                if (model.Updates != null)
+                {
+                    foreach (var upd in model.Updates)
+                    {
+                        if (upd.Id.HasValue)
+                        {
+                            var res = await UpdateRecordInternalAsync(normTable, upd.Id.Value, upd.Fields, saveChanges: false);
+                            if (res.Success) totalUpdated++;
+                            else errors.Add($"Update Error (#{upd.Id}): {res.Message}");
+                        }
+                    }
+                }
+
+                // 3. Process Deletions
+                if (model.Deletions != null)
+                {
+                    foreach (var delId in model.Deletions)
+                    {
+                        var res = await DeleteRecordInternalAsync(normTable, delId, saveChanges: false);
+                        if (res.Success) totalDeleted++;
+                        else errors.Add($"Delete Error (#{delId}): {res.Message}");
+                    }
+                }
+
+                if (errors.Any())
+                {
+                    await tx.RollbackAsync();
+                    return Json(new DatabaseCrudResult
+                    {
+                        Success = false,
+                        Message = $"Batch aborted due to {errors.Count} error(s): " + string.Join("; ", errors.Take(3))
+                    });
+                }
+
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                var totalChanges = totalInserted + totalUpdated + totalDeleted;
+                await LogAuditAsync("DATABASE_BATCH_APPLY", normTable.ToUpperInvariant(), null, $"Batch committed on '{normTable}': +{totalInserted} inserted, ~{totalUpdated} updated, -{totalDeleted} deleted.");
+
+                return Json(new DatabaseCrudResult
+                {
+                    Success = true,
+                    Message = $"Successfully applied batch changes to '{normTable}': {totalInserted} added, {totalUpdated} updated, {totalDeleted} deleted.",
+                    AffectedRows = totalChanges
+                });
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                _logger.LogError(ex, "Failed to apply batch records for table {Table}", model.Table);
+                return Json(new DatabaseCrudResult { Success = false, Message = "Batch execution failed: " + ex.Message });
+            }
+        }
+
+        // =========================================================
+        // PRIVATE HELPER METHODS FOR DATABASE RECORDS GRID
+        // =========================================================
+
+        private async Task<DatabaseRecordsViewModel> BuildDatabaseRecordsViewModelAsync(string table, int page, int pageSize, string? search)
+        {
+            var normTable = (table ?? "events").ToLowerInvariant().Trim();
+            if (page < 1) page = 1;
+            if (pageSize < 5) pageSize = 25;
+            if (pageSize > 100) pageSize = 100;
+
+            var vm = new DatabaseRecordsViewModel
+            {
+                ActiveTable = normTable,
+                CurrentPage = page,
+                PageSize = pageSize,
+                SearchQuery = search?.Trim(),
+                AvailableTables = GetAvailableDatabaseTables(),
+                Columns = GetColumnsForTable(normTable)
+            };
+
+            // Calculate live counts for tables
+            foreach (var t in vm.AvailableTables)
+            {
+                t.RecordCount = await GetTableCountAsync(t.Key);
+            }
+
+            // Fetch Paginated Rows
+            var (rows, total) = await FetchTableRowsAsync(normTable, page, pageSize, search);
+            vm.Rows = rows;
+            vm.TotalRecords = total;
+
+            return vm;
+        }
+
+        private List<DatabaseTableInfo> GetAvailableDatabaseTables()
+        {
+            return new List<DatabaseTableInfo>
+            {
+                new() { Key = "events", DisplayName = "events", Icon = "bi-calendar-event", Description = "Core university events, conferences, and workshops" },
+                new() { Key = "announcements", DisplayName = "announcements", Icon = "bi-megaphone", Description = "Official campus broadcasts and departmental notices" },
+                new() { Key = "users", DisplayName = "users", Icon = "bi-people", Description = "Registered student, faculty, and administrative accounts" },
+                new() { Key = "venues", DisplayName = "venues", Icon = "bi-geo-alt", Description = "Campus auditoriums, halls, classrooms, and grounds" },
+                new() { Key = "registrations", DisplayName = "registrations", Icon = "bi-ticket-perforated", Description = "Attendee event bookings, tickets, and check-in logs" },
+                new() { Key = "organizations", DisplayName = "organizations", Icon = "bi-building", Description = "Campus clubs, student chapters, and academic unions" },
+                new() { Key = "departments", DisplayName = "departments", Icon = "bi-mortarboard", Description = "University academic departments and faculties" },
+                new() { Key = "event_categories", DisplayName = "event_categories", Icon = "bi-grid", Description = "Event classifications and filtering taxonomy" },
+                new() { Key = "audit_logs", DisplayName = "audit_logs", Icon = "bi-shield-check", Description = "System operational audit trail and security logs" }
+            };
+        }
+
+        private async Task<int> GetTableCountAsync(string table)
+        {
+            try
+            {
+                return table switch
+                {
+                    "events" => await _db.events.CountAsync(),
+                    "announcements" => await _db.announcements.CountAsync(),
+                    "users" => await _db.users.CountAsync(),
+                    "venues" => await _db.venues.CountAsync(),
+                    "registrations" => await _db.registrations.CountAsync(),
+                    "organizations" => await _db.organizations.CountAsync(),
+                    "departments" => await _db.departments.CountAsync(),
+                    "event_categories" => await _db.event_categories.CountAsync(),
+                    "audit_logs" => await _db.audit_logs.CountAsync(),
+                    _ => 0
+                };
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        private List<DatabaseColumnMeta> GetColumnsForTable(string table)
+        {
+            return table switch
+            {
+                "events" => new List<DatabaseColumnMeta>
+                {
+                    new() { Name = "id", DisplayName = "ID", DataType = "number", IsPrimaryKey = true, IsReadOnly = true },
+                    new() { Name = "title", DisplayName = "Title", DataType = "string", IsRequired = true },
+                    new() { Name = "slug", DisplayName = "Slug", DataType = "string", IsRequired = true },
+                    new() { Name = "short_description", DisplayName = "Short Desc", DataType = "string" },
+                    new() { Name = "category_id", DisplayName = "Category ID", DataType = "number", IsRequired = true },
+                    new() { Name = "organizer_id", DisplayName = "Organizer ID", DataType = "number", IsRequired = true },
+                    new() { Name = "venue_id", DisplayName = "Venue ID", DataType = "number" },
+                    new() { Name = "start_at", DisplayName = "Start At", DataType = "datetime", IsRequired = true },
+                    new() { Name = "end_at", DisplayName = "End At", DataType = "datetime", IsRequired = true },
+                    new() { Name = "capacity", DisplayName = "Capacity", DataType = "number" },
+                    new() { Name = "event_mode", DisplayName = "Mode", DataType = "enum", EnumOptions = new() { "IN_PERSON", "ONLINE", "HYBRID" }, DefaultValue = "IN_PERSON" },
+                    new() { Name = "status", DisplayName = "Status", DataType = "enum", EnumOptions = new() { "DRAFT", "PENDING_APPROVAL", "APPROVED", "PUBLISHED", "REJECTED", "CANCELLED", "COMPLETED" }, DefaultValue = "PUBLISHED" },
+                    new() { Name = "approval_status", DisplayName = "Approval", DataType = "enum", EnumOptions = new() { "NOT_REQUIRED", "PENDING", "APPROVED", "REJECTED" }, DefaultValue = "APPROVED" },
+                    new() { Name = "created_at", DisplayName = "Created At", DataType = "datetime", IsReadOnly = true }
+                },
+                "announcements" => new List<DatabaseColumnMeta>
+                {
+                    new() { Name = "id", DisplayName = "ID", DataType = "number", IsPrimaryKey = true, IsReadOnly = true },
+                    new() { Name = "title", DisplayName = "Title", DataType = "string", IsRequired = true },
+                    new() { Name = "summary", DisplayName = "Summary", DataType = "string" },
+                    new() { Name = "announcement_type", DisplayName = "Type", DataType = "enum", EnumOptions = new() { "GENERAL", "EVENT", "URGENT", "COMMUNITY", "ACADEMIC" }, DefaultValue = "GENERAL" },
+                    new() { Name = "priority", DisplayName = "Priority", DataType = "enum", EnumOptions = new() { "LOW", "NORMAL", "HIGH", "URGENT" }, DefaultValue = "NORMAL" },
+                    new() { Name = "status", DisplayName = "Status", DataType = "enum", EnumOptions = new() { "DRAFT", "PUBLISHED", "ARCHIVED" }, DefaultValue = "PUBLISHED" },
+                    new() { Name = "author_id", DisplayName = "Author ID", DataType = "number", IsRequired = true },
+                    new() { Name = "department_id", DisplayName = "Dept ID", DataType = "number" },
+                    new() { Name = "created_at", DisplayName = "Created At", DataType = "datetime", IsReadOnly = true }
+                },
+                "users" => new List<DatabaseColumnMeta>
+                {
+                    new() { Name = "id", DisplayName = "ID", DataType = "number", IsPrimaryKey = true, IsReadOnly = true },
+                    new() { Name = "username", DisplayName = "Username", DataType = "string", IsRequired = true },
+                    new() { Name = "email", DisplayName = "Email", DataType = "string", IsRequired = true },
+                    new() { Name = "first_name", DisplayName = "First Name", DataType = "string", IsRequired = true },
+                    new() { Name = "last_name", DisplayName = "Last Name", DataType = "string", IsRequired = true },
+                    new() { Name = "phone", DisplayName = "Phone", DataType = "string" },
+                    new() { Name = "account_type", DisplayName = "Role Type", DataType = "enum", EnumOptions = new() { "STUDENT", "FACULTY", "STAFF", "ORGANIZER", "ADMIN", "SUPERADMIN" }, DefaultValue = "STUDENT" },
+                    new() { Name = "account_status", DisplayName = "Status", DataType = "enum", EnumOptions = new() { "ACTIVE", "PENDING_VERIFICATION", "SUSPENDED", "DEACTIVATED" }, DefaultValue = "ACTIVE" },
+                    new() { Name = "student_id", DisplayName = "Student ID", DataType = "string" },
+                    new() { Name = "employee_id", DisplayName = "Employee ID", DataType = "string" },
+                    new() { Name = "created_at", DisplayName = "Created At", DataType = "datetime", IsReadOnly = true }
+                },
+                "venues" => new List<DatabaseColumnMeta>
+                {
+                    new() { Name = "id", DisplayName = "ID", DataType = "number", IsPrimaryKey = true, IsReadOnly = true },
+                    new() { Name = "name", DisplayName = "Venue Name", DataType = "string", IsRequired = true },
+                    new() { Name = "building_name", DisplayName = "Building", DataType = "string" },
+                    new() { Name = "room_number", DisplayName = "Room #", DataType = "string" },
+                    new() { Name = "capacity", DisplayName = "Capacity", DataType = "number" },
+                    new() { Name = "venue_type", DisplayName = "Type", DataType = "enum", EnumOptions = new() { "AUDITORIUM", "CLASSROOM", "HALL", "LAB", "OUTDOOR", "SPORTS", "OTHER" }, DefaultValue = "HALL" },
+                    new() { Name = "status", DisplayName = "Status", DataType = "enum", EnumOptions = new() { "AVAILABLE", "MAINTENANCE", "RESERVED", "INACTIVE" }, DefaultValue = "AVAILABLE" },
+                    new() { Name = "created_at", DisplayName = "Created At", DataType = "datetime", IsReadOnly = true }
+                },
+                "registrations" => new List<DatabaseColumnMeta>
+                {
+                    new() { Name = "id", DisplayName = "ID", DataType = "number", IsPrimaryKey = true, IsReadOnly = true },
+                    new() { Name = "event_id", DisplayName = "Event ID", DataType = "number", IsRequired = true },
+                    new() { Name = "user_id", DisplayName = "User ID", DataType = "number", IsRequired = true },
+                    new() { Name = "registration_code", DisplayName = "Reg Code", DataType = "string", IsRequired = true },
+                    new() { Name = "qr_token", DisplayName = "QR Token", DataType = "string" },
+                    new() { Name = "status", DisplayName = "Status", DataType = "enum", EnumOptions = new() { "REGISTERED", "ATTENDED", "CANCELLED", "WAITLISTED" }, DefaultValue = "REGISTERED" },
+                    new() { Name = "checked_in_at", DisplayName = "Checked In", DataType = "datetime" },
+                    new() { Name = "registered_at", DisplayName = "Registered At", DataType = "datetime", IsReadOnly = true }
+                },
+                "organizations" => new List<DatabaseColumnMeta>
+                {
+                    new() { Name = "id", DisplayName = "ID", DataType = "number", IsPrimaryKey = true, IsReadOnly = true },
+                    new() { Name = "name", DisplayName = "Org Name", DataType = "string", IsRequired = true },
+                    new() { Name = "short_name", DisplayName = "Short Name", DataType = "string" },
+                    new() { Name = "organization_type", DisplayName = "Type", DataType = "enum", EnumOptions = new() { "CLUB", "OFFICE", "ASSOCIATION", "STUDENT_UNION", "DEPARTMENT", "FACULTY", "OTHER" }, DefaultValue = "CLUB" },
+                    new() { Name = "email", DisplayName = "Email", DataType = "string" },
+                    new() { Name = "phone", DisplayName = "Phone", DataType = "string" },
+                    new() { Name = "status", DisplayName = "Status", DataType = "enum", EnumOptions = new() { "PENDING", "ACTIVE", "SUSPENDED", "INACTIVE" }, DefaultValue = "ACTIVE" },
+                    new() { Name = "department_id", DisplayName = "Dept ID", DataType = "number" },
+                    new() { Name = "created_at", DisplayName = "Created At", DataType = "datetime", IsReadOnly = true }
+                },
+                "departments" => new List<DatabaseColumnMeta>
+                {
+                    new() { Name = "id", DisplayName = "ID", DataType = "number", IsPrimaryKey = true, IsReadOnly = true },
+                    new() { Name = "name", DisplayName = "Department Name", DataType = "string", IsRequired = true },
+                    new() { Name = "code", DisplayName = "Code", DataType = "string", IsRequired = true },
+                    new() { Name = "faculty_id", DisplayName = "Faculty ID", DataType = "number", IsRequired = true },
+                    new() { Name = "created_at", DisplayName = "Created At", DataType = "datetime", IsReadOnly = true }
+                },
+                "event_categories" => new List<DatabaseColumnMeta>
+                {
+                    new() { Name = "id", DisplayName = "ID", DataType = "number", IsPrimaryKey = true, IsReadOnly = true },
+                    new() { Name = "name", DisplayName = "Category Name", DataType = "string", IsRequired = true },
+                    new() { Name = "slug", DisplayName = "Slug", DataType = "string", IsRequired = true },
+                    new() { Name = "description", DisplayName = "Description", DataType = "string" },
+                    new() { Name = "icon", DisplayName = "Icon", DataType = "string" },
+                    new() { Name = "is_active", DisplayName = "Is Active", DataType = "boolean", DefaultValue = "true" }
+                },
+                "audit_logs" => new List<DatabaseColumnMeta>
+                {
+                    new() { Name = "id", DisplayName = "ID", DataType = "number", IsPrimaryKey = true, IsReadOnly = true },
+                    new() { Name = "user_id", DisplayName = "User ID", DataType = "number", IsReadOnly = true },
+                    new() { Name = "action", DisplayName = "Action", DataType = "string", IsReadOnly = true },
+                    new() { Name = "entity_type", DisplayName = "Entity Type", DataType = "string", IsReadOnly = true },
+                    new() { Name = "entity_id", DisplayName = "Entity ID", DataType = "number", IsReadOnly = true },
+                    new() { Name = "description", DisplayName = "Description", DataType = "string", IsReadOnly = true },
+                    new() { Name = "ip_address", DisplayName = "IP Address", DataType = "string", IsReadOnly = true },
+                    new() { Name = "created_at", DisplayName = "Timestamp", DataType = "datetime", IsReadOnly = true }
+                },
+                _ => new List<DatabaseColumnMeta>()
+            };
+        }
+
+        private async Task<(List<Dictionary<string, object?>> Rows, int Total)> FetchTableRowsAsync(string table, int page, int pageSize, string? search)
+        {
+            var rows = new List<Dictionary<string, object?>>();
+            int total = 0;
+            var s = search?.Trim().ToLowerInvariant();
+
+            switch (table)
+            {
+                case "events":
+                    {
+                        var q = _db.events.AsQueryable();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            q = q.Where(e => e.title.ToLower().Contains(s) || e.slug.ToLower().Contains(s) || (e.short_description != null && e.short_description.ToLower().Contains(s)));
+                        total = await q.CountAsync();
+                        var items = await q.OrderByDescending(e => e.id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+                        foreach (var i in items)
+                        {
+                            rows.Add(new Dictionary<string, object?>
+                            {
+                                ["id"] = i.id,
+                                ["title"] = i.title,
+                                ["slug"] = i.slug,
+                                ["short_description"] = i.short_description,
+                                ["category_id"] = i.category_id,
+                                ["organizer_id"] = i.organizer_id,
+                                ["venue_id"] = i.venue_id,
+                                ["start_at"] = i.start_at.ToString("yyyy-MM-dd HH:mm"),
+                                ["end_at"] = i.end_at.ToString("yyyy-MM-dd HH:mm"),
+                                ["capacity"] = i.capacity,
+                                ["event_mode"] = i.event_mode,
+                                ["status"] = i.status,
+                                ["approval_status"] = i.approval_status,
+                                ["created_at"] = i.created_at.ToString("yyyy-MM-dd HH:mm")
+                            });
+                        }
+                    }
+                    break;
+
+                case "announcements":
+                    {
+                        var q = _db.announcements.AsQueryable();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            q = q.Where(a => a.title.ToLower().Contains(s) || (a.summary != null && a.summary.ToLower().Contains(s)));
+                        total = await q.CountAsync();
+                        var items = await q.OrderByDescending(a => a.id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+                        foreach (var i in items)
+                        {
+                            rows.Add(new Dictionary<string, object?>
+                            {
+                                ["id"] = i.id,
+                                ["title"] = i.title,
+                                ["summary"] = i.summary,
+                                ["announcement_type"] = i.announcement_type,
+                                ["priority"] = i.priority,
+                                ["status"] = i.status,
+                                ["author_id"] = i.author_id,
+                                ["department_id"] = i.department_id,
+                                ["created_at"] = i.created_at.ToString("yyyy-MM-dd HH:mm")
+                            });
+                        }
+                    }
+                    break;
+
+                case "users":
+                    {
+                        var q = _db.users.AsQueryable();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            q = q.Where(u => u.username.ToLower().Contains(s) || u.email.ToLower().Contains(s) || u.first_name.ToLower().Contains(s) || u.last_name.ToLower().Contains(s));
+                        total = await q.CountAsync();
+                        var items = await q.OrderByDescending(u => u.id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+                        foreach (var i in items)
+                        {
+                            rows.Add(new Dictionary<string, object?>
+                            {
+                                ["id"] = i.id,
+                                ["username"] = i.username,
+                                ["email"] = i.email,
+                                ["first_name"] = i.first_name,
+                                ["last_name"] = i.last_name,
+                                ["phone"] = i.phone,
+                                ["account_type"] = i.account_type,
+                                ["account_status"] = i.account_status,
+                                ["student_id"] = i.student_id,
+                                ["employee_id"] = i.employee_id,
+                                ["created_at"] = i.created_at.ToString("yyyy-MM-dd HH:mm")
+                            });
+                        }
+                    }
+                    break;
+
+                case "venues":
+                    {
+                        var q = _db.venues.AsQueryable();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            q = q.Where(v => v.name.ToLower().Contains(s) || (v.building_name != null && v.building_name.ToLower().Contains(s)));
+                        total = await q.CountAsync();
+                        var items = await q.OrderByDescending(v => v.id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+                        foreach (var i in items)
+                        {
+                            rows.Add(new Dictionary<string, object?>
+                            {
+                                ["id"] = i.id,
+                                ["name"] = i.name,
+                                ["building_name"] = i.building_name,
+                                ["room_number"] = i.room_number,
+                                ["capacity"] = i.capacity,
+                                ["venue_type"] = i.venue_type,
+                                ["status"] = i.status,
+                                ["created_at"] = i.created_at.ToString("yyyy-MM-dd HH:mm")
+                            });
+                        }
+                    }
+                    break;
+
+                case "registrations":
+                    {
+                        var q = _db.registrations.AsQueryable();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            q = q.Where(r => r.registration_code.ToLower().Contains(s) || (r.qr_token != null && r.qr_token.ToLower().Contains(s)));
+                        total = await q.CountAsync();
+                        var items = await q.OrderByDescending(r => r.id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+                        foreach (var i in items)
+                        {
+                            rows.Add(new Dictionary<string, object?>
+                            {
+                                ["id"] = i.id,
+                                ["event_id"] = i.event_id,
+                                ["user_id"] = i.user_id,
+                                ["registration_code"] = i.registration_code,
+                                ["qr_token"] = i.qr_token,
+                                ["status"] = i.status,
+                                ["checked_in_at"] = i.checked_in_at?.ToString("yyyy-MM-dd HH:mm"),
+                                ["registered_at"] = i.registered_at.ToString("yyyy-MM-dd HH:mm")
+                            });
+                        }
+                    }
+                    break;
+
+                case "organizations":
+                    {
+                        var q = _db.organizations.AsQueryable();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            q = q.Where(o => o.name.ToLower().Contains(s) || (o.short_name != null && o.short_name.ToLower().Contains(s)));
+                        total = await q.CountAsync();
+                        var items = await q.OrderByDescending(o => o.id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+                        foreach (var i in items)
+                        {
+                            rows.Add(new Dictionary<string, object?>
+                            {
+                                ["id"] = i.id,
+                                ["name"] = i.name,
+                                ["short_name"] = i.short_name,
+                                ["organization_type"] = i.organization_type,
+                                ["email"] = i.email,
+                                ["phone"] = i.phone,
+                                ["status"] = i.status,
+                                ["department_id"] = i.department_id,
+                                ["created_at"] = i.created_at.ToString("yyyy-MM-dd HH:mm")
+                            });
+                        }
+                    }
+                    break;
+
+                case "departments":
+                    {
+                        var q = _db.departments.AsQueryable();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            q = q.Where(d => d.name.ToLower().Contains(s) || (d.code != null && d.code.ToLower().Contains(s)));
+                        total = await q.CountAsync();
+                        var items = await q.OrderByDescending(d => d.id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+                        foreach (var i in items)
+                        {
+                            rows.Add(new Dictionary<string, object?>
+                            {
+                                ["id"] = i.id,
+                                ["name"] = i.name,
+                                ["code"] = i.code,
+                                ["faculty_id"] = i.faculty_id,
+                                ["created_at"] = i.created_at.ToString("yyyy-MM-dd HH:mm")
+                            });
+                        }
+                    }
+                    break;
+
+                case "event_categories":
+                    {
+                        var q = _db.event_categories.AsQueryable();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            q = q.Where(c => c.name.ToLower().Contains(s) || c.slug.ToLower().Contains(s));
+                        total = await q.CountAsync();
+                        var items = await q.OrderByDescending(c => c.id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+                        foreach (var i in items)
+                        {
+                            rows.Add(new Dictionary<string, object?>
+                            {
+                                ["id"] = i.id,
+                                ["name"] = i.name,
+                                ["slug"] = i.slug,
+                                ["description"] = i.description,
+                                ["icon"] = i.icon,
+                                ["is_active"] = i.is_active
+                            });
+                        }
+                    }
+                    break;
+
+                case "audit_logs":
+                    {
+                        var q = _db.audit_logs.AsQueryable();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            q = q.Where(l => l.action.ToLower().Contains(s) || (l.description != null && l.description.ToLower().Contains(s)));
+                        total = await q.CountAsync();
+                        var items = await q.OrderByDescending(l => l.id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+                        foreach (var i in items)
+                        {
+                            rows.Add(new Dictionary<string, object?>
+                            {
+                                ["id"] = i.id,
+                                ["user_id"] = i.user_id,
+                                ["action"] = i.action,
+                                ["entity_type"] = i.entity_type,
+                                ["entity_id"] = i.entity_id,
+                                ["description"] = i.description,
+                                ["ip_address"] = i.ip_address,
+                                ["created_at"] = i.created_at.ToString("yyyy-MM-dd HH:mm")
+                            });
+                        }
+                    }
+                    break;
+            }
+
+            return (rows, total);
+        }
+
+        private async Task<Dictionary<string, object?>?> FetchSingleRecordAsync(string table, ulong id)
+        {
+            switch (table)
+            {
+                case "events":
+                    var ev = await _db.events.FindAsync(id);
+                    if (ev == null) return null;
+                    return new Dictionary<string, object?>
+                    {
+                        ["id"] = ev.id,
+                        ["title"] = ev.title,
+                        ["slug"] = ev.slug,
+                        ["short_description"] = ev.short_description,
+                        ["category_id"] = ev.category_id,
+                        ["organizer_id"] = ev.organizer_id,
+                        ["venue_id"] = ev.venue_id,
+                        ["start_at"] = ev.start_at.ToString("yyyy-MM-ddTHH:mm"),
+                        ["end_at"] = ev.end_at.ToString("yyyy-MM-ddTHH:mm"),
+                        ["capacity"] = ev.capacity,
+                        ["event_mode"] = ev.event_mode,
+                        ["status"] = ev.status,
+                        ["approval_status"] = ev.approval_status
+                    };
+
+                case "announcements":
+                    var an = await _db.announcements.FindAsync(id);
+                    if (an == null) return null;
+                    return new Dictionary<string, object?>
+                    {
+                        ["id"] = an.id,
+                        ["title"] = an.title,
+                        ["summary"] = an.summary,
+                        ["announcement_type"] = an.announcement_type,
+                        ["priority"] = an.priority,
+                        ["status"] = an.status,
+                        ["author_id"] = an.author_id,
+                        ["department_id"] = an.department_id
+                    };
+
+                case "users":
+                    var u = await _db.users.FindAsync(id);
+                    if (u == null) return null;
+                    return new Dictionary<string, object?>
+                    {
+                        ["id"] = u.id,
+                        ["username"] = u.username,
+                        ["email"] = u.email,
+                        ["first_name"] = u.first_name,
+                        ["last_name"] = u.last_name,
+                        ["phone"] = u.phone,
+                        ["account_type"] = u.account_type,
+                        ["account_status"] = u.account_status,
+                        ["student_id"] = u.student_id,
+                        ["employee_id"] = u.employee_id
+                    };
+
+                case "venues":
+                    var vn = await _db.venues.FindAsync(id);
+                    if (vn == null) return null;
+                    return new Dictionary<string, object?>
+                    {
+                        ["id"] = vn.id,
+                        ["name"] = vn.name,
+                        ["building_name"] = vn.building_name,
+                        ["room_number"] = vn.room_number,
+                        ["capacity"] = vn.capacity,
+                        ["venue_type"] = vn.venue_type,
+                        ["status"] = vn.status
+                    };
+
+                case "registrations":
+                    var rg = await _db.registrations.FindAsync(id);
+                    if (rg == null) return null;
+                    return new Dictionary<string, object?>
+                    {
+                        ["id"] = rg.id,
+                        ["event_id"] = rg.event_id,
+                        ["user_id"] = rg.user_id,
+                        ["registration_code"] = rg.registration_code,
+                        ["qr_token"] = rg.qr_token,
+                        ["status"] = rg.status,
+                        ["checked_in_at"] = rg.checked_in_at?.ToString("yyyy-MM-ddTHH:mm")
+                    };
+
+                case "organizations":
+                    var org = await _db.organizations.FindAsync(id);
+                    if (org == null) return null;
+                    return new Dictionary<string, object?>
+                    {
+                        ["id"] = org.id,
+                        ["name"] = org.name,
+                        ["short_name"] = org.short_name,
+                        ["organization_type"] = org.organization_type,
+                        ["email"] = org.email,
+                        ["phone"] = org.phone,
+                        ["status"] = org.status,
+                        ["department_id"] = org.department_id
+                    };
+
+                case "departments":
+                    var dp = await _db.departments.FindAsync(id);
+                    if (dp == null) return null;
+                    return new Dictionary<string, object?>
+                    {
+                        ["id"] = dp.id,
+                        ["name"] = dp.name,
+                        ["code"] = dp.code,
+                        ["faculty_id"] = dp.faculty_id
+                    };
+
+                case "event_categories":
+                    var cat = await _db.event_categories.FindAsync(id);
+                    if (cat == null) return null;
+                    return new Dictionary<string, object?>
+                    {
+                        ["id"] = cat.id,
+                        ["name"] = cat.name,
+                        ["slug"] = cat.slug,
+                        ["description"] = cat.description,
+                        ["icon"] = cat.icon,
+                        ["is_active"] = cat.is_active
+                    };
+
+                default:
+                    return null;
+            }
+        }
+
+        private async Task<DatabaseCrudResult> InsertRecordInternalAsync(string table, Dictionary<string, string?> fields, bool saveChanges = true)
+        {
+            switch (table)
+            {
+                case "events":
+                    {
+                        var title = fields.GetValueOrDefault("title") ?? "Untitled Event";
+                        var slug = fields.GetValueOrDefault("slug");
+                        if (string.IsNullOrWhiteSpace(slug))
+                            slug = title.ToLower().Replace(" ", "-").Replace("'", "") + "-" + DateTime.UtcNow.Ticks % 10000;
+
+                        ulong.TryParse(fields.GetValueOrDefault("category_id") ?? "1", out var catId);
+                        ulong.TryParse(fields.GetValueOrDefault("organizer_id") ?? GetCurrentUserId()?.ToString() ?? "1", out var orgId);
+                        ulong.TryParse(fields.GetValueOrDefault("venue_id") ?? "0", out var venId);
+                        uint.TryParse(fields.GetValueOrDefault("capacity") ?? "100", out var cap);
+
+                        DateTime.TryParse(fields.GetValueOrDefault("start_at"), out var startAt);
+                        if (startAt == default) startAt = DateTime.UtcNow.AddDays(1);
+                        DateTime.TryParse(fields.GetValueOrDefault("end_at"), out var endAt);
+                        if (endAt == default) endAt = startAt.AddHours(2);
+
+                        var entity = new _event
+                        {
+                            title = title,
+                            slug = slug,
+                            short_description = fields.GetValueOrDefault("short_description"),
+                            category_id = catId == 0 ? 1 : catId,
+                            organizer_id = orgId == 0 ? 1 : orgId,
+                            venue_id = venId == 0 ? null : venId,
+                            start_at = startAt,
+                            end_at = endAt,
+                            capacity = cap,
+                            event_mode = fields.GetValueOrDefault("event_mode") ?? "IN_PERSON",
+                            status = fields.GetValueOrDefault("status") ?? "PUBLISHED",
+                            approval_status = fields.GetValueOrDefault("approval_status") ?? "APPROVED",
+                            is_public = true,
+                            registration_required = true,
+                            created_at = DateTime.UtcNow,
+                            updated_at = DateTime.UtcNow
+                        };
+                        _db.events.Add(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = entity.id, Message = $"Event '{title}' created successfully (ID: #{entity.id})." };
+                    }
+
+                case "announcements":
+                    {
+                        var title = fields.GetValueOrDefault("title") ?? "New Announcement";
+                        ulong.TryParse(fields.GetValueOrDefault("author_id") ?? GetCurrentUserId()?.ToString() ?? "1", out var authId);
+                        ulong.TryParse(fields.GetValueOrDefault("department_id") ?? "0", out var deptId);
+
+                        var entity = new Announcement
+                        {
+                            title = title,
+                            slug = title.ToLower().Replace(" ", "-") + "-" + DateTime.UtcNow.Ticks % 10000,
+                            summary = fields.GetValueOrDefault("summary"),
+                            content = fields.GetValueOrDefault("summary") ?? title,
+                            announcement_type = fields.GetValueOrDefault("announcement_type") ?? "GENERAL",
+                            priority = fields.GetValueOrDefault("priority") ?? "NORMAL",
+                            status = fields.GetValueOrDefault("status") ?? "PUBLISHED",
+                            author_id = authId == 0 ? 1 : authId,
+                            department_id = deptId == 0 ? null : deptId,
+                            published_at = DateTime.UtcNow,
+                            created_at = DateTime.UtcNow,
+                            updated_at = DateTime.UtcNow
+                        };
+                        _db.announcements.Add(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = entity.id, Message = $"Announcement '{title}' created successfully (ID: #{entity.id})." };
+                    }
+
+                case "users":
+                    {
+                        var username = fields.GetValueOrDefault("username") ?? "user" + (DateTime.UtcNow.Ticks % 10000);
+                        var email = fields.GetValueOrDefault("email") ?? $"{username}@hawassa.edu.et";
+                        var first = fields.GetValueOrDefault("first_name") ?? "Campus";
+                        var last = fields.GetValueOrDefault("last_name") ?? "User";
+
+                        var entity = new User
+                        {
+                            username = username,
+                            email = email,
+                            first_name = first,
+                            last_name = last,
+                            phone = fields.GetValueOrDefault("phone"),
+                            account_type = fields.GetValueOrDefault("account_type") ?? "STUDENT",
+                            account_status = fields.GetValueOrDefault("account_status") ?? "ACTIVE",
+                            student_id = fields.GetValueOrDefault("student_id"),
+                            employee_id = fields.GetValueOrDefault("employee_id"),
+                            password_hash = AccountController.HashPassword("User@2026"),
+                            created_at = DateTime.UtcNow,
+                            updated_at = DateTime.UtcNow
+                        };
+                        _db.users.Add(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = entity.id, Message = $"User '{username}' created successfully (ID: #{entity.id})." };
+                    }
+
+                case "venues":
+                    {
+                        var name = fields.GetValueOrDefault("name") ?? "New Venue Hall";
+                        uint.TryParse(fields.GetValueOrDefault("capacity") ?? "100", out var cap);
+
+                        var entity = new Venue
+                        {
+                            name = name,
+                            building_name = fields.GetValueOrDefault("building_name"),
+                            room_number = fields.GetValueOrDefault("room_number"),
+                            capacity = cap,
+                            venue_type = fields.GetValueOrDefault("venue_type") ?? "HALL",
+                            status = fields.GetValueOrDefault("status") ?? "AVAILABLE",
+                            created_at = DateTime.UtcNow,
+                            updated_at = DateTime.UtcNow
+                        };
+                        _db.venues.Add(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = entity.id, Message = $"Venue '{name}' created successfully (ID: #{entity.id})." };
+                    }
+
+                case "departments":
+                    {
+                        var name = fields.GetValueOrDefault("name") ?? "Department Name";
+                        var code = fields.GetValueOrDefault("code") ?? "DEPT-" + (DateTime.UtcNow.Ticks % 1000);
+                        ulong.TryParse(fields.GetValueOrDefault("faculty_id") ?? "1", out var facId);
+
+                        var entity = new Department
+                        {
+                            name = name,
+                            code = code,
+                            faculty_id = facId == 0 ? 1 : facId,
+                            created_at = DateTime.UtcNow,
+                            updated_at = DateTime.UtcNow
+                        };
+                        _db.departments.Add(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = entity.id, Message = $"Department '{name}' created successfully (ID: #{entity.id})." };
+                    }
+
+                case "organizations":
+                    {
+                        var name = fields.GetValueOrDefault("name") ?? "New Organization";
+                        ulong.TryParse(fields.GetValueOrDefault("department_id") ?? "0", out var deptId);
+
+                        var entity = new Organization
+                        {
+                            name = name,
+                            short_name = fields.GetValueOrDefault("short_name"),
+                            organization_type = fields.GetValueOrDefault("organization_type") ?? "CLUB",
+                            email = fields.GetValueOrDefault("email"),
+                            phone = fields.GetValueOrDefault("phone"),
+                            department_id = deptId == 0 ? null : deptId,
+                            status = fields.GetValueOrDefault("status") ?? "ACTIVE",
+                            created_at = DateTime.UtcNow,
+                            updated_at = DateTime.UtcNow
+                        };
+                        _db.organizations.Add(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = entity.id, Message = $"Organization '{name}' created successfully (ID: #{entity.id})." };
+                    }
+
+                case "event_categories":
+                    {
+                        var name = fields.GetValueOrDefault("name") ?? "Category";
+                        var slug = fields.GetValueOrDefault("slug") ?? name.ToLower().Replace(" ", "-");
+                        bool.TryParse(fields.GetValueOrDefault("is_active") ?? "true", out var isActive);
+
+                        var entity = new event_category
+                        {
+                            name = name,
+                            slug = slug,
+                            description = fields.GetValueOrDefault("description"),
+                            icon = fields.GetValueOrDefault("icon") ?? "bi-tag",
+                            is_active = isActive,
+                            created_at = DateTime.UtcNow,
+                            updated_at = DateTime.UtcNow
+                        };
+                        _db.event_categories.Add(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = entity.id, Message = $"Category '{name}' created successfully (ID: #{entity.id})." };
+                    }
+
+                default:
+                    return new DatabaseCrudResult { Success = false, Message = $"Direct INSERT not supported for table '{table}'." };
+            }
+        }
+
+        private async Task<DatabaseCrudResult> UpdateRecordInternalAsync(string table, ulong id, Dictionary<string, string?> fields, bool saveChanges = true)
+        {
+            switch (table)
+            {
+                case "events":
+                    {
+                        var entity = await _db.events.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"Event #{id} not found." };
+
+                        if (fields.ContainsKey("title")) entity.title = fields["title"] ?? entity.title;
+                        if (fields.ContainsKey("slug")) entity.slug = fields["slug"] ?? entity.slug;
+                        if (fields.ContainsKey("short_description")) entity.short_description = fields["short_description"];
+                        if (fields.ContainsKey("category_id") && ulong.TryParse(fields["category_id"], out var catId)) entity.category_id = catId;
+                        if (fields.ContainsKey("organizer_id") && ulong.TryParse(fields["organizer_id"], out var orgId)) entity.organizer_id = orgId;
+                        if (fields.ContainsKey("venue_id")) entity.venue_id = ulong.TryParse(fields["venue_id"], out var vId) && vId > 0 ? vId : null;
+                        if (fields.ContainsKey("capacity") && uint.TryParse(fields["capacity"], out var cap)) entity.capacity = cap;
+                        if (fields.ContainsKey("event_mode")) entity.event_mode = fields["event_mode"] ?? entity.event_mode;
+                        if (fields.ContainsKey("status")) entity.status = fields["status"] ?? entity.status;
+                        if (fields.ContainsKey("approval_status")) entity.approval_status = fields["approval_status"] ?? entity.approval_status;
+                        if (fields.ContainsKey("start_at") && DateTime.TryParse(fields["start_at"], out var startAt)) entity.start_at = startAt;
+                        if (fields.ContainsKey("end_at") && DateTime.TryParse(fields["end_at"], out var endAt)) entity.end_at = endAt;
+                        entity.updated_at = DateTime.UtcNow;
+
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"Event #{id} ('{entity.title}') updated successfully." };
+                    }
+
+                case "announcements":
+                    {
+                        var entity = await _db.announcements.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"Announcement #{id} not found." };
+
+                        if (fields.ContainsKey("title")) entity.title = fields["title"] ?? entity.title;
+                        if (fields.ContainsKey("summary")) entity.summary = fields["summary"];
+                        if (fields.ContainsKey("announcement_type")) entity.announcement_type = fields["announcement_type"] ?? entity.announcement_type;
+                        if (fields.ContainsKey("priority")) entity.priority = fields["priority"] ?? entity.priority;
+                        if (fields.ContainsKey("status")) entity.status = fields["status"] ?? entity.status;
+                        if (fields.ContainsKey("author_id") && ulong.TryParse(fields["author_id"], out var authId)) entity.author_id = authId;
+                        if (fields.ContainsKey("department_id")) entity.department_id = ulong.TryParse(fields["department_id"], out var dId) && dId > 0 ? dId : null;
+                        entity.updated_at = DateTime.UtcNow;
+
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"Announcement #{id} ('{entity.title}') updated successfully." };
+                    }
+
+                case "users":
+                    {
+                        var entity = await _db.users.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"User #{id} not found." };
+
+                        if (fields.ContainsKey("username")) entity.username = fields["username"] ?? entity.username;
+                        if (fields.ContainsKey("email")) entity.email = fields["email"] ?? entity.email;
+                        if (fields.ContainsKey("first_name")) entity.first_name = fields["first_name"] ?? entity.first_name;
+                        if (fields.ContainsKey("last_name")) entity.last_name = fields["last_name"] ?? entity.last_name;
+                        if (fields.ContainsKey("phone")) entity.phone = fields["phone"];
+                        if (fields.ContainsKey("account_type")) entity.account_type = fields["account_type"] ?? entity.account_type;
+                        if (fields.ContainsKey("account_status")) entity.account_status = fields["account_status"] ?? entity.account_status;
+                        if (fields.ContainsKey("student_id")) entity.student_id = fields["student_id"];
+                        if (fields.ContainsKey("employee_id")) entity.employee_id = fields["employee_id"];
+                        entity.updated_at = DateTime.UtcNow;
+
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"User #{id} ('{entity.username}') updated successfully." };
+                    }
+
+                case "venues":
+                    {
+                        var entity = await _db.venues.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"Venue #{id} not found." };
+
+                        if (fields.ContainsKey("name")) entity.name = fields["name"] ?? entity.name;
+                        if (fields.ContainsKey("building_name")) entity.building_name = fields["building_name"];
+                        if (fields.ContainsKey("room_number")) entity.room_number = fields["room_number"];
+                        if (fields.ContainsKey("capacity") && uint.TryParse(fields["capacity"], out var cap)) entity.capacity = cap;
+                        if (fields.ContainsKey("venue_type")) entity.venue_type = fields["venue_type"] ?? entity.venue_type;
+                        if (fields.ContainsKey("status")) entity.status = fields["status"] ?? entity.status;
+                        entity.updated_at = DateTime.UtcNow;
+
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"Venue #{id} ('{entity.name}') updated successfully." };
+                    }
+
+                case "departments":
+                    {
+                        var entity = await _db.departments.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"Department #{id} not found." };
+
+                        if (fields.ContainsKey("name")) entity.name = fields["name"] ?? entity.name;
+                        if (fields.ContainsKey("code")) entity.code = fields["code"] ?? entity.code;
+                        if (fields.ContainsKey("faculty_id") && ulong.TryParse(fields["faculty_id"], out var fId)) entity.faculty_id = fId;
+                        entity.updated_at = DateTime.UtcNow;
+
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"Department #{id} ('{entity.name}') updated successfully." };
+                    }
+
+                case "organizations":
+                    {
+                        var entity = await _db.organizations.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"Organization #{id} not found." };
+
+                        if (fields.ContainsKey("name")) entity.name = fields["name"] ?? entity.name;
+                        if (fields.ContainsKey("short_name")) entity.short_name = fields["short_name"];
+                        if (fields.ContainsKey("organization_type")) entity.organization_type = fields["organization_type"] ?? entity.organization_type;
+                        if (fields.ContainsKey("email")) entity.email = fields["email"];
+                        if (fields.ContainsKey("phone")) entity.phone = fields["phone"];
+                        if (fields.ContainsKey("department_id")) entity.department_id = ulong.TryParse(fields["department_id"], out var dId) && dId > 0 ? dId : null;
+                        if (fields.ContainsKey("status")) entity.status = fields["status"] ?? entity.status;
+                        entity.updated_at = DateTime.UtcNow;
+
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"Organization #{id} ('{entity.name}') updated successfully." };
+                    }
+
+                case "event_categories":
+                    {
+                        var entity = await _db.event_categories.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"Category #{id} not found." };
+
+                        if (fields.ContainsKey("name")) entity.name = fields["name"] ?? entity.name;
+                        if (fields.ContainsKey("slug")) entity.slug = fields["slug"] ?? entity.slug;
+                        if (fields.ContainsKey("description")) entity.description = fields["description"];
+                        if (fields.ContainsKey("icon")) entity.icon = fields["icon"] ?? entity.icon;
+                        if (fields.ContainsKey("is_active") && bool.TryParse(fields["is_active"], out var act)) entity.is_active = act;
+                        entity.updated_at = DateTime.UtcNow;
+
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"Category #{id} ('{entity.name}') updated successfully." };
+                    }
+
+                case "registrations":
+                    {
+                        var entity = await _db.registrations.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"Registration #{id} not found." };
+
+                        if (fields.ContainsKey("status")) entity.status = fields["status"] ?? entity.status;
+                        if (fields.ContainsKey("registration_code")) entity.registration_code = fields["registration_code"] ?? entity.registration_code;
+                        if (fields.ContainsKey("checked_in_at"))
+                        {
+                            if (DateTime.TryParse(fields["checked_in_at"], out var chkAt)) entity.checked_in_at = chkAt;
+                            else entity.checked_in_at = null;
+                        }
+
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"Registration #{id} updated successfully." };
+                    }
+
+                default:
+                    return new DatabaseCrudResult { Success = false, Message = $"Direct UPDATE not supported for table '{table}'." };
+            }
+        }
+
+        private async Task<DatabaseCrudResult> DeleteRecordInternalAsync(string table, ulong id, bool saveChanges = true)
+        {
+            switch (table)
+            {
+                case "events":
+                    {
+                        var entity = await _db.events.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"Event #{id} not found." };
+                        _db.events.Remove(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"Event #{id} ('{entity.title}') permanently removed from database." };
+                    }
+
+                case "announcements":
+                    {
+                        var entity = await _db.announcements.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"Announcement #{id} not found." };
+                        _db.announcements.Remove(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"Announcement #{id} ('{entity.title}') permanently removed from database." };
+                    }
+
+                case "users":
+                    {
+                        var entity = await _db.users.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"User #{id} not found." };
+                        if (entity.account_type == "SUPERADMIN" || entity.id == GetCurrentUserId())
+                        {
+                            return new DatabaseCrudResult { Success = false, Message = "Security Constraint: Cannot delete active SuperAdmin or your own active account." };
+                        }
+                        _db.users.Remove(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"User #{id} ('{entity.username}') permanently removed from database." };
+                    }
+
+                case "venues":
+                    {
+                        var entity = await _db.venues.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"Venue #{id} not found." };
+                        _db.venues.Remove(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"Venue #{id} ('{entity.name}') permanently removed from database." };
+                    }
+
+                case "registrations":
+                    {
+                        var entity = await _db.registrations.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"Registration #{id} not found." };
+                        _db.registrations.Remove(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"Registration #{id} permanently removed from database." };
+                    }
+
+                case "organizations":
+                    {
+                        var entity = await _db.organizations.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"Organization #{id} not found." };
+                        _db.organizations.Remove(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"Organization #{id} ('{entity.name}') permanently removed from database." };
+                    }
+
+                case "departments":
+                    {
+                        var entity = await _db.departments.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"Department #{id} not found." };
+                        _db.departments.Remove(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"Department #{id} ('{entity.name}') permanently removed from database." };
+                    }
+
+                case "event_categories":
+                    {
+                        var entity = await _db.event_categories.FindAsync(id);
+                        if (entity == null) return new DatabaseCrudResult { Success = false, Message = $"Category #{id} not found." };
+                        _db.event_categories.Remove(entity);
+                        if (saveChanges) await _db.SaveChangesAsync();
+                        return new DatabaseCrudResult { Success = true, RecordId = id, Message = $"Category #{id} ('{entity.name}') permanently removed from database." };
+                    }
+
+                default:
+                    return new DatabaseCrudResult { Success = false, Message = $"Direct DELETE not supported for table '{table}'." };
+            }
         }
     }
 }

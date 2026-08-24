@@ -22,8 +22,6 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public int TotalOrganizations { get; set; }
         public int TotalRegistrations { get; set; }
         public int TotalAnnouncements { get; set; }
-        public int TotalJobs { get; set; }
-        public int TotalStudyGroups { get; set; }
         public int TotalVenues { get; set; }
 
         // Recent items
@@ -248,30 +246,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     }
 
     // =========================================================
-    // 8. JOB & CAREER VIEW MODEL
-    // =========================================================
-    public class AdminJobsViewModel
-    {
-        public List<AdminJobRow> Jobs { get; set; } = new();
-        public int TotalCount { get; set; }
-        public int ActiveCount { get; set; }
-        public int ExpiredCount { get; set; }
-    }
-
-    public class AdminJobRow
-    {
-        public ulong Id { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string EmployerName { get; set; } = string.Empty;
-        public string JobType { get; set; } = "INTERNSHIP";
-        public string? Location { get; set; }
-        public string Status { get; set; } = "ACTIVE";
-        public DateTime? ApplicationDeadline { get; set; }
-        public DateTime CreatedAt { get; set; }
-    }
-
-    // =========================================================
-    // 9. REGISTRATIONS VIEW MODEL
+    // 8. REGISTRATIONS VIEW MODEL
     // =========================================================
     public class AdminRegistrationsViewModel
     {
@@ -299,7 +274,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     }
 
     // =========================================================
-    // 10. COMMENTS & FEEDBACK VIEW MODEL
+    // 9. COMMENTS & FEEDBACK VIEW MODEL
     // =========================================================
     public class AdminCommentsFeedbackViewModel
     {
@@ -332,7 +307,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     }
 
     // =========================================================
-    // 11. REPORTS & ANALYTICS VIEW MODEL
+    // 10. REPORTS & ANALYTICS VIEW MODEL
     // =========================================================
     public class AdminReportsViewModel
     {
@@ -364,7 +339,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     }
 
     // =========================================================
-    // 12. NOTIFICATIONS VIEW MODEL
+    // 11. NOTIFICATIONS VIEW MODEL
     // =========================================================
     public class AdminNotificationsViewModel
     {
@@ -384,30 +359,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     }
 
     // =========================================================
-    // 13. STUDY GROUPS VIEW MODEL
-    // =========================================================
-    public class AdminStudyGroupsViewModel
-    {
-        public List<AdminStudyGroupRow> StudyGroups { get; set; } = new();
-        public int TotalCount { get; set; }
-        public int ActiveCount { get; set; }
-    }
-
-    public class AdminStudyGroupRow
-    {
-        public ulong Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string CourseCode { get; set; } = string.Empty;
-        public string? DepartmentName { get; set; }
-        public string LeaderName { get; set; } = string.Empty;
-        public int MemberCount { get; set; }
-        public uint MaxMembers { get; set; }
-        public string Status { get; set; } = "ACTIVE";
-        public DateTime CreatedAt { get; set; }
-    }
-
-    // =========================================================
-    // 14. ROLES & PERMISSIONS VIEW MODEL
+    // 12. ROLES & PERMISSIONS VIEW MODEL
     // =========================================================
     public class AdminRolesPermissionsViewModel
     {
@@ -425,7 +377,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     }
 
     // =========================================================
-    // 15. CATEGORIES & TAGS VIEW MODEL
+    // 13. CATEGORIES & TAGS VIEW MODEL
     // =========================================================
     public class AdminCategoriesTagsViewModel
     {
@@ -434,7 +386,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     }
 
     // =========================================================
-    // 16. AUDIT LOGS VIEW MODEL
+    // 14. AUDIT LOGS VIEW MODEL
     // =========================================================
     public class AdminAuditLogsViewModel
     {
@@ -456,7 +408,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     }
 
     // =========================================================
-    // 17. SESSIONS & DEVICES VIEW MODEL
+    // 15. SESSIONS & DEVICES VIEW MODEL
     // =========================================================
     public class AdminSessionsViewModel
     {
@@ -476,7 +428,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     }
 
     // =========================================================
-    // 18. SYSTEM SETTINGS VIEW MODEL
+    // 16. SYSTEM SETTINGS VIEW MODEL
     // =========================================================
     public class AdminSettingsViewModel
     {
@@ -494,7 +446,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     }
 
     // =========================================================
-    // 19. DATABASE MANAGEMENT & SNAPSHOT VIEW MODEL
+    // 17. DATABASE MANAGEMENT & SNAPSHOT VIEW MODEL
     // =========================================================
     public class AdminDatabaseManagementViewModel
     {
@@ -502,7 +454,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public string ServerHost { get; set; } = "localhost:3306";
         public string EngineVersion { get; set; } = "MySQL 8.0 Enterprise / RDS";
         public string ConnectionStatus { get; set; } = "Online / Operational";
-        public int TotalTables { get; set; } = 41;
+        public int TotalTables { get; set; } = 30;
         public long EstimatedTotalRows { get; set; }
         public string TotalDatabaseSize { get; set; } = "Healthy (Pool: 24/500)";
         public DateTime? LastBackupTimestamp { get; set; }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -8,7 +8,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models;
 
 [Index("module", Name = "idx_permissions_module")]
 [Index("name", Name = "uq_permissions_name", IsUnique = true)]
-public partial class permission
+public partial class Permission
 {
     [Key]
     public ulong id { get; set; }

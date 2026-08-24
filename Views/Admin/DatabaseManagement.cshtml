@@ -142,9 +142,14 @@
                                     <div class="fw-bold text-dark small"><i class="bi bi-filetype-sql text-primary me-1"></i>@f.FileName</div>
                                     <small class="text-muted">@f.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC &bull; @f.FileSizeBytes</small>
                                 </div>
-                                <a asp-controller="Admin" asp-action="DownloadBackup" asp-route-fileName="@f.FileName" class="btn btn-sm btn-outline-secondary px-2 py-1" title="Download Snapshot Archive">
-                                    <i class="bi bi-download"></i>
-                                </a>
+                                <div class="d-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-danger px-2 py-1" title="Restore Snapshot" onclick="openRestoreModal('@f.FileName')">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                    </button>
+                                    <a asp-controller="Admin" asp-action="DownloadBackup" asp-route-fileName="@f.FileName" class="btn btn-sm btn-outline-secondary px-2 py-1" title="Download Snapshot Archive">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                </div>
                             </div>
                             <div class="small text-muted font-monospace" style="font-size: 0.75rem;">
                                 SHA256: @f.Checksum...
@@ -185,3 +190,44 @@
         </div>
     </div>
 </div>
+
+<!-- RESTORE SNAPSHOT MODAL -->
+<div class="modal fade" id="restoreModal" tabindex="-1" aria-labelledby="restoreModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <form asp-controller="Admin" asp-action="DatabaseRestoreSnapshot" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="fileName" id="restoreFileName" value="" />
+                <div class="modal-header border-bottom bg-danger-subtle">
+                    <h2 class="modal-title h5 fw-bold text-danger" id="restoreModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Database Restoration</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning small mb-3">
+                        <strong>Security Safeguard:</strong> Restoring a snapshot verifies table schema and row telemetry from the archive: <code id="restoreFileNameDisplay"></code>.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">SuperAdmin Master Password</label>
+                        <input type="password" name="superAdminPassword" class="form-control form-control-sm" placeholder="Enter SuperAdmin password to authorize" required />
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger btn-sm fw-semibold"><i class="bi bi-arrow-counterclockwise me-1"></i>Authorize & Restore</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openRestoreModal(fileName) {
+            document.getElementById('restoreFileName').value = fileName;
+            document.getElementById('restoreFileNameDisplay').textContent = fileName;
+            const modal = new bootstrap.Modal(document.getElementById('restoreModal'));
+            modal.show();
+        }
+    </script>
+}

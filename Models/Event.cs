@@ -30,6 +30,34 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public string? ImageUrl { get; set; }
         public string? Slug { get; set; }
         public DateTime? CreatedAt { get; set; }
+
+        // Event Feedback and Community Discussions
+        public List<EventCommentItemViewModel> Comments { get; set; } = new();
+        public List<EventFeedbackItemViewModel> Feedbacks { get; set; } = new();
+        public double AverageRating { get; set; }
+        public int TotalRatings { get; set; }
+        public bool HasUserRated { get; set; }
+        public int UserRating { get; set; }
+    }
+
+    public class EventCommentItemViewModel
+    {
+        public ulong Id { get; set; }
+        public ulong UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public string CommentText { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public bool CanDelete { get; set; }
+    }
+
+    public class EventFeedbackItemViewModel
+    {
+        public ulong Id { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public int Rating { get; set; }
+        public string? Comment { get; set; }
+        public bool IsAnonymous { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     public class EventCategorySummaryViewModel

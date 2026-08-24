@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -52,5 +52,5 @@ public partial class event_comment
 
     [ForeignKey("user_id")]
     [InverseProperty("event_comments")]
-    public virtual user user { get; set; } = null!;
+    public virtual User user { get; set; } = null!;
 }

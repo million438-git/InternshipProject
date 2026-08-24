@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,7 +9,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models;
 [Index("expires_at", Name = "idx_sessions_expires")]
 [Index("user_id", Name = "idx_sessions_user")]
 [Index("session_token_hash", Name = "uq_sessions_token", IsUnique = true)]
-public partial class session
+public partial class Session
 {
     [Key]
     public ulong id { get; set; }
@@ -41,5 +41,5 @@ public partial class session
 
     [ForeignKey("user_id")]
     [InverseProperty("sessions")]
-    public virtual user user { get; set; } = null!;
+    public virtual User user { get; set; } = null!;
 }

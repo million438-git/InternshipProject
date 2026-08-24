@@ -131,7 +131,7 @@
                     </div>
                 }
 
-                <!-- ATTENDEE REGISTRATION BAR -->
+                <!-- CALENDAR SYNC & ATTENDEE REGISTRATION BAR -->
                 <div class="p-3 bg-light rounded-3 border d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 my-4">
                     <div>
                         <div class="fw-bold text-dark">
@@ -142,13 +142,18 @@
                         </small>
                     </div>
 
-                    <div>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <a asp-controller="Events" asp-action="ExportIcs" asp-route-id="@Model.Id" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1" title="Add to Outlook / Apple / Google Calendar">
+                            <i class="bi bi-calendar-plus"></i>
+                            <span>iCal Sync</span>
+                        </a>
+
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             if (Model.IsUserRegistered)
                             {
                                 <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-success py-2 px-3"><i class="bi bi-check-circle me-1"></i> You are Registered</span>
+                                    <span class="badge bg-success py-2 px-3"><i class="bi bi-check-circle me-1"></i> Registered</span>
                                     <form asp-controller="Events" asp-action="CancelRegistration" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to cancel your registration?');">
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="btn btn-outline-danger btn-sm">
@@ -202,6 +207,168 @@
 
             </div>
 
+        </div>
+
+        <!-- =======================================================
+             EVENT FEEDBACK & RATINGS SECTION
+             ======================================================= -->
+        <div class="card shadow-sm border-0 my-4 rounded-4 overflow-hidden">
+            <div class="card-header bg-body border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h2 class="h5 fw-bold mb-0 text-dark">
+                    <i class="bi bi-star-fill text-warning me-2"></i>Attendee Ratings & Reviews
+                </h2>
+                <div>
+                    @if (Model.TotalRatings > 0)
+                    {
+                        <span class="badge bg-warning-subtle text-warning-emphasis fs-6 px-3 py-1 border">
+                            ★ @Model.AverageRating.ToString("F1") / 5.0 (@Model.TotalRatings @(Model.TotalRatings == 1 ? "review" : "reviews"))
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="text-muted small">No reviews yet</span>
+                    }
+                </div>
+            </div>
+            <div class="card-body p-4">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="p-3 bg-light rounded-3 border mb-4">
+                        <h3 class="h6 fw-bold text-dark mb-2">
+                            @(Model.HasUserRated ? "Update Your Event Review" : "Leave Your Event Feedback")
+                        </h3>
+                        <form asp-controller="Events" asp-action="AddFeedback" method="post" class="row g-3">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="eventId" value="@Model.Id" />
+                            <div class="col-md-3">
+                                <label class="form-label small fw-semibold">Star Rating</label>
+                                <select name="rating" class="form-select form-select-sm" required>
+                                    <option value="5" selected="@(Model.UserRating == 5 || Model.UserRating == 0)">★★★★★ (5 - Excellent)</option>
+                                    <option value="4" selected="@(Model.UserRating == 4)">★★★★☆ (4 - Good)</option>
+                                    <option value="3" selected="@(Model.UserRating == 3)">★★★☆☆ (3 - Average)</option>
+                                    <option value="2" selected="@(Model.UserRating == 2)">★★☆☆☆ (2 - Below Average)</option>
+                                    <option value="1" selected="@(Model.UserRating == 1)">★☆☆☆☆ (1 - Poor)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-7">
+                                <label class="form-label small fw-semibold">Your Comments / Experience</label>
+                                <input type="text" name="comment" class="form-control form-control-sm" placeholder="Share what you liked or how to improve..." />
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-warning btn-sm w-100 fw-semibold text-dark">
+                                    <i class="bi bi-send me-1"></i> Submit
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                }
+
+                @if (Model.Feedbacks.Any())
+                {
+                    <div class="row g-3">
+                        @foreach (var fb in Model.Feedbacks)
+                        {
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-3 border bg-body h-100">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <strong class="text-dark small"><i class="bi bi-person-circle me-1 text-secondary"></i>@fb.UserName</strong>
+                                        <span class="text-warning small">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                @(i <= fb.Rating ? "★" : "☆")
+                                            }
+                                        </span>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(fb.Comment))
+                                    {
+                                        <p class="small text-muted mb-1">@fb.Comment</p>
+                                    }
+                                    <small class="text-muted" style="font-size: 11px;">@fb.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted small mb-0 text-center py-3">Be the first attendee to rate and review this event!</p>
+                }
+            </div>
+        </div>
+
+        <!-- =======================================================
+             COMMUNITY DISCUSSIONS & COMMENTS SECTION
+             ======================================================= -->
+        <div class="card shadow-sm border-0 my-4 rounded-4 overflow-hidden">
+            <div class="card-header bg-body border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h2 class="h5 fw-bold mb-0 text-dark">
+                    <i class="bi bi-chat-dots-fill text-primary me-2"></i>Campus Event Discussions
+                </h2>
+                <span class="badge bg-primary-subtle text-primary border px-2 py-1">@Model.Comments.Count @(Model.Comments.Count == 1 ? "comment" : "comments")</span>
+            </div>
+            <div class="card-body p-4">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <form asp-controller="Events" asp-action="AddComment" method="post" class="mb-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="eventId" value="@Model.Id" />
+                        <div class="input-group">
+                            <input type="text" name="comment" class="form-control" placeholder="Ask a question or share a thought about this event..." required />
+                            <button type="submit" class="btn btn-primary px-3">
+                                <i class="bi bi-send-fill me-1"></i> Post Comment
+                            </button>
+                        </div>
+                    </form>
+                }
+                else
+                {
+                    <div class="alert alert-light border text-center py-3 mb-4 rounded-3">
+                        <span class="small text-muted">Want to join the discussion?</span>
+                        <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Details", "Events", new { id = Model.Id })" class="btn btn-sm btn-outline-primary ms-2">
+                            Sign in to Comment
+                        </a>
+                    </div>
+                }
+
+                @if (Model.Comments.Any())
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @foreach (var c in Model.Comments)
+                        {
+                            <div class="p-3 rounded-3 border bg-body d-flex justify-content-between align-items-start gap-3">
+                                <div class="d-flex gap-3">
+                                    <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px; min-width: 40px;">
+                                        @(c.UserName.Length > 0 ? c.UserName[0].ToString().ToUpper() : "U")
+                                    </div>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <strong class="text-dark small">@c.UserName</strong>
+                                            <small class="text-muted" style="font-size: 11px;">&bull; @c.CreatedAt.ToString("MMM dd, hh:mm tt")</small>
+                                        </div>
+                                        <p class="small text-dark mb-0">@c.CommentText</p>
+                                    </div>
+                                </div>
+
+                                @if (c.CanDelete)
+                                {
+                                    <form asp-controller="Events" asp-action="DeleteComment" method="post" onsubmit="return confirm('Delete this comment?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="commentId" value="@c.Id" />
+                                        <input type="hidden" name="eventId" value="@Model.Id" />
+                                        <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Delete comment">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted small mb-0 text-center py-3">No comments yet. Start the conversation!</p>
+                }
+            </div>
         </div>
 
     </div>

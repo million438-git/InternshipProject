@@ -75,122 +75,83 @@
 
 
                     <div class="event-form-field">
-
                         <label asp-for="Category">
                             Category
                         </label>
-
-                        <select asp-for="Category">
-
-                            <option value="">
-                                Select category
-                            </option>
-
-                            <option>
-                                Academic
-                            </option>
-
-                            <option>
-                                Technology
-                            </option>
-
-                            <option>
-                                Cybersecurity
-                            </option>
-
-                            <option>
-                                Business
-                            </option>
-
-                            <option>
-                                Culture
-                            </option>
-
-                            <option>
-                                Sports
-                            </option>
-
-                            <option>
-                                Social
-                            </option>
-
+                        <select asp-for="Category" class="form-select">
+                            <option value="">Select category</option>
+                            @if (ViewBag.Categories != null)
+                            {
+                                foreach (var cat in (IEnumerable<HawassaUnifiedCampusEventManagementSystem.Models.event_category>)ViewBag.Categories)
+                                {
+                                    <option value="@cat.name">@cat.name</option>
+                                }
+                            }
+                            else
+                            {
+                                <option>Academic</option>
+                                <option>Technology</option>
+                                <option>Culture</option>
+                                <option>Sports</option>
+                            }
                         </select>
-
-                        <span asp-validation-for="Category"
-                              class="text-danger">
-                        </span>
-
+                        <span asp-validation-for="Category" class="text-danger"></span>
                     </div>
 
-
                     <div class="event-form-field">
-
                         <label asp-for="Capacity">
                             Maximum Capacity
                         </label>
-
-                        <input asp-for="Capacity"
-                               type="number"
-                               min="1"
-                               placeholder="Example: 100" />
-
+                        <input asp-for="Capacity" type="number" min="1" placeholder="Example: 100" />
                     </div>
 
-
                     <div class="event-form-field full">
-
                         <label asp-for="Description">
                             Description
                         </label>
-
-                        <textarea asp-for="Description"
-                                  rows="6"
-                                  placeholder="Describe your event..."></textarea>
-
-                        <span asp-validation-for="Description"
-                              class="text-danger">
-                        </span>
-
+                        <textarea asp-for="Description" rows="6" placeholder="Describe your event..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
                     </div>
 
                 </div>
 
             </div>
 
-
             <!-- DATE AND LOCATION -->
-
             <div class="event-form-section">
-
                 <h2>
                     <i class="bi bi-calendar-event"></i>
                     Date, Time & Location
                 </h2>
 
-
                 <div class="event-form-grid">
-
                     <div class="event-form-field">
-
                         <label asp-for="EventDate">
                             Event Date
                         </label>
-
-                        <input asp-for="EventDate"
-                               type="date" />
-
+                        <input asp-for="EventDate" type="date" />
                     </div>
 
-
                     <div class="event-form-field">
-
                         <label asp-for="Venue">
-                            Venue
+                            Venue / Campus Hall
                         </label>
-
-                        <input asp-for="Venue"
-                               placeholder="Example: Main Auditorium" />
-
+                        <select asp-for="Venue" class="form-select">
+                            <option value="">Select venue</option>
+                            @if (ViewBag.Venues != null)
+                            {
+                                foreach (var v in (IEnumerable<HawassaUnifiedCampusEventManagementSystem.Models.Venue>)ViewBag.Venues)
+                                {
+                                    <option value="@v.name">@v.name (@v.capacity capacity)</option>
+                                }
+                            }
+                            else
+                            {
+                                <option>Main Campus Auditorium</option>
+                                <option>Technology Amphitheater</option>
+                                <option>Campus Sports Stadium</option>
+                            }
+                        </select>
                     </div>
 
 

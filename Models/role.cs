@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace HawassaUnifiedCampusEventManagementSystem.Models;
 
 [Index("name", Name = "uq_roles_name", IsUnique = true)]
-public partial class role
+public partial class Role
 {
     [Key]
     public ulong id { get; set; }

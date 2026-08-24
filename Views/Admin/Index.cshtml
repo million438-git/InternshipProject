@@ -5,7 +5,7 @@
     ViewData["Title"] = "Dashboard Overview";
 }
 
-<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
+<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-3">
     <div>
         <h1 class="h3 fw-bold text-dark mb-1">🛡️ Admin Control Center</h1>
         <p class="text-muted small mb-0">Central command and unified oversight for Hawassa University Campus Hub.</p>
@@ -19,6 +19,35 @@
             <i class="bi bi-calendar-check"></i>
             <span>Review Pending (@Model.PendingApprovals)</span>
         </a>
+    </div>
+</div>
+
+<!-- =======================================================
+     QUICK ACTIONS COMMAND BAR
+     ======================================================= -->
+<div class="admin-card p-3 mb-4 bg-body-tertiary">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary px-2 py-1"><i class="bi bi-lightning-charge-fill me-1"></i>Quick Actions</span>
+            <span class="small text-muted d-none d-md-inline">Rapid operational shortcuts for campus administrators</span>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-controller="Events" asp-action="Create" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
+                <i class="bi bi-plus-circle"></i> Create Event
+            </a>
+            <a asp-controller="Admin" asp-action="Announcements" class="btn btn-sm btn-outline-info d-inline-flex align-items-center gap-1">
+                <i class="bi bi-megaphone"></i> Broadcast Notice
+            </a>
+            <a asp-controller="Admin" asp-action="Venues" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1">
+                <i class="bi bi-geo-alt"></i> Add Venue
+            </a>
+            <a asp-controller="Admin" asp-action="DatabaseManagement" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
+                <i class="bi bi-database"></i> DB Snapshot
+            </a>
+            <a asp-controller="Admin" asp-action="AuditLogs" class="btn btn-sm btn-outline-dark d-inline-flex align-items-center gap-1">
+                <i class="bi bi-shield-lock"></i> Audit Logs
+            </a>
+        </div>
     </div>
 </div>
 
