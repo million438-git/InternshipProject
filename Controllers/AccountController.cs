@@ -140,20 +140,20 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             {
-                ViewBag.Error = "Please enter both email and password.";
+                ViewBag.Error = "Please enter both your username/email and password.";
                 return View();
             }
 
-            email = email.Trim().ToLower();
+            var identifier = email.Trim();
 
-            // Query user from database
+            // Query user from database by username or email
             User? dbUser = null;
             try
             {
                 dbUser = await _db.users
                     .Include(u => u.user_roleusers)
                         .ThenInclude(ur => ur.role)
-                    .FirstOrDefaultAsync(u => u.email == email || u.username == email);
+                    .FirstOrDefaultAsync(u => u.email.ToLower() == identifier.ToLower() || u.username.ToLower() == identifier.ToLower());
             }
             catch (Exception ex)
             {
@@ -164,30 +164,25 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
             if (dbUser == null || !VerifyPassword(dbUser, password, dbUser.password_hash))
             {
-                ViewBag.Error = "Invalid email/username or password. Please check your credentials.";
+                ViewBag.Error = "Invalid email/username or password. Please verify your credentials.";
                 return View();
             }
 
-            if (dbUser.account_status == "SUSPENDED" || dbUser.account_status == "LOCKED")
+            if (dbUser.account_status == "SUSPENDED" || dbUser.account_status == "LOCKED" || dbUser.account_status == "INACTIVE")
             {
-                ViewBag.Error = "Your account is currently suspended or locked. Please contact campus security administration.";
+                ViewBag.Error = "Your account is currently inactive or suspended. Please contact campus security administration.";
                 return View();
             }
 
-            // Upgrade legacy hash format if needed
+            // Upgrade legacy hash format if needed and update last login
             try
             {
+                dbUser.last_login_at = DateTime.UtcNow;
                 if (!dbUser.password_hash.StartsWith("AQAAAA"))
                 {
                     dbUser.password_hash = HashPassword(password);
-                    dbUser.last_login_at = DateTime.UtcNow;
-                    await _db.SaveChangesAsync();
                 }
-                else
-                {
-                    dbUser.last_login_at = DateTime.UtcNow;
-                    await _db.SaveChangesAsync();
-                }
+                await _db.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -214,12 +209,19 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProps);
 
-            TempData["SuccessMessage"] = $"Welcome back, {dbUser.first_name}! ({userRole} Dashboard)";
+            TempData["SuccessMessage"] = $"Welcome back, {dbUser.first_name}! Logged in as {userRole}.";
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
 
-            return RedirectToAction("Index", "Dashboard");
+            // Direct route based on authenticated role
+            return userRole switch
+            {
+                "SuperAdmin" or "Admin" => RedirectToAction("Index", "Admin"),
+                "Faculty" or "Staff" => RedirectToAction("Staff", "Dashboard"),
+                "Organization" => RedirectToAction("Organization", "Dashboard"),
+                _ => RedirectToAction("Student", "Dashboard")
+            };
         }
 
         private static string ResolveUserRole(User u)
@@ -253,13 +255,28 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             };
         }
 
+        private async Task LoadDepartmentsViewBagAsync()
+        {
+            try
+            {
+                ViewBag.Departments = await _db.departments
+                    .Where(d => d.is_active == null || d.is_active == true)
+                    .OrderBy(d => d.name)
+                    .ToListAsync();
+            }
+            catch
+            {
+                ViewBag.Departments = new List<Department>();
+            }
+        }
+
         // =====================================================
         // REGISTER
         // =====================================================
 
         // GET: /Account/Register
         [HttpGet]
-        public IActionResult Register(string? returnUrl = null)
+        public async Task<IActionResult> Register(string? returnUrl = null)
         {
             if (User.Identity?.IsAuthenticated == true)
             {
@@ -271,6 +288,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             }
 
             ViewBag.ReturnUrl = returnUrl;
+            await LoadDepartmentsViewBagAsync();
             return View();
         }
 
@@ -279,116 +297,167 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(
             string fullName,
+            string username,
             string email,
+            string phone,
             string password,
             string confirmPassword,
             string? accountType = "Student",
+            ulong? departmentId = null,
             string? studentId = null,
             string? employeeId = null,
             string? organizationName = null,
-            string? departmentName = null,
+            string? organizationType = null,
+            string? bio = null,
             string? returnUrl = null)
         {
             ViewBag.ReturnUrl = returnUrl;
 
-            if (string.IsNullOrWhiteSpace(fullName))
+            // 1. SECURITY POLICY GUARD: Block public registration as Admin or SuperAdmin
+            var normType = (accountType ?? "Student").Trim().ToUpperInvariant();
+            if (normType == "ADMIN" || normType == "SUPERADMIN" || normType == "SUPER_ADMIN" || normType == "ADMINISTRATOR")
             {
-                ViewBag.Error = "Please enter your full name.";
+                ViewBag.Error = "Security Policy: Administrative and SuperAdmin accounts cannot be self-registered publicly. They must be provisioned internally by an authorized University SuperAdmin.";
+                await LoadDepartmentsViewBagAsync();
                 return View();
             }
 
-            if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
+            // 2. Full Name Validation
+            if (string.IsNullOrWhiteSpace(fullName) || fullName.Trim().Length < 3)
             {
-                ViewBag.Error = "Please enter a valid email address.";
+                ViewBag.Error = "Please enter your full legal name (First and Last name).";
+                await LoadDepartmentsViewBagAsync();
                 return View();
             }
 
-            if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
+            // 3. Username Validation
+            if (string.IsNullOrWhiteSpace(username) || username.Trim().Length < 3)
             {
-                ViewBag.Error = "Password must be at least 6 characters long.";
+                ViewBag.Error = "Please choose a valid username (at least 3 alphanumeric characters).";
+                await LoadDepartmentsViewBagAsync();
+                return View();
+            }
+
+            username = username.Trim().ToLowerInvariant().Replace(" ", "_");
+            if (await _db.users.AnyAsync(u => u.username == username))
+            {
+                ViewBag.Error = $"The username '{username}' is already taken. Please choose another username.";
+                await LoadDepartmentsViewBagAsync();
+                return View();
+            }
+
+            // 4. Email Validation
+            if (string.IsNullOrWhiteSpace(email) || !email.Contains('@') || !email.Contains('.'))
+            {
+                ViewBag.Error = "Please enter a valid campus or personal email address.";
+                await LoadDepartmentsViewBagAsync();
+                return View();
+            }
+
+            email = email.Trim().ToLowerInvariant();
+            if (await _db.users.AnyAsync(u => u.email == email))
+            {
+                ViewBag.Error = "An account with this email address already exists. Please log in.";
+                await LoadDepartmentsViewBagAsync();
+                return View();
+            }
+
+            // 5. Phone Validation
+            if (string.IsNullOrWhiteSpace(phone) || phone.Trim().Length < 8)
+            {
+                ViewBag.Error = "Please enter a valid contact phone number (e.g. +251 911 234567).";
+                await LoadDepartmentsViewBagAsync();
+                return View();
+            }
+
+            // 6. Role-Specific Real Identification Requirements
+            string dbAccountType = "STUDENT";
+            string roleClaim = "Student";
+
+            if (normType == "STAFF")
+            {
+                dbAccountType = "STAFF";
+                roleClaim = "Staff";
+                if (string.IsNullOrWhiteSpace(employeeId))
+                {
+                    ViewBag.Error = "Staff registration requires a valid University Staff ID (e.g., EMP-HU-1042).";
+                    await LoadDepartmentsViewBagAsync();
+                    return View();
+                }
+            }
+            else if (normType == "FACULTY")
+            {
+                dbAccountType = "FACULTY";
+                roleClaim = "Faculty";
+                if (string.IsNullOrWhiteSpace(employeeId))
+                {
+                    ViewBag.Error = "Faculty registration requires an Academic Staff ID (e.g., FAC-HU-8091).";
+                    await LoadDepartmentsViewBagAsync();
+                    return View();
+                }
+            }
+            else if (normType == "ORGANIZATION")
+            {
+                dbAccountType = "ORGANIZATION";
+                roleClaim = "Organization";
+                if (string.IsNullOrWhiteSpace(organizationName))
+                {
+                    ViewBag.Error = "Club/Organization registration requires the official club or association name.";
+                    await LoadDepartmentsViewBagAsync();
+                    return View();
+                }
+            }
+            else
+            {
+                // STUDENT
+                dbAccountType = "STUDENT";
+                roleClaim = "Student";
+                if (string.IsNullOrWhiteSpace(studentId))
+                {
+                    ViewBag.Error = "Student registration requires a valid Student ID Number (e.g., UGR/1234/16 or HU/45821/15).";
+                    await LoadDepartmentsViewBagAsync();
+                    return View();
+                }
+            }
+
+            // 7. Password Security Validation
+            if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+            {
+                ViewBag.Error = "Password must be at least 8 characters long.";
+                await LoadDepartmentsViewBagAsync();
                 return View();
             }
 
             if (password != confirmPassword)
             {
                 ViewBag.Error = "Passwords do not match.";
+                await LoadDepartmentsViewBagAsync();
                 return View();
             }
 
-            email = email.Trim().ToLower();
-            fullName = fullName.Trim();
-
             // Split name into first and last name
-            var nameParts = fullName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-            var firstName = nameParts.Length > 0 ? nameParts[0] : fullName;
+            var nameParts = fullName.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+            var firstName = nameParts.Length > 0 ? nameParts[0] : fullName.Trim();
             var lastName = nameParts.Length > 1 ? nameParts[1] : firstName;
-
-            // Normalize account type
-            accountType = (accountType ?? "Student").Trim();
-            string dbAccountType = "STUDENT";
-            string roleClaim = "Student";
-
-            if (accountType.Equals("Staff", StringComparison.OrdinalIgnoreCase))
-            {
-                dbAccountType = "STAFF";
-                roleClaim = "Staff";
-            }
-            else if (accountType.Equals("Faculty", StringComparison.OrdinalIgnoreCase))
-            {
-                dbAccountType = "FACULTY";
-                roleClaim = "Faculty";
-            }
-            else if (accountType.Equals("Organization", StringComparison.OrdinalIgnoreCase))
-            {
-                dbAccountType = "ORGANIZATION";
-                roleClaim = "Organization";
-            }
-            else if (accountType.Equals("Admin", StringComparison.OrdinalIgnoreCase))
-            {
-                dbAccountType = "ADMIN";
-                roleClaim = "Admin";
-            }
-            else if (accountType.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase))
-            {
-                dbAccountType = "SUPERADMIN";
-                roleClaim = "SuperAdmin";
-            }
 
             try
             {
-                // Check if email already registered
-                var existingUser = await _db.users.FirstOrDefaultAsync(u => u.email == email);
-                if (existingUser != null)
-                {
-                    ViewBag.Error = "An account with this email address already exists. Please log in.";
-                    return View();
-                }
-
-                // Generate a unique username base
-                var baseUsername = email.Split('@')[0].Replace(".", "_");
-                if (baseUsername.Length > 30) baseUsername = baseUsername.Substring(0, 30);
-                var username = baseUsername;
-
-                var existingUsername = await _db.users.AnyAsync(u => u.username == username);
-                if (existingUsername)
-                {
-                    username = $"{baseUsername}_{new Random().Next(100, 999)}";
-                }
-
                 var newUser = new User
                 {
                     username = username,
                     email = email,
+                    phone = phone.Trim(),
                     password_hash = HashPassword(password),
                     first_name = firstName,
                     last_name = lastName,
-                    student_id = !string.IsNullOrWhiteSpace(studentId) ? studentId.Trim() : (dbAccountType == "STUDENT" ? $"HU/{(new Random().Next(10000, 99999))}/26" : null),
-                    employee_id = !string.IsNullOrWhiteSpace(employeeId) ? employeeId.Trim() : (dbAccountType == "STAFF" || dbAccountType == "FACULTY" || dbAccountType == "ADMIN" || dbAccountType == "SUPERADMIN" ? $"EMP-{(new Random().Next(1000, 9999))}" : null),
-                    bio = !string.IsNullOrWhiteSpace(organizationName) ? organizationName.Trim() : null,
+                    department_id = departmentId.HasValue && departmentId.Value > 0 ? departmentId.Value : null,
+                    student_id = normType == "STUDENT" ? studentId?.Trim() : null,
+                    employee_id = (normType == "STAFF" || normType == "FACULTY") ? employeeId?.Trim() : null,
+                    bio = normType == "ORGANIZATION" ? (!string.IsNullOrWhiteSpace(organizationName) ? organizationName.Trim() : bio?.Trim()) : bio?.Trim(),
                     account_type = dbAccountType,
                     account_status = "ACTIVE",
                     email_verified = true,
-                    phone_verified = false,
+                    phone_verified = true,
                     created_at = DateTime.UtcNow,
                     updated_at = DateTime.UtcNow
                 };
@@ -396,7 +465,34 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 _db.users.Add(newUser);
                 await _db.SaveChangesAsync();
 
-                // Associate role in user_roles table if role definition exists
+                // If registering as Organization, also ensure organization record is linked
+                if (normType == "ORGANIZATION" && !string.IsNullOrWhiteSpace(organizationName))
+                {
+                    try
+                    {
+                        var org = new Organization
+                        {
+                            name = organizationName.Trim(),
+                            short_name = username.ToUpperInvariant(),
+                            organization_type = !string.IsNullOrWhiteSpace(organizationType) ? organizationType.Trim().ToUpperInvariant() : "CLUB",
+                            email = email,
+                            phone = phone.Trim(),
+                            description = bio?.Trim() ?? $"Official campus organization led by {firstName} {lastName}",
+                            status = "ACTIVE",
+                            department_id = departmentId.HasValue && departmentId.Value > 0 ? departmentId.Value : null,
+                            created_at = DateTime.UtcNow,
+                            updated_at = DateTime.UtcNow
+                        };
+                        _db.organizations.Add(org);
+                        await _db.SaveChangesAsync();
+                    }
+                    catch (Exception orgEx)
+                    {
+                        _logger.LogWarning(orgEx, "Could not create corresponding organization record.");
+                    }
+                }
+
+                // Associate role in user_roles table
                 try
                 {
                     var targetRole = await _db.roles.FirstOrDefaultAsync(r => r.name.ToLower() == roleClaim.ToLower());
@@ -434,19 +530,25 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
 
-                TempData["SuccessMessage"] = $"Registration successful! Welcome to HUCEMS, {firstName}. You have been redirected to your {roleClaim} Dashboard.";
+                TempData["SuccessMessage"] = $"Registration successful! Welcome to HUCEMS, {firstName}.";
 
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 {
                     return Redirect(returnUrl);
                 }
 
-                return RedirectToAction("Index", "Dashboard");
+                return roleClaim switch
+                {
+                    "Faculty" or "Staff" => RedirectToAction("Staff", "Dashboard"),
+                    "Organization" => RedirectToAction("Organization", "Dashboard"),
+                    _ => RedirectToAction("Student", "Dashboard")
+                };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to save registered user to database.");
-                ViewBag.Error = "An error occurred while saving your account. Please try again.";
+                ViewBag.Error = "An error occurred while saving your account: " + ex.Message;
+                await LoadDepartmentsViewBagAsync();
                 return View();
             }
         }

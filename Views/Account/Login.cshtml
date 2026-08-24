@@ -73,45 +73,15 @@
             <button type="submit"
                     class="account-button"
                     id="loginButton">
-                Sign In & Open Dashboard ➔
+                Sign In to Portal &rarr;
             </button>
 
         </form>
 
-        <!-- QUICK TEST / EVALUATION ROLES HELPER -->
-        <div class="demo-roles-panel mt-4 pt-3 border-top">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <small class="text-uppercase fw-bold text-muted" style="font-size: 11px;">
-                    <i class="bi bi-stars text-warning me-1"></i> Quick 1-Click Role Login
-                </small>
-                <span class="badge bg-light text-secondary border small" style="font-size: 10px;">Pass: 123456</span>
-            </div>
-            <div class="d-flex flex-wrap gap-1">
-                <button type="button" class="btn btn-sm btn-outline-primary demo-pill" onclick="fillDemo('student@hawassauniversity.edu.et')">
-                    🎓 Student
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-success demo-pill" onclick="fillDemo('staff@hawassauniversity.edu.et')">
-                    💼 Staff
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary demo-pill" onclick="fillDemo('faculty@hawassauniversity.edu.et')">
-                    📚 Faculty
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-warning text-dark demo-pill" onclick="fillDemo('org@hawassauniversity.edu.et')">
-                    🌟 Organization
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-danger demo-pill" onclick="fillDemo('admin@hawassauniversity.edu.et')">
-                    🛡️ Admin
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-dark demo-pill" onclick="fillDemo('superadmin@hawassauniversity.edu.et')">
-                    ⚡ SuperAdmin
-                </button>
-            </div>
-        </div>
-
         <div class="account-footer">
-            Don't have an account?
+            Don't have an account yet?
             <a asp-action="Register" asp-route-returnUrl="@ViewBag.ReturnUrl">
-                Create Account
+                Register Verified Campus Account
             </a>
         </div>
 
@@ -120,14 +90,3 @@
 </div>
 
 <script src="~/js/login.js" asp-append-version="true"></script>
-<script>
-    function fillDemo(email) {
-        const emailInput = document.getElementById('email');
-        const passInput = document.getElementById('password');
-        if (emailInput && passInput) {
-            emailInput.value = email;
-            passInput.value = '123456';
-            document.getElementById('loginButton')?.focus();
-        }
-    }
-</script>
