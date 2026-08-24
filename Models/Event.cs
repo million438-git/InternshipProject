@@ -79,28 +79,4 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
             set => EventCount = value;
         }
     }
-
-    public class MyRegisteredEventViewModel
-    {
-        public ulong EventId { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string? Category { get; set; }
-        public string? Venue { get; set; }
-        public DateTime EventDate { get; set; }
-        public TimeSpan StartTime { get; set; }
-        public TimeSpan? EndTime { get; set; }
-        public string RegistrationCode { get; set; } = string.Empty;
-        public string QrToken { get; set; } = string.Empty;
-        public string Status { get; set; } = "REGISTERED"; // REGISTERED, WAITLISTED, CANCELLED, ATTENDED
-        public DateTime RegisteredAt { get; set; }
-        public DateTime? CheckedInAt { get; set; }
-        public string? ImageUrl { get; set; }
-        public string? OrganizerName { get; set; }
-    }
-
-    public class MyEventsPageViewModel
-    {
-        public List<Event> OrganizedEvents { get; set; } = new();
-        public List<MyRegisteredEventViewModel> RegisteredEvents { get; set; } = new();
-    }
 }
