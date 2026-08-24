@@ -3,261 +3,352 @@
     var departments = ViewBag.Departments as List<HawassaUnifiedCampusEventManagementSystem.Models.Department> ?? new List<HawassaUnifiedCampusEventManagementSystem.Models.Department>();
 }
 
-<link rel="stylesheet" href="~/css/register.css" asp-append-version="true" />
+@section Styles {
+    <link rel="stylesheet" href="~/css/register.css" asp-append-version="true" />
+}
 
-<div class="register-page py-4">
+<div class="auth-page-container">
 
-    <div class="register-card shadow-lg" style="max-width: 680px;">
+    <div class="auth-split-card">
 
-        <div class="register-icon mb-2">
-            <img src="~/images/hawassa-logo.png" alt="Hawassa University" style="width: 64px; height: 64px; object-fit: contain; border-radius: 50%;" />
-        </div>
+        <!-- =====================================================
+             LEFT SHOWCASE SIDEBAR
+             ===================================================== -->
+        <div class="auth-showcase-panel">
 
-        <h1>Verified Campus Registration</h1>
-
-        <p class="register-description">
-            Create your authenticated Hawassa University account with your official academic or organizational identity.
-        </p>
-
-        <!-- SECURITY NOTICE BANNER -->
-        <div class="alert alert-warning py-2 px-3 mb-3 small rounded-3 border-0 d-flex align-items-center gap-2" style="background-color: #fffbeb; color: #92400e; border: 1px solid #fef3c7;">
-            <i class="bi bi-shield-lock-fill fs-5 text-warning flex-shrink-0"></i>
-            <div>
-                <strong>Security Policy:</strong> Administrative and SuperAdmin accounts are protected and cannot be self-registered. Registration is strictly verified for Students, Staff, Faculty, and Clubs.
-            </div>
-        </div>
-
-        @if (ViewBag.Error != null)
-        {
-            <div class="alert alert-danger py-2 px-3 mb-3 rounded-3">
-                <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                @ViewBag.Error
-            </div>
-        }
-
-        <form asp-controller="Account"
-              asp-action="Register"
-              method="post"
-              id="registerForm">
-
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
-
-            <!-- 1. ACCOUNT ROLE SELECTOR -->
-            <div class="form-group mb-3">
-                <label class="fw-bold mb-2 text-dark">Select Your Campus Role</label>
-                <div class="role-selector-grid">
-                    <label class="role-option-card active" for="role_student">
-                        <input type="radio" name="accountType" id="role_student" value="Student" checked onchange="toggleRoleFields('Student')" />
-                        <div class="role-option-content">
-                            <span class="role-icon">🎓</span>
-                            <strong>Student</strong>
-                            <small>Events & Tickets</small>
-                        </div>
-                    </label>
-
-                    <label class="role-option-card" for="role_staff">
-                        <input type="radio" name="accountType" id="role_staff" value="Staff" onchange="toggleRoleFields('Staff')" />
-                        <div class="role-option-content">
-                            <span class="role-icon">💼</span>
-                            <strong>Staff</strong>
-                            <small>Operations</small>
-                        </div>
-                    </label>
-
-                    <label class="role-option-card" for="role_faculty">
-                        <input type="radio" name="accountType" id="role_faculty" value="Faculty" onchange="toggleRoleFields('Faculty')" />
-                        <div class="role-option-content">
-                            <span class="role-icon">📚</span>
-                            <strong>Faculty</strong>
-                            <small>Academic Hub</small>
-                        </div>
-                    </label>
-
-                    <label class="role-option-card" for="role_org">
-                        <input type="radio" name="accountType" id="role_org" value="Organization" onchange="toggleRoleFields('Organization')" />
-                        <div class="role-option-content">
-                            <span class="role-icon">🌟</span>
-                            <strong>Club / Org</strong>
-                            <small>Host Events</small>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            <!-- 2. PRIMARY IDENTITY -->
-            <div class="row g-2 mb-3">
-                <div class="col-md-6">
-                    <label for="fullName" class="form-label fw-semibold small text-muted mb-1">Full Legal Name *</label>
-                    <input type="text"
-                           class="form-control"
-                           name="fullName"
-                           id="fullName"
-                           placeholder="e.g. Dawit Yohannes"
-                           required />
-                </div>
-                <div class="col-md-6">
-                    <label for="username" class="form-label fw-semibold small text-muted mb-1">Unique Username *</label>
-                    <input type="text"
-                           class="form-control"
-                           name="username"
-                           id="username"
-                           placeholder="e.g. dawit_yohannes"
-                           pattern="^[a-zA-Z0-9_.-]{3,30}$"
-                           title="3-30 characters, letters, numbers, underscores"
-                           required />
-                </div>
-            </div>
-
-            <div class="row g-2 mb-3">
-                <div class="col-md-6">
-                    <label for="email" class="form-label fw-semibold small text-muted mb-1">University / Personal Email *</label>
-                    <input type="email"
-                           class="form-control"
-                           name="email"
-                           id="email"
-                           placeholder="name@hawassa.edu.et"
-                           required />
-                </div>
-                <div class="col-md-6">
-                    <label for="phone" class="form-label fw-semibold small text-muted mb-1">Mobile Phone Number *</label>
-                    <input type="tel"
-                           class="form-control"
-                           name="phone"
-                           id="phone"
-                           placeholder="e.g. +251 911 234567"
-                           required />
-                </div>
-            </div>
-
-            <!-- 3. DEPARTMENT SELECTOR -->
-            <div class="mb-3" id="departmentGroup">
-                <label for="departmentId" class="form-label fw-semibold small text-muted mb-1">Academic Department / Faculty *</label>
-                <select class="form-select" name="departmentId" id="departmentId" required>
-                    <option value="">-- Select Your University Department --</option>
-                    @foreach (var d in departments)
-                    {
-                        <option value="@d.id">@d.name (@d.code)</option>
-                    }
-                </select>
-            </div>
-
-            <!-- 4. DYNAMIC ROLE-SPECIFIC FIELDS -->
-            <!-- STUDENT: Student ID -->
-            <div class="mb-3" id="studentIdGroup">
-                <label for="studentId" class="form-label fw-semibold small text-muted mb-1">Official Student ID Number *</label>
-                <input type="text"
-                       class="form-control"
-                       name="studentId"
-                       id="studentId"
-                       placeholder="e.g. UGR/1234/16 or HU/45821/15" />
-                <div class="form-text small">Enter the valid student ID issued by Hawassa University Registrar.</div>
-            </div>
-
-            <!-- STAFF / FACULTY: Employee ID -->
-            <div class="mb-3 d-none" id="employeeIdGroup">
-                <label for="employeeId" class="form-label fw-semibold small text-muted mb-1">Staff / Academic Employee ID *</label>
-                <input type="text"
-                       class="form-control"
-                       name="employeeId"
-                       id="employeeId"
-                       placeholder="e.g. EMP-HU-1042 or FAC-HU-8091" />
-                <div class="form-text small">Enter your official university employment ID card number.</div>
-            </div>
-
-            <!-- ORGANIZATION: Club Name & Type -->
-            <div class="mb-3 d-none" id="orgNameGroup">
-                <div class="row g-2 mb-2">
-                    <div class="col-md-7">
-                        <label for="organizationName" class="form-label fw-semibold small text-muted mb-1">Official Club / Organization Name *</label>
-                        <input type="text"
-                               class="form-control"
-                               name="organizationName"
-                               id="organizationName"
-                               placeholder="e.g. Hawassa Tech Society" />
+            <div class="auth-showcase-content">
+                <div class="auth-brand-badge">
+                    <img src="~/images/hawassa-logo.png" alt="Hawassa University Crest" class="auth-brand-logo" />
+                    <div class="auth-brand-text">
+                        <h6>HAWASSA UNIVERSITY</h6>
+                        <small>Verified Portal Access</small>
                     </div>
-                    <div class="col-md-5">
-                        <label for="organizationType" class="form-label fw-semibold small text-muted mb-1">Organization Type</label>
-                        <select class="form-select" name="organizationType" id="organizationType">
-                            <option value="CLUB">Student Club</option>
-                            <option value="ASSOCIATION">Academic Association</option>
-                            <option value="STUDENT_UNION">Student Union</option>
-                            <option value="DEPARTMENT">Departmental Society</option>
-                            <option value="OTHER">Other Campus Group</option>
+                </div>
+
+                <h1 class="auth-showcase-title">
+                    Join the <span>Campus Event Network</span>
+                </h1>
+
+                <p class="auth-showcase-desc">
+                    Register with your official student, faculty, staff, or student organization credentials to discover, propose, and attend campus activities across all 7 Hawassa campuses.
+                </p>
+
+                <div class="auth-feature-list">
+                    <div class="auth-feature-item">
+                        <div class="auth-feature-icon bg-primary text-white">
+                            <i class="bi bi-mortarboard-fill"></i>
+                        </div>
+                        <div class="auth-feature-text">Student & Faculty Academic Directory</div>
+                    </div>
+
+                    <div class="auth-feature-item">
+                        <div class="auth-feature-icon bg-warning text-dark">
+                            <i class="bi bi-stars"></i>
+                        </div>
+                        <div class="auth-feature-text">Official Club & Society Event Hosting</div>
+                    </div>
+
+                    <div class="auth-feature-item">
+                        <div class="auth-feature-icon bg-success text-white">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <div class="auth-feature-text">Anti-Spoofing & Verified Identity Guard</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="auth-showcase-footer">
+                <span><i class="bi bi-lock-fill text-warning me-1"></i> End-to-End Encrypted</span>
+                <span>Hawassa University &copy; @DateTime.Now.Year</span>
+            </div>
+
+        </div>
+
+        <!-- =====================================================
+             RIGHT INTERACTIVE REGISTRATION FORM PANEL
+             ===================================================== -->
+        <div class="auth-form-panel">
+
+            <div class="auth-form-header">
+                <h2>Verified Campus Registration</h2>
+                <p>Select your campus role and complete your authenticated profile.</p>
+            </div>
+
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger py-2 px-3 mb-3 small rounded-3 border-0 d-flex align-items-center gap-2" style="background-color: #fef2f2; color: #991b1b; border: 1px solid #fee2e2;">
+                    <i class="bi bi-exclamation-octagon-fill fs-5 text-danger flex-shrink-0"></i>
+                    <div>@ViewBag.Error</div>
+                </div>
+            }
+
+            <form asp-controller="Account"
+                  asp-action="Register"
+                  method="post"
+                  id="registerForm"
+                  autocomplete="on">
+
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+
+                <!-- 1. INTERACTIVE ROLE SELECTOR -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark small mb-2 d-flex justify-content-between align-items-center">
+                        <span>Select Your University Role *</span>
+                        <span class="badge bg-primary-subtle text-primary" id="roleDescriptionBadge">Student Access</span>
+                    </label>
+
+                    <div class="role-picker-grid">
+                        <label class="role-picker-card active" for="role_student">
+                            <input type="radio" name="accountType" id="role_student" value="Student" checked />
+                            <span class="role-picker-icon">🎓</span>
+                            <strong>Student</strong>
+                            <small>Events & RSVPs</small>
+                        </label>
+
+                        <label class="role-picker-card" for="role_faculty">
+                            <input type="radio" name="accountType" id="role_faculty" value="Faculty" />
+                            <span class="role-picker-icon">📚</span>
+                            <strong>Faculty</strong>
+                            <small>Academic Seminars</small>
+                        </label>
+
+                        <label class="role-picker-card" for="role_staff">
+                            <input type="radio" name="accountType" id="role_staff" value="Staff" />
+                            <span class="role-picker-icon">💼</span>
+                            <strong>Staff</strong>
+                            <small>Campus Operations</small>
+                        </label>
+
+                        <label class="role-picker-card" for="role_org">
+                            <input type="radio" name="accountType" id="role_org" value="Organization" />
+                            <span class="role-picker-icon">🌟</span>
+                            <strong>Club / Org</strong>
+                            <small>Host Activities</small>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 2. PRIMARY NAME & USERNAME -->
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="auth-input-group">
+                            <label for="fullName">Full Legal Name *</label>
+                            <div class="auth-input-box">
+                                <i class="bi bi-person auth-input-icon"></i>
+                                <input type="text"
+                                       name="fullName"
+                                       id="fullName"
+                                       placeholder="e.g. Dawit Yohannes"
+                                       autocomplete="name"
+                                       required />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="auth-input-group">
+                            <label for="username">Unique Username *</label>
+                            <div class="auth-input-box">
+                                <i class="bi bi-at auth-input-icon"></i>
+                                <input type="text"
+                                       name="username"
+                                       id="username"
+                                       placeholder="e.g. dawit_yohannes"
+                                       pattern="^[a-zA-Z0-9_.-]{3,30}$"
+                                       title="3-30 characters, alphanumeric"
+                                       autocomplete="username"
+                                       required />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. EMAIL & PHONE -->
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="auth-input-group">
+                            <label for="email">Email Address *</label>
+                            <div class="auth-input-box">
+                                <i class="bi bi-envelope auth-input-icon"></i>
+                                <input type="email"
+                                       name="email"
+                                       id="email"
+                                       placeholder="name@hawassa.edu.et"
+                                       autocomplete="email"
+                                       required />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="auth-input-group">
+                            <label for="phone">Mobile Phone *</label>
+                            <div class="auth-input-box">
+                                <i class="bi bi-telephone auth-input-icon"></i>
+                                <input type="tel"
+                                       name="phone"
+                                       id="phone"
+                                       placeholder="+251 911 234567"
+                                       autocomplete="tel"
+                                       required />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. ACADEMIC DEPARTMENT SELECTOR -->
+                <div class="auth-input-group mb-3" id="departmentGroup">
+                    <label for="departmentId">Academic Department / Faculty *</label>
+                    <div class="auth-input-box">
+                        <i class="bi bi-buildings auth-input-icon"></i>
+                        <select name="departmentId" id="departmentId" required>
+                            <option value="">-- Select Your University Department --</option>
+                            @foreach (var d in departments)
+                            {
+                                <option value="@d.id">@d.name (@d.code)</option>
+                            }
                         </select>
                     </div>
                 </div>
-                <div>
-                    <label for="bio" class="form-label fw-semibold small text-muted mb-1">Club Mission / Purpose Description</label>
-                    <textarea class="form-control" name="bio" id="bio" rows="2" placeholder="Briefly describe your club or organization's campus activities..."></textarea>
+
+                <!-- 5. DYNAMIC ROLE-SPECIFIC FIELDS -->
+                <!-- STUDENT ID -->
+                <div class="auth-input-group role-conditional-field" id="studentIdGroup">
+                    <label for="studentId">Official Student ID *</label>
+                    <div class="auth-input-box">
+                        <i class="bi bi-person-badge auth-input-icon"></i>
+                        <input type="text"
+                               name="studentId"
+                               id="studentId"
+                               placeholder="e.g. UGR/1234/16 or HU/45821/15" />
+                    </div>
+                    <small class="text-muted" style="font-size: 11px;">Issued by Hawassa University Registrar Office.</small>
                 </div>
+
+                <!-- EMPLOYEE ID (Staff / Faculty) -->
+                <div class="auth-input-group role-conditional-field d-none" id="employeeIdGroup">
+                    <label for="employeeId">University Employee ID *</label>
+                    <div class="auth-input-box">
+                        <i class="bi bi-card-heading auth-input-icon"></i>
+                        <input type="text"
+                               name="employeeId"
+                               id="employeeId"
+                               placeholder="e.g. EMP-HU-1042 or FAC-HU-8091" />
+                    </div>
+                    <small class="text-muted" style="font-size: 11px;">Official staff/faculty ID number.</small>
+                </div>
+
+                <!-- CLUB / ORGANIZATION FIELDS -->
+                <div class="role-conditional-field d-none" id="orgGroup">
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-7">
+                            <div class="auth-input-group mb-0">
+                                <label for="organizationName">Official Club / Organization Name *</label>
+                                <div class="auth-input-box">
+                                    <i class="bi bi-people auth-input-icon"></i>
+                                    <input type="text"
+                                           name="organizationName"
+                                           id="organizationName"
+                                           placeholder="e.g. Hawassa Tech Society" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="auth-input-group mb-0">
+                                <label for="organizationType">Organization Type</label>
+                                <div class="auth-input-box">
+                                    <i class="bi bi-tag auth-input-icon"></i>
+                                    <select name="organizationType" id="organizationType">
+                                        <option value="CLUB">Student Club</option>
+                                        <option value="ASSOCIATION">Academic Association</option>
+                                        <option value="STUDENT_UNION">Student Union</option>
+                                        <option value="DEPARTMENT">Departmental Society</option>
+                                        <option value="OTHER">Other Campus Group</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="auth-input-group mb-3">
+                        <label for="bio">Club Mission Description</label>
+                        <div class="auth-input-box">
+                            <i class="bi bi-pencil-square auth-input-icon"></i>
+                            <textarea name="bio" id="bio" rows="2" placeholder="Briefly summarize your club's goals and activities..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. PASSWORD & CONFIRMATION WITH REAL-TIME STRENGTH METER -->
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6">
+                        <div class="auth-input-group mb-1">
+                            <label for="password">Security Password *</label>
+                            <div class="auth-input-box">
+                                <i class="bi bi-shield-lock auth-input-icon"></i>
+                                <input type="password"
+                                       name="password"
+                                       id="password"
+                                       placeholder="Min 8 characters"
+                                       minlength="8"
+                                       autocomplete="new-password"
+                                       required />
+                                <button type="button" class="auth-password-toggle" id="toggleRegPasswordBtn" title="Toggle visibility">
+                                    <i class="bi bi-eye" id="toggleRegPasswordIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="auth-input-group mb-1">
+                            <label for="confirmPassword">Confirm Password *</label>
+                            <div class="auth-input-box">
+                                <i class="bi bi-shield-check auth-input-icon"></i>
+                                <input type="password"
+                                       name="confirmPassword"
+                                       id="confirmPassword"
+                                       placeholder="Re-type password"
+                                       minlength="8"
+                                       autocomplete="new-password"
+                                       required />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DYNAMIC PASSWORD STRENGTH & MATCH INDICATOR -->
+                <div class="password-strength-container mb-3">
+                    <div class="password-strength-meter">
+                        <div class="password-strength-bar" id="strengthBar"></div>
+                    </div>
+                    <div class="password-strength-text">
+                        <span id="strengthLabel">Password strength: Enter password</span>
+                        <span id="matchLabel" class="d-none"></span>
+                    </div>
+                </div>
+
+                <!-- SUBMIT BUTTON -->
+                <button type="submit"
+                        class="auth-submit-btn"
+                        id="registerButton">
+                    <span id="regBtnText">Register Verified Campus Account</span>
+                    <i class="bi bi-arrow-right" id="regBtnArrow"></i>
+                    <span class="spinner-border spinner-border-sm d-none" id="regBtnSpinner" role="status" aria-hidden="true"></span>
+                </button>
+
+            </form>
+
+            <div class="auth-form-footer">
+                Already registered with Hawassa University?
+                <a asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl">
+                    Sign In to Portal &rarr;
+                </a>
             </div>
 
-            <!-- 5. PASSWORD & CONFIRMATION -->
-            <div class="row g-2 mb-3">
-                <div class="col-md-6">
-                    <label for="password" class="form-label fw-semibold small text-muted mb-1">Security Password (Min 8 Chars) *</label>
-                    <input type="password"
-                           class="form-control"
-                           name="password"
-                           id="password"
-                           placeholder="Enter strong password"
-                           minlength="8"
-                           required />
-                </div>
-                <div class="col-md-6">
-                    <label for="confirmPassword" class="form-label fw-semibold small text-muted mb-1">Confirm Security Password *</label>
-                    <input type="password"
-                           class="form-control"
-                           name="confirmPassword"
-                           id="confirmPassword"
-                           placeholder="Confirm your password"
-                           minlength="8"
-                           required />
-                </div>
-            </div>
-
-            <button type="submit"
-                    class="register-button w-100 py-2 fw-bold shadow-sm mt-2"
-                    id="registerButton">
-                Register Verified Campus Account &rarr;
-            </button>
-
-        </form>
-
-        <div class="register-footer mt-3 pt-3 border-top text-center">
-            Already have a registered account?
-            <a asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl" class="fw-bold text-primary">
-                Sign In to Portal
-            </a>
         </div>
 
     </div>
 
 </div>
 
-<script src="~/js/register.js" asp-append-version="true"></script>
-<script>
-    function toggleRoleFields(role) {
-        document.querySelectorAll('.role-option-card').forEach(el => el.classList.remove('active'));
-        if (event && event.currentTarget) {
-            event.currentTarget.closest('.role-option-card')?.classList.add('active');
-        }
-
-        const studentGrp = document.getElementById('studentIdGroup');
-        const empGrp = document.getElementById('employeeIdGroup');
-        const orgGrp = document.getElementById('orgNameGroup');
-
-        if (studentGrp) studentGrp.classList.add('d-none');
-        if (empGrp) empGrp.classList.add('d-none');
-        if (orgGrp) orgGrp.classList.add('d-none');
-
-        if (role === 'Student' && studentGrp) {
-            studentGrp.classList.remove('d-none');
-        } else if ((role === 'Staff' || role === 'Faculty') && empGrp) {
-            empGrp.classList.remove('d-none');
-        } else if (role === 'Organization' && orgGrp) {
-            orgGrp.classList.remove('d-none');
-        }
-    }
-</script>
+@section Scripts {
+    <script src="~/js/register.js" asp-append-version="true"></script>
+}

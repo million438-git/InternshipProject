@@ -1,94 +1,172 @@
 @{
-    ViewData["Title"] = "Login | HUCEMS";
+    ViewData["Title"] = "Verified Campus Login | HUCEMS";
 }
 
-<link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
+@section Styles {
+    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
+}
 
-<div class="account-page">
+<div class="auth-page-container">
 
-    <div class="account-card shadow-lg">
+    <div class="auth-split-card">
 
-        <div class="account-icon mb-2">
-            <img src="~/images/hawassa-logo.png" alt="Hawassa University" style="width: 64px; height: 64px; object-fit: contain; border-radius: 50%;" />
+        <!-- =====================================================
+             LEFT SHOWCASE SIDEBAR
+             ===================================================== -->
+        <div class="auth-showcase-panel">
+
+            <div class="auth-showcase-content">
+                <div class="auth-brand-badge">
+                    <img src="~/images/hawassa-logo.png" alt="Hawassa University Crest" class="auth-brand-logo" />
+                    <div class="auth-brand-text">
+                        <h6>HAWASSA UNIVERSITY</h6>
+                        <small>Official Campus Portal</small>
+                    </div>
+                </div>
+
+                <h1 class="auth-showcase-title">
+                    Unified Campus <span>Events & Access</span>
+                </h1>
+
+                <p class="auth-showcase-desc">
+                    Sign in to your authenticated role portal to manage academic seminars, reserve auditoriums, and access official university announcements.
+                </p>
+
+                <div class="auth-feature-list">
+                    <div class="auth-feature-item">
+                        <div class="auth-feature-icon bg-primary text-white">
+                            <i class="bi bi-calendar2-check-fill"></i>
+                        </div>
+                        <div class="auth-feature-text">Real-Time Campus Event Discovery & RSVPs</div>
+                    </div>
+
+                    <div class="auth-feature-item">
+                        <div class="auth-feature-icon bg-info text-white">
+                            <i class="bi bi-buildings-fill"></i>
+                        </div>
+                        <div class="auth-feature-text">7 Campus Auditoriums & Smart Venues</div>
+                    </div>
+
+                    <div class="auth-feature-item">
+                        <div class="auth-feature-icon bg-success text-white">
+                            <i class="bi bi-shield-lock-fill"></i>
+                        </div>
+                        <div class="auth-feature-text">Role-Verified Academic Security & Access</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="auth-showcase-footer">
+                <span><i class="bi bi-patch-check-fill text-primary me-1"></i> 100% Institutional Verification</span>
+                <span>HUCEMS v2026</span>
+            </div>
+
         </div>
 
-        <h1>Welcome Back</h1>
+        <!-- =====================================================
+             RIGHT INTERACTIVE LOGIN FORM PANEL
+             ===================================================== -->
+        <div class="auth-form-panel">
 
-        <p class="account-description">
-            Sign in to access your role-based campus dashboard.
-        </p>
-
-        @if (ViewBag.ReturnUrl != null && ((string)ViewBag.ReturnUrl).Contains("Create", StringComparison.OrdinalIgnoreCase))
-        {
-            <div class="alert alert-info py-2 px-3 mb-3 small rounded-3" style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
-                <i class="bi bi-lock-fill me-1"></i>
-                Please sign in or <a asp-action="Register" asp-route-returnUrl="@ViewBag.ReturnUrl" class="fw-bold text-decoration-underline" style="color: #0284c7;">create an account</a> to access the event creation page.
-            </div>
-        }
-
-        @if (ViewBag.Error != null)
-        {
-            <div class="error-message">
-                @ViewBag.Error
-            </div>
-        }
-
-        <form asp-controller="Account"
-              asp-action="Login"
-              method="post"
-              id="loginForm">
-
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
-
-            <div class="form-group">
-                <label for="email">Campus Email Address</label>
-                <input type="email"
-                       id="email"
-                       name="email"
-                       placeholder="e.g. student@hawassauniversity.edu.et"
-                       autocomplete="email"
-                       required />
+            <div class="auth-form-header">
+                <h2>Welcome Back</h2>
+                <p>Sign in with your official university credentials.</p>
             </div>
 
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password"
-                       id="password"
-                       name="password"
-                       placeholder="Enter your password"
-                       autocomplete="current-password"
-                       required />
-            </div>
+            @if (ViewBag.ReturnUrl != null && ((string)ViewBag.ReturnUrl).Contains("Create", StringComparison.OrdinalIgnoreCase))
+            {
+                <div class="alert alert-info py-2 px-3 mb-3 small rounded-3 border-0 d-flex align-items-center gap-2" style="background-color: #eff6ff; color: #1e40af; border: 1px solid #dbeafe;">
+                    <i class="bi bi-info-circle-fill fs-5 text-primary flex-shrink-0"></i>
+                    <div>
+                        <strong>Event Creation:</strong> Please sign in or <a asp-action="Register" asp-route-returnUrl="@ViewBag.ReturnUrl" class="fw-bold text-decoration-underline" style="color: #2563eb;">register</a> to submit and host campus events.
+                    </div>
+                </div>
+            }
 
-            <div class="password-row">
-                <label>
-                    <input type="checkbox" id="showPassword" />
-                    Show password
-                </label>
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger py-2 px-3 mb-3 small rounded-3 border-0 d-flex align-items-center gap-2" style="background-color: #fef2f2; color: #991b1b; border: 1px solid #fee2e2;">
+                    <i class="bi bi-exclamation-octagon-fill fs-5 text-danger flex-shrink-0"></i>
+                    <div>@ViewBag.Error</div>
+                </div>
+            }
 
-                <a asp-action="ForgotPassword">
-                    Forgot Password?
+            <form asp-controller="Account"
+                  asp-action="Login"
+                  method="post"
+                  id="loginForm"
+                  autocomplete="on">
+
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+
+                <!-- EMAIL / USERNAME INPUT -->
+                <div class="auth-input-group">
+                    <label for="email">Campus Email or Username</label>
+                    <div class="auth-input-box">
+                        <i class="bi bi-envelope-at auth-input-icon"></i>
+                        <input type="text"
+                               id="email"
+                               name="email"
+                               placeholder="e.g. student@hawassa.edu.et or username"
+                               autocomplete="username"
+                               required />
+                    </div>
+                </div>
+
+                <!-- PASSWORD INPUT -->
+                <div class="auth-input-group">
+                    <label for="password">Password</label>
+                    <div class="auth-input-box">
+                        <i class="bi bi-lock auth-input-icon"></i>
+                        <input type="password"
+                               id="password"
+                               name="password"
+                               placeholder="Enter your account password"
+                               autocomplete="current-password"
+                               required />
+                        <button type="button" class="auth-password-toggle" id="togglePasswordBtn" title="Toggle password visibility">
+                            <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- REMEMBER & FORGOT PASSWORD ROW -->
+                <div class="auth-options-row">
+                    <label class="auth-remember-label" for="rememberMe">
+                        <input type="checkbox" id="rememberMe" name="rememberMe" />
+                        <span>Keep me signed in</span>
+                    </label>
+
+                    <a asp-action="ForgotPassword" class="auth-forgot-link">
+                        Forgot Password?
+                    </a>
+                </div>
+
+                <!-- SUBMIT BUTTON -->
+                <button type="submit"
+                        class="auth-submit-btn"
+                        id="loginButton">
+                    <span id="btnText">Sign In to Campus Portal</span>
+                    <i class="bi bi-arrow-right" id="btnArrow"></i>
+                    <span class="spinner-border spinner-border-sm d-none" id="btnSpinner" role="status" aria-hidden="true"></span>
+                </button>
+
+            </form>
+
+            <div class="auth-form-footer">
+                New to Hawassa University Portal?
+                <a asp-action="Register" asp-route-returnUrl="@ViewBag.ReturnUrl">
+                    Create Verified Account &rarr;
                 </a>
             </div>
 
-            <button type="submit"
-                    class="account-button"
-                    id="loginButton">
-                Sign In to Portal &rarr;
-            </button>
-
-        </form>
-
-        <div class="account-footer">
-            Don't have an account yet?
-            <a asp-action="Register" asp-route-returnUrl="@ViewBag.ReturnUrl">
-                Register Verified Campus Account
-            </a>
         </div>
 
     </div>
 
 </div>
 
-<script src="~/js/login.js" asp-append-version="true"></script>
+@section Scripts {
+    <script src="~/js/login.js" asp-append-version="true"></script>
+}
