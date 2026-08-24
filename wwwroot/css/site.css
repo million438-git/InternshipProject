@@ -561,33 +561,68 @@ textarea.form-control {
    FOOTER
    ========================================================= */
 
+/* =========================================================
+   ENTERPRISE CAMPUS FOOTER
+   ========================================================= */
+
 .site-footer {
-    margin-top: 60px;
-    padding: 45px 0 25px;
-    background: #212529;
-    color: #adb5bd;
+    margin-top: 80px;
+    padding: 0 0 10px;
+    background: linear-gradient(180deg, #0b132b 0%, #030712 100%);
+    color: #94a3b8;
+    border-top: 2px solid rgba(59, 130, 246, 0.35);
+    position: relative;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.35);
 }
 
-    .site-footer h5 {
-        color: white;
-        font-weight: 700;
-    }
+.footer-top-bar {
+    background: rgba(255, 255, 255, 0.025);
+}
 
-    .site-footer a {
-        color: #adb5bd;
-        transition: color var(--transition);
-    }
+.site-footer h5,
+.site-footer h6,
+.footer-col-title {
+    color: #f8fafc;
+    font-weight: 700;
+}
 
-        .site-footer a:hover {
-            color: white;
-        }
+.footer-nav-list a {
+    color: #94a3b8;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+}
 
-.footer-bottom {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    text-align: center;
-    font-size: 14px;
+.footer-nav-list a:hover {
+    color: #ffffff;
+    transform: translateX(4px);
+}
+
+.footer-social-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.25s ease-in-out;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.footer-social-btn:hover {
+    background: #0284c7;
+    color: #ffffff;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(2, 132, 199, 0.4);
+}
+
+.hover-white:hover {
+    color: #ffffff !important;
+    text-decoration: underline !important;
 }
 
 

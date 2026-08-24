@@ -457,344 +457,248 @@
 
 
     <!-- =====================================================
-         FOOTER
+         ENTERPRISE CAMPUS FOOTER
          ===================================================== -->
 
     <footer class="site-footer">
 
+        <!-- TOP EMERGENCY & LIVE STATUS BAR -->
+        <div class="footer-top-bar border-bottom border-secondary border-opacity-10 py-3 mb-4">
+            <div class="container">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2 small fw-semibold d-inline-flex align-items-center gap-2">
+                            <span class="spinner-grow spinner-grow-sm text-success" style="width: 8px; height: 8px;" role="status"></span>
+                            HUCEMS Systems Operational
+                        </span>
+                        <span class="text-white-50 small d-none d-sm-inline">
+                            <i class="bi bi-shield-check text-primary me-1"></i> Hawassa University Verified Portal
+                        </span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 text-white-50 small">
+                        <span class="d-flex align-items-center gap-1">
+                            <i class="bi bi-telephone-fill text-warning"></i> Campus Security Desk: <strong class="text-white ms-1">+251 46 220 5411</strong>
+                        </span>
+                        <span class="d-none d-lg-inline text-secondary">|</span>
+                        <a asp-controller="Home" asp-action="Contact" class="text-decoration-none text-info fw-semibold d-none d-lg-inline">
+                            <i class="bi bi-headset me-1"></i>24/7 Help Desk
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="container">
 
-            <div class="row g-4">
+            <div class="row g-4 pb-4">
 
-
-                <!-- =================================================
-                     HUCEMS INFORMATION
-                     ================================================= -->
-
+                <!-- 1. UNIVERSITY & SYSTEM IDENTITY -->
                 <div class="col-lg-4 col-md-6">
-
-                    <h5>
-
-                        <span class="footer-brand-icon">
+                    <div class="footer-brand mb-3 d-flex align-items-center gap-2">
+                        <div class="footer-brand-logo bg-primary bg-gradient text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 22px;">
                             🎓
-                        </span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 fw-bold text-white fs-5 tracking-tight">HUCEMS</h5>
+                            <small class="text-white-50 text-uppercase fw-semibold" style="font-size: 10px; letter-spacing: 1px;">Hawassa University</small>
+                        </div>
+                    </div>
 
-                        HUCEMS
-
-                    </h5>
-
-
-                    <p>
-
-                        Hawassa Unified Campus Event Management
-                        System connects students, staff, clubs,
-                        and university communities through one
-                        centralized platform.
-
+                    <p class="text-white-50 small mb-3 lh-base">
+                        The official unified digital campus event management platform connecting students, faculty, staff, and student organizations across all Hawassa University campuses.
                     </p>
 
+                    <div class="footer-contact-list small text-white-50 d-flex flex-column gap-2 mb-3">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-geo-alt-fill text-danger flex-shrink-0 mt-1"></i>
+                            <span>Main Campus, Bensa Road, Hawassa, Sidama Region, Ethiopia</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-envelope-fill text-primary flex-shrink-0"></i>
+                            <a href="mailto:events@hawassa.edu.et" class="text-white-50 text-decoration-none hover-white">events@hawassa.edu.et</a>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-globe text-success flex-shrink-0"></i>
+                            <a href="https://www.hu.edu.et" target="_blank" rel="noopener" class="text-white-50 text-decoration-none hover-white">www.hu.edu.et</a>
+                        </div>
+                    </div>
 
-                    <p class="footer-description">
-
-                        Discover events, connect with your campus
-                        community, create activities, and stay
-                        informed about what is happening around
-                        the university.
-
-                    </p>
-
+                    <!-- SOCIAL LINKS -->
+                    <div class="d-flex gap-2 mt-2">
+                        <a href="https://t.me/hawassa_university" target="_blank" rel="noopener" class="footer-social-btn" title="Telegram Channel">
+                            <i class="bi bi-telegram"></i>
+                        </a>
+                        <a href="https://www.linkedin.com/school/hawassa-university/" target="_blank" rel="noopener" class="footer-social-btn" title="LinkedIn">
+                            <i class="bi bi-linkedin"></i>
+                        </a>
+                        <a href="https://www.facebook.com/HawassaUniversityOfficial/" target="_blank" rel="noopener" class="footer-social-btn" title="Facebook">
+                            <i class="bi bi-facebook"></i>
+                        </a>
+                        <a href="https://twitter.com/HawassaUni" target="_blank" rel="noopener" class="footer-social-btn" title="X (Twitter)">
+                            <i class="bi bi-twitter-x"></i>
+                        </a>
+                        <a href="https://www.youtube.com/c/HawassaUniversityOfficial" target="_blank" rel="noopener" class="footer-social-btn" title="YouTube">
+                            <i class="bi bi-youtube"></i>
+                        </a>
+                    </div>
                 </div>
 
+                <!-- 2. EVENTS & VENUE INFRASTRUCTURE -->
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <h6 class="footer-col-title text-white fw-bold text-uppercase mb-3" style="font-size: 13px; letter-spacing: 0.8px;">
+                        <i class="bi bi-calendar-event text-primary me-2"></i>Events & Venues
+                    </h6>
 
-                <!-- =================================================
-                     QUICK LINKS
-                     ================================================= -->
-
-                <div class="col-lg-2 col-md-6">
-
-                    <h5>
-                        Quick Links
-                    </h5>
-
-
-                    <ul class="list-unstyled">                        <li class="mb-2">
-                            <a asp-controller="Home" asp-action="Index">
-                                <i class="bi bi-house me-1"></i>Home
-                            </a>
-                        </li>
-                        <li class="mb-2">
+                    <ul class="list-unstyled footer-nav-list small d-flex flex-column gap-2">
+                        <li>
                             <a asp-controller="Events" asp-action="Index">
-                                <i class="bi bi-calendar-event me-1"></i>Explore Events
+                                <i class="bi bi-chevron-right me-1 text-primary small"></i>Explore All Events
                             </a>
                         </li>
-                        <li class="mb-2">
+                        <li>
                             <a asp-controller="Calendar" asp-action="Index">
-                                <i class="bi bi-calendar3 me-1"></i>Event Calendar
+                                <i class="bi bi-chevron-right me-1 text-primary small"></i>Interactive Campus Calendar
                             </a>
                         </li>
-                        <li class="mb-2">
-                            <a asp-controller="Announcements" asp-action="Index">
-                                <i class="bi bi-megaphone me-1 text-danger"></i>Campus Announcements
+                        <li>
+                            <a asp-controller="Events" asp-action="Venues">
+                                <i class="bi bi-chevron-right me-1 text-primary small"></i>Auditoriums & Venues Directory
                             </a>
                         </li>
-                        <li class="mb-2">
+                        <li>
                             <a asp-controller="Events" asp-action="Search">
-                                <i class="bi bi-search me-1"></i>Search Events & Venues
+                                <i class="bi bi-chevron-right me-1 text-primary small"></i>Advanced Search & Filters
                             </a>
                         </li>
-                        <li class="mb-2">
-                            <a asp-controller="Home" asp-action="Contact">
-                                <i class="bi bi-headset me-1 text-warning"></i>Contact & Support Desk
+                        <li>
+                            <a asp-controller="Events" asp-action="Categories">
+                                <i class="bi bi-chevron-right me-1 text-primary small"></i>Event Categories & Tracks
                             </a>
                         </li>
-                        <li class="mb-2">
+                        <li>
+                            <a asp-controller="Events" asp-action="Create">
+                                <i class="bi bi-chevron-right me-1 text-primary small"></i>Host an Event / Reserve Hall
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Events" asp-action="MyEvents">
+                                <i class="bi bi-chevron-right me-1 text-primary small"></i>My Event Registrations & Passes
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 3. CAMPUS PORTALS & GOVERNANCE -->
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <h6 class="footer-col-title text-white fw-bold text-uppercase mb-3" style="font-size: 13px; letter-spacing: 0.8px;">
+                        <i class="bi bi-speedometer2 text-success me-2"></i>Portals & Governance
+                    </h6>
+
+                    <ul class="list-unstyled footer-nav-list small d-flex flex-column gap-2">
+                        <li>
+                            <a asp-controller="Announcements" asp-action="Index">
+                                <i class="bi bi-chevron-right me-1 text-success small"></i>Campus Circulars & Bulletins
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Dashboard" asp-action="Index">
+                                <i class="bi bi-chevron-right me-1 text-success small"></i>Personalized Role Dashboard
+                            </a>
+                        </li>
+                        @if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN")))
+                        {
+                            <li>
+                                <a asp-controller="Admin" asp-action="Index" class="fw-semibold text-warning">
+                                    <i class="bi bi-shield-lock-fill me-1"></i>Admin Control Center
+                                </a>
+                            </li>
+                            <li>
+                                <a asp-controller="Admin" asp-action="DatabaseManagement" class="text-info">
+                                    <i class="bi bi-database-check me-1"></i>Database Vault & Snapshots
+                                </a>
+                            </li>
+                        }
+                        <li>
+                            <a asp-controller="Community" asp-action="FindPeople">
+                                <i class="bi bi-chevron-right me-1 text-success small"></i>Campus Community Directory
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Account" asp-action="Login">
+                                <i class="bi bi-chevron-right me-1 text-success small"></i>Verified Campus Login
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Account" asp-action="Register">
+                                <i class="bi bi-chevron-right me-1 text-success small"></i>Student & Staff Registration
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 4. INSTITUTIONAL TRUST & POLICIES -->
+                <div class="col-lg-2 col-md-6">
+                    <h6 class="footer-col-title text-white fw-bold text-uppercase mb-3" style="font-size: 13px; letter-spacing: 0.8px;">
+                        <i class="bi bi-shield-check text-info me-2"></i>Trust & Legal
+                    </h6>
+
+                    <ul class="list-unstyled footer-nav-list small d-flex flex-column gap-2">
+                        <li>
                             <a asp-controller="Home" asp-action="About">
-                                <i class="bi bi-info-circle me-1"></i>About HUCEMS
+                                <i class="bi bi-chevron-right me-1 text-info small"></i>About HUCEMS
                             </a>
                         </li>
-                        <li class="mb-2">
+                        <li>
+                            <a asp-controller="Home" asp-action="Contact">
+                                <i class="bi bi-chevron-right me-1 text-info small"></i>Contact Administration
+                            </a>
+                        </li>
+                        <li>
                             <a asp-controller="Home" asp-action="Privacy">
-                                <i class="bi bi-shield-check me-1 text-success"></i>Privacy & Governance
+                                <i class="bi bi-chevron-right me-1 text-info small"></i>Privacy & Data Policy
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/api/events" target="_blank">
+                                <i class="bi bi-chevron-right me-1 text-info small"></i>Public Developer API
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/Calendar" target="_blank">
+                                <i class="bi bi-chevron-right me-1 text-info small"></i>iCal Calendar Feed
                             </a>
                         </li>
                     </ul>
 
-                </div>
-
-
-                <!-- =================================================
-                     EVENTS
-                     ================================================= -->
-
-                <div class="col-lg-3 col-md-6">
-
-                    <h5>
-                        Events
-                    </h5>
-
-
-                    <ul class="list-unstyled">
-
-
-                        <!-- DASHBOARD -->
-                        <li class="mb-2">
-                            <a asp-controller="Dashboard"
-                               asp-action="Index">
-                                <i class="bi bi-speedometer2 me-1"></i>
-                                Campus Dashboard
-                            </a>
-                        </li>
-
-                        <!-- ALL EVENTS -->
-                        <li class="mb-2">
-                            <a asp-controller="Events"
-                               asp-action="Index">
-                                <i class="bi bi-calendar-event me-1"></i>
-                                All Events
-                            </a>
-                        </li>
-
-
-                        <!-- SEARCH EVENTS -->
-
-                        <li class="mb-2">
-
-                            <a asp-controller="Events"
-                               asp-action="Search">
-
-                                <i class="bi bi-search me-1"></i>
-
-                                Search Events
-
-                            </a>
-
-                        </li>
-
-
-                        <!-- CREATE EVENT -->
-                        <li class="mb-2">
-                            @if (User.Identity?.IsAuthenticated == true)
-                            {
-                                <a asp-controller="Events"
-                                   asp-action="Create">
-                                    <i class="bi bi-plus-circle me-1"></i>
-                                    Create Event
-                                </a>
-                            }
-                            else
-                            {
-                                <a asp-controller="Account"
-                                   asp-action="Register"
-                                   asp-route-returnUrl="/Events/Create">
-                                    <i class="bi bi-person-plus me-1"></i>
-                                    Register to Create Event
-                                </a>
-                            }
-                        </li>
-
-
-                        <!-- MY EVENTS -->
-
-                        <li class="mb-2">
-
-                            <a asp-controller="Events"
-                               asp-action="MyEvents">
-
-                                <i class="bi bi-person-check me-1"></i>
-
-                                My Events
-
-                            </a>
-
-                        </li>
-
-
-                        <!-- CATEGORIES -->
-
-                        <li class="mb-2">
-
-                            <a asp-controller="Events"
-                               asp-action="Categories">
-
-                                <i class="bi bi-grid me-1"></i>
-
-                                Categories
-
-                            </a>
-
-                        </li>
-
-                    </ul>
-
-                </div>
-
-
-                <!-- =================================================
-                     COMMUNITY
-                     ================================================= -->
-
-                <div class="col-lg-3 col-md-6">
-
-                    <h5>
-                        Community
-                    </h5>
-
-
-                    <ul class="list-unstyled">
-
-
-                        <li class="mb-2">
-
-                            <a asp-controller="Community"
-                               asp-action="FindPeople">
-
-                                <i class="bi bi-person-plus me-1"></i>
-
-                                Find People
-
-                            </a>
-
-                        </li>
-
-
-                        <li class="mb-2">
-
-                            <a asp-controller="Community"
-                               asp-action="Friends">
-
-                                <i class="bi bi-people me-1"></i>
-
-                                Friends
-
-                            </a>
-
-                        </li>
-
-
-                        <li class="mb-2">
-
-                            <a asp-controller="Community"
-                               asp-action="Posts">
-
-                                <i class="bi bi-chat-left-text me-1"></i>
-
-                                Community Posts
-
-                            </a>
-
-                        </li>
-
-
-                        <li class="mb-2">
-
-                            <a asp-controller="Community"
-                               asp-action="CreatePost">
-
-                                <i class="bi bi-pencil-square me-1"></i>
-
-                                Create Post
-
-                            </a>
-
-                        </li>
-
-                    </ul>
-
+                    <div class="mt-4 p-2 rounded-3 bg-white bg-opacity-5 border border-white border-opacity-10 text-center">
+                        <small class="text-white-50 d-block mb-1" style="font-size: 11px;">Powered by Enterprise .NET 10</small>
+                        <span class="badge bg-primary text-white rounded-pill px-2 py-1" style="font-size: 10px;">MySQL 8 Relational Core</span>
+                    </div>
                 </div>
 
             </div>
 
+            <!-- FOOTER DIVIDER -->
+            <hr class="border-secondary border-opacity-25 my-0" />
 
-            <!-- =====================================================
-                 FOOTER DIVIDER
-                 ===================================================== -->
+            <!-- FOOTER BOTTOM COPYRIGHT & METRICS -->
+            <div class="py-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 small text-white-50">
+                <p class="mb-0 text-center text-md-start">
+                    &copy; @DateTime.Now.Year <strong>Hawassa University Campus Event Management System (HUCEMS)</strong>. All rights reserved.
+                </p>
 
-            <hr class="footer-divider" />
-
-
-            <!-- =====================================================
-                 FOOTER BOTTOM
-                 ===================================================== -->
-
-            <div class="footer-bottom">
-
-
-                <div>
-
-                    <p class="mb-1">
-
-                        &copy;
-
-                        <span class="current-year">
-                            @DateTime.Now.Year
-                        </span>
-
-                        HUCEMS.
-
-                        All rights reserved.
-
-                    </p>
-
-
-                    <small>
-
-                        Hawassa University Campus
-                        Event Management System
-
-                    </small>
-
-                </div>
-
-
-                <!-- LEGAL -->
-                <div class="footer-legal">
-                    <a asp-controller="Home" asp-action="About">About</a>
+                <div class="d-flex align-items-center gap-3">
+                    <a asp-controller="Home" asp-action="About" class="text-white-50 text-decoration-none hover-white">About</a>
                     <span>•</span>
-                    <a asp-controller="Home" asp-action="Contact">Contact & Support</a>
+                    <a asp-controller="Home" asp-action="Privacy" class="text-white-50 text-decoration-none hover-white">Privacy</a>
                     <span>•</span>
-                    <a asp-controller="Home" asp-action="Privacy">Privacy Policy</a>
+                    <a asp-controller="Home" asp-action="Contact" class="text-white-50 text-decoration-none hover-white">Help Desk</a>
+                    <span>•</span>
+                    <a href="#top" class="text-primary text-decoration-none fw-semibold">
+                        <i class="bi bi-arrow-up-circle-fill me-1"></i>Top
+                    </a>
                 </div>
-
             </div>
 
         </div>
