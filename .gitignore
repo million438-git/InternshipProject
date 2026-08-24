@@ -1,6 +1,8 @@
 ## Build and Binary Output
 [Bb]in/
 [Oo]bj/
+[Pp]ublish/
+[Pp]ublished/
 [Ll]og/
 [Ll]ogs/
 *.user
