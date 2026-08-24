@@ -594,6 +594,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         }
 
         // =========================================================
+        // =========================================================
         // GET: /Events/MyEvents
         // =========================================================
         [Authorize]
@@ -603,9 +604,10 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var currentUserId = GetCurrentUserId();
             if (!currentUserId.HasValue)
             {
-                return View(Enumerable.Empty<Event>());
+                return View(new MyEventsPageViewModel());
             }
 
+            // 1. Fetch events organized by the user
             var userEvents = await _db.events
                 .Include(x => x.category)
                 .Include(x => x.venue)
@@ -615,8 +617,87 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 .OrderByDescending(x => x.start_at)
                 .ToListAsync();
 
-            var vm = userEvents.Select(e => ToViewModel(e, currentUserId)).ToList();
-            return View(vm);
+            // 2. Fetch events the user has registered for (Passes/Tickets)
+            var registrations = await _db.registrations
+                .Include(r => r._event)
+                    .ThenInclude(e => e.category)
+                .Include(r => r._event)
+                    .ThenInclude(e => e.venue)
+                .Include(r => r._event)
+                    .ThenInclude(e => e.organizer)
+                .Where(r => r.user_id == currentUserId.Value && r._event != null)
+                .OrderByDescending(r => r.registered_at)
+                .ToListAsync();
+
+            var registeredList = registrations.Select(r => new MyRegisteredEventViewModel
+            {
+                EventId = r.event_id,
+                Title = r._event?.title ?? "Campus Event",
+                Category = r._event?.category?.name ?? "General",
+                Venue = r._event?.venue?.name ?? "Main Campus",
+                EventDate = r._event?.start_at.Date ?? DateTime.UtcNow.Date,
+                StartTime = r._event?.start_at.TimeOfDay ?? TimeSpan.Zero,
+                EndTime = r._event?.end_at.TimeOfDay,
+                RegistrationCode = r.registration_code,
+                QrToken = r.qr_token,
+                Status = r.status,
+                RegisteredAt = r.registered_at,
+                CheckedInAt = r.checked_in_at,
+                ImageUrl = r._event?.image_url,
+                OrganizerName = r._event?.organizer != null ? $"{r._event.organizer.first_name} {r._event.organizer.last_name}".Trim() : "University"
+            }).ToList();
+
+            var pageModel = new MyEventsPageViewModel
+            {
+                OrganizedEvents = userEvents.Select(e => ToViewModel(e, currentUserId)).ToList(),
+                RegisteredEvents = registeredList
+            };
+
+            return View(pageModel);
+        }
+
+        // =========================================================
+        // GET: /Events/GetTicket/5 (JSON Ticket Card Data)
+        // =========================================================
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> GetTicket(ulong id)
+        {
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue) return Unauthorized();
+
+            var reg = await _db.registrations
+                .Include(r => r._event)
+                    .ThenInclude(e => e.venue)
+                .Include(r => r._event)
+                    .ThenInclude(e => e.category)
+                .Include(r => r.user)
+                .FirstOrDefaultAsync(r => r.event_id == id && r.user_id == currentUserId.Value);
+
+            if (reg == null) return NotFound(new { success = false, message = "No registration found for this event." });
+
+            return Ok(new
+            {
+                success = true,
+                ticket = new
+                {
+                    eventId = reg.event_id,
+                    eventTitle = reg._event?.title,
+                    eventDate = reg._event?.start_at.ToString("dddd, MMMM dd, yyyy"),
+                    eventTime = reg._event?.start_at.ToString("hh:mm tt"),
+                    venue = reg._event?.venue?.name ?? "Main Campus",
+                    room = reg._event?.venue?.room_number ?? "TBA",
+                    category = reg._event?.category?.name ?? "General",
+                    registrationCode = reg.registration_code,
+                    qrToken = reg.qr_token,
+                    status = reg.status,
+                    attendeeName = $"{reg.user.first_name} {reg.user.last_name}".Trim(),
+                    studentId = reg.user.student_id,
+                    employeeId = reg.user.employee_id,
+                    registeredAt = reg.registered_at.ToString("MMM dd, yyyy hh:mm tt"),
+                    checkedInAt = reg.checked_in_at?.ToString("MMM dd, yyyy hh:mm tt")
+                }
+            });
         }
 
         // =========================================================

@@ -103,6 +103,31 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 .OrderByDescending(u => u.created_at)
                 .ToListAsync();
 
+            // Query live follower & following counts from user_relationships table
+            Dictionary<ulong, int> followerCounts = new();
+            Dictionary<ulong, int> followingCounts = new();
+
+            try
+            {
+                var userIds = dbUsers.Select(u => u.id).ToList();
+
+                followerCounts = await _db.user_relationships
+                    .Where(r => userIds.Contains(r.followed_user_id))
+                    .GroupBy(r => r.followed_user_id)
+                    .Select(g => new { UserId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.UserId, x => x.Count);
+
+                followingCounts = await _db.user_relationships
+                    .Where(r => userIds.Contains(r.follower_user_id))
+                    .GroupBy(r => r.follower_user_id)
+                    .Select(g => new { UserId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.UserId, x => x.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not aggregate user relationship counts from database.");
+            }
+
             return dbUsers.Select(u =>
             {
                 var fullName = $"{u.first_name} {u.last_name}".Trim();
@@ -120,8 +145,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         ? u.bio
                         : $"Campus {u.account_type?.ToLower() ?? "member"} at Hawassa University.",
                     ProfileImage = u.profile_image_url,
-                    Followers = (int)(u.id * 17 % 120 + 5) + (isFollowing ? 1 : 0),
-                    Following = (int)(u.id * 13 % 60 + 3),
+                    Followers = followerCounts.TryGetValue(u.id, out int fCnt) ? fCnt : 0,
+                    Following = followingCounts.TryGetValue(u.id, out int fgCnt) ? fgCnt : 0,
                     IsFollowing = isFollowing
                 };
             }).ToList();
@@ -207,6 +232,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var followedSet = await GetUserFollowedIdsAsync(currentUserId);
             var isFollowing = followedSet.Contains(id);
 
+            var followerCount = await _db.user_relationships.CountAsync(r => r.followed_user_id == id);
+            var followingCount = await _db.user_relationships.CountAsync(r => r.follower_user_id == id);
+
             var vm = new CommunityUser
             {
                 Id = u.id,
@@ -217,8 +245,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     ? u.bio
                     : $"Campus {u.account_type?.ToLower() ?? "member"} at Hawassa University.",
                 ProfileImage = u.profile_image_url,
-                Followers = (int)(u.id * 17 % 120 + 5) + (isFollowing ? 1 : 0),
-                Following = (int)(u.id * 13 % 60 + 3),
+                Followers = followerCount,
+                Following = followingCount,
                 IsFollowing = isFollowing
             };
 
