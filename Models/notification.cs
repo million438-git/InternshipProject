@@ -22,7 +22,7 @@ public partial class Notification
     [Column(TypeName = "text")]
     public string message { get; set; } = null!;
 
-    [Column(TypeName = "enum('EVENT','REGISTRATION','REMINDER','ANNOUNCEMENT','JOB','INTERVIEW','SYSTEM','COMMENT','POLL')")]
+    [Column(TypeName = "enum('EVENT','REGISTRATION','REMINDER','ANNOUNCEMENT','SYSTEM','FEEDBACK','POLL')")]
     public string notification_type { get; set; } = null!;
 
     [StringLength(100)]

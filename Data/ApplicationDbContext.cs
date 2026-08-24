@@ -78,8 +78,6 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<UserSuspension> user_suspensions { get; set; }
 
-    public virtual DbSet<user_relationship> user_relationships { get; set; }
-
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

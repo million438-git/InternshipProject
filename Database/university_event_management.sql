@@ -1,7 +1,7 @@
 -- ============================================================
 -- UNIVERSITY EVENT MANAGEMENT SYSTEM
 -- COMPLETE MYSQL 8 DATABASE
--- 41 TABLES WITH FULL INITIAL SEED DATA
+-- 35 RELATIONAL TABLES FOR CAMPUS EVENT MANAGEMENT
 -- ============================================================
 
 DROP DATABASE IF EXISTS university_event_management;
@@ -776,236 +776,7 @@ CREATE TABLE registrations (
 ) ENGINE=InnoDB;
 
 
--- ============================================================
--- 19. EMPLOYERS
--- ============================================================
 
-CREATE TABLE employers (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    name VARCHAR(255) NOT NULL,
-    slug VARCHAR(300) NOT NULL,
-
-    description TEXT NULL,
-
-    website_url VARCHAR(1000) NULL,
-    logo_url VARCHAR(1000) NULL,
-
-    email VARCHAR(255) NULL,
-    phone VARCHAR(50) NULL,
-    address VARCHAR(500) NULL,
-
-    industry VARCHAR(150) NULL,
-
-    contact_person_name VARCHAR(200) NULL,
-    contact_person_email VARCHAR(255) NULL,
-    contact_person_phone VARCHAR(50) NULL,
-
-    verified BOOLEAN NOT NULL DEFAULT FALSE,
-
-    status ENUM(
-        'PENDING',
-        'ACTIVE',
-        'SUSPENDED',
-        'INACTIVE'
-    ) NOT NULL DEFAULT 'PENDING',
-
-    created_by BIGINT UNSIGNED NULL,
-
-    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-        ON UPDATE CURRENT_TIMESTAMP(6),
-
-    PRIMARY KEY (id),
-
-    UNIQUE KEY uq_employers_slug (slug),
-
-    KEY idx_employers_name (name),
-    KEY idx_employers_status (status),
-
-    CONSTRAINT fk_employers_created_by
-        FOREIGN KEY (created_by)
-        REFERENCES users(id)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE
-) ENGINE=InnoDB;
-
-
--- ============================================================
--- 20. JOB_POSTINGS
--- ============================================================
-
-CREATE TABLE job_postings (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    employer_id BIGINT UNSIGNED NOT NULL,
-
-    title VARCHAR(255) NOT NULL,
-    slug VARCHAR(300) NOT NULL,
-
-    description TEXT NOT NULL,
-    requirements TEXT NULL,
-    responsibilities TEXT NULL,
-
-    job_type ENUM(
-        'FULL_TIME',
-        'PART_TIME',
-        'INTERNSHIP',
-        'CONTRACT',
-        'VOLUNTEER',
-        'TEMPORARY'
-    ) NOT NULL DEFAULT 'FULL_TIME',
-
-    workplace_type ENUM(
-        'ON_SITE',
-        'REMOTE',
-        'HYBRID'
-    ) NOT NULL DEFAULT 'ON_SITE',
-
-    location VARCHAR(255) NULL,
-
-    salary_min DECIMAL(15,2) NULL,
-    salary_max DECIMAL(15,2) NULL,
-    salary_currency VARCHAR(10) NOT NULL DEFAULT 'ETB',
-
-    application_url VARCHAR(1000) NULL,
-    application_email VARCHAR(255) NULL,
-
-    published_at DATETIME(6) NULL,
-    deadline_at DATETIME(6) NULL,
-
-    status ENUM(
-        'DRAFT',
-        'PUBLISHED',
-        'CLOSED',
-        'EXPIRED',
-        'SUSPENDED'
-    ) NOT NULL DEFAULT 'DRAFT',
-
-    created_by BIGINT UNSIGNED NULL,
-
-    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-        ON UPDATE CURRENT_TIMESTAMP(6),
-
-    PRIMARY KEY (id),
-
-    UNIQUE KEY uq_job_postings_slug (slug),
-
-    KEY idx_jobs_employer (employer_id),
-    KEY idx_jobs_status (status),
-    KEY idx_jobs_deadline (deadline_at),
-
-    CONSTRAINT fk_jobs_employer
-        FOREIGN KEY (employer_id)
-        REFERENCES employers(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_jobs_created_by
-        FOREIGN KEY (created_by)
-        REFERENCES users(id)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE
-) ENGINE=InnoDB;
-
-
--- ============================================================
--- 21. INTERVIEW_SLOTS
--- ============================================================
-
-CREATE TABLE interview_slots (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    job_posting_id BIGINT UNSIGNED NOT NULL,
-
-    title VARCHAR(255) NULL,
-
-    start_at DATETIME(6) NOT NULL,
-    end_at DATETIME(6) NOT NULL,
-
-    venue_id BIGINT UNSIGNED NULL,
-    meeting_url VARCHAR(1000) NULL,
-
-    capacity INT UNSIGNED NOT NULL DEFAULT 1,
-
-    status ENUM(
-        'AVAILABLE',
-        'FULL',
-        'CANCELLED',
-        'COMPLETED'
-    ) NOT NULL DEFAULT 'AVAILABLE',
-
-    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-        ON UPDATE CURRENT_TIMESTAMP(6),
-
-    PRIMARY KEY (id),
-
-    KEY idx_interview_slots_job (job_posting_id),
-    KEY idx_interview_slots_venue (venue_id),
-    KEY idx_interview_slots_start (start_at),
-
-    CONSTRAINT fk_interview_slots_job
-        FOREIGN KEY (job_posting_id)
-        REFERENCES job_postings(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_interview_slots_venue
-        FOREIGN KEY (venue_id)
-        REFERENCES venues(id)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE,
-
-    CONSTRAINT chk_interview_slot_dates
-        CHECK (end_at > start_at)
-) ENGINE=InnoDB;
-
-
--- ============================================================
--- 22. INTERVIEW_BOOKINGS
--- ============================================================
-
-CREATE TABLE interview_bookings (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    interview_slot_id BIGINT UNSIGNED NOT NULL,
-    user_id BIGINT UNSIGNED NOT NULL,
-
-    status ENUM(
-        'BOOKED',
-        'CANCELLED',
-        'ATTENDED',
-        'NO_SHOW'
-    ) NOT NULL DEFAULT 'BOOKED',
-
-    notes TEXT NULL,
-
-    booked_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    cancelled_at DATETIME(6) NULL,
-
-    PRIMARY KEY (id),
-
-    UNIQUE KEY uq_interview_booking_slot_user (
-        interview_slot_id,
-        user_id
-    ),
-
-    KEY idx_interview_bookings_user (user_id),
-
-    CONSTRAINT fk_interview_bookings_slot
-        FOREIGN KEY (interview_slot_id)
-        REFERENCES interview_slots(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_interview_bookings_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -1095,10 +866,8 @@ CREATE TABLE notifications (
         'REGISTRATION',
         'REMINDER',
         'ANNOUNCEMENT',
-        'JOB',
-        'INTERVIEW',
         'SYSTEM',
-        'COMMENT',
+        'FEEDBACK',
         'POLL'
     ) NOT NULL DEFAULT 'SYSTEM',
 
@@ -1414,98 +1183,7 @@ CREATE TABLE event_feedback (
 ) ENGINE=InnoDB;
 
 
--- ============================================================
--- 32. STUDY_GROUPS
--- ============================================================
 
-CREATE TABLE study_groups (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    department_id BIGINT UNSIGNED NULL,
-    created_by BIGINT UNSIGNED NOT NULL,
-
-    name VARCHAR(255) NOT NULL,
-    description TEXT NULL,
-
-    course_code VARCHAR(50) NULL,
-    course_name VARCHAR(255) NULL,
-
-    academic_year VARCHAR(50) NULL,
-    semester VARCHAR(50) NULL,
-
-    max_members INT UNSIGNED NULL,
-
-    group_type ENUM(
-        'PUBLIC',
-        'PRIVATE'
-    ) NOT NULL DEFAULT 'PUBLIC',
-
-    status ENUM(
-        'ACTIVE',
-        'FULL',
-        'CLOSED',
-        'ARCHIVED'
-    ) NOT NULL DEFAULT 'ACTIVE',
-
-    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-        ON UPDATE CURRENT_TIMESTAMP(6),
-
-    PRIMARY KEY (id),
-
-    KEY idx_study_groups_department (department_id),
-    KEY idx_study_groups_creator (created_by),
-    KEY idx_study_groups_course (course_code),
-
-    CONSTRAINT fk_study_groups_department
-        FOREIGN KEY (department_id)
-        REFERENCES departments(id)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_study_groups_creator
-        FOREIGN KEY (created_by)
-        REFERENCES users(id)
-        ON DELETE RESTRICT
-        ON UPDATE CASCADE
-) ENGINE=InnoDB;
-
-
--- ============================================================
--- 33. STUDY_GROUP_MEMBERS
--- ============================================================
-
-CREATE TABLE study_group_members (
-    study_group_id BIGINT UNSIGNED NOT NULL,
-    user_id BIGINT UNSIGNED NOT NULL,
-
-    member_role ENUM(
-        'MEMBER',
-        'MODERATOR',
-        'OWNER'
-    ) NOT NULL DEFAULT 'MEMBER',
-
-    joined_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    left_at DATETIME(6) NULL,
-
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-
-    PRIMARY KEY (study_group_id, user_id),
-
-    KEY idx_study_group_members_user (user_id),
-
-    CONSTRAINT fk_study_group_members_group
-        FOREIGN KEY (study_group_id)
-        REFERENCES study_groups(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_study_group_members_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-) ENGINE=InnoDB;
 
 
 -- ============================================================
@@ -1841,16 +1519,15 @@ INSERT INTO permissions (id, name, description, module) VALUES
 (5, 'events.register', 'Register and reserve tickets for campus events', 'Events'),
 (6, 'venues.manage', 'Manage campus venues, room capacities, and booking slots', 'Venues'),
 (7, 'announcements.publish', 'Publish campus-wide notices and urgent academic alerts', 'Announcements'),
-(8, 'jobs.manage', 'Post, edit, and review campus internships and job listings', 'Jobs'),
-(9, 'system.settings', 'Manage global platform configuration and telemetry settings', 'System'),
-(10, 'audit.view', 'View security audit trails and system access logs', 'Security');
+(8, 'system.settings', 'Manage global platform configuration and telemetry settings', 'System'),
+(9, 'audit.view', 'View security audit trails and system access logs', 'Security');
 
 -- 3. ROLE_PERMISSIONS
 INSERT INTO role_permissions (role_id, permission_id) VALUES
 -- SuperAdmin (All permissions)
-(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9), (1, 10),
+(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9),
 -- Admin
-(2, 1), (2, 2), (2, 3), (2, 4), (2, 5), (2, 6), (2, 7), (2, 8), (2, 10),
+(2, 1), (2, 2), (2, 3), (2, 4), (2, 5), (2, 6), (2, 7), (2, 9),
 -- Faculty
 (3, 2), (3, 3), (3, 5), (3, 7),
 -- Staff
