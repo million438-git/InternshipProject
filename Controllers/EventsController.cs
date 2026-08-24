@@ -815,5 +815,18 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var bytes = System.Text.Encoding.UTF8.GetBytes(ics);
             return File(bytes, "text/calendar", $"{e.slug ?? "campus_event"}.ics");
         }
+
+        // =====================================================================
+        // VENUES DIRECTORY & FACILITIES
+        // =====================================================================
+        [HttpGet]
+        public async Task<IActionResult> Venues()
+        {
+            var venues = await _db.venues
+                .OrderBy(v => v.name)
+                .ToListAsync();
+
+            return View(venues);
+        }
     }
 }
