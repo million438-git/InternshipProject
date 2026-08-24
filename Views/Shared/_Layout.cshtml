@@ -154,6 +154,36 @@
                             </a>
                         </li>
 
+                        <!-- EXPLORE EVENTS -->
+                        <li class="nav-item">
+                            <a class="nav-link @(currentController == "Events" && currentAction == "Index" ? "active" : "")"
+                               asp-controller="Events"
+                               asp-action="Index">
+                                <i class="bi bi-calendar-event"></i>
+                                <span>Explore Events</span>
+                            </a>
+                        </li>
+
+                        <!-- CALENDAR -->
+                        <li class="nav-item">
+                            <a class="nav-link @(currentController == "Calendar" ? "active" : "")"
+                               asp-controller="Calendar"
+                               asp-action="Index">
+                                <i class="bi bi-calendar3"></i>
+                                <span>Event Calendar</span>
+                            </a>
+                        </li>
+
+                        <!-- ANNOUNCEMENTS -->
+                        <li class="nav-item">
+                            <a class="nav-link @(currentController == "Announcements" ? "active" : "")"
+                               asp-controller="Announcements"
+                               asp-action="Index">
+                                <i class="bi bi-megaphone"></i>
+                                <span>Announcements</span>
+                            </a>
+                        </li>
+
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <!-- DASHBOARD -->
@@ -166,19 +196,6 @@
                                 </a>
                             </li>
 
-                            @if (User.IsInRole("SuperAdmin") || User.IsInRole("SUPERADMIN"))
-                            {
-                                <!-- SUPERADMIN -->
-                                <li class="nav-item">
-                                    <a class="nav-link @(currentController == "SuperAdmin" ? "active" : "")"
-                                       asp-controller="SuperAdmin"
-                                       asp-action="Index">
-                                        <i class="bi bi-cpu-fill text-warning"></i>
-                                        <span class="fw-bold">SuperAdmin</span>
-                                    </a>
-                                </li>
-                            }
-
                             @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN"))
                             {
                                 <!-- ADMIN -->
@@ -187,71 +204,31 @@
                                        asp-controller="Admin"
                                        asp-action="Index">
                                         <i class="bi bi-shield-lock"></i>
-                                        <span>Admin</span>
+                                        <span>Admin Console</span>
                                     </a>
                                 </li>
                             }
                         }
 
-                        <!-- EVENTS -->
-                        <li class="nav-item">
-                            <a class="nav-link @(currentController == "Events" && currentAction == "Index" ? "active" : "")"
-                               asp-controller="Events"
-                               asp-action="Index">
-                                <i class="bi bi-calendar-event"></i>
-                                <span>Events</span>
-                            </a>
-                        </li>
-
-                        <!-- CALENDAR -->
-                        <li class="nav-item">
-                            <a class="nav-link @(currentController == "Calendar" ? "active" : "")"
-                               asp-controller="Calendar"
-                               asp-action="Index">
-                                <i class="bi bi-calendar3"></i>
-                                <span>Calendar</span>
-                            </a>
-                        </li>
-
-                        <!-- JOBS -->
-                        <li class="nav-item">
-                            <a class="nav-link @(currentController == "Jobs" ? "active" : "")"
-                               asp-controller="Jobs"
-                               asp-action="Index">
-                                <i class="bi bi-briefcase"></i>
-                                <span>Jobs</span>
-                            </a>
-                        </li>
-
-                        <!-- CAMPUS HUB DROPDOWN -->
+                        <!-- MORE INFORMATION DROPDOWN -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle @(currentController == "Community" || currentController == "Announcements" || currentAction == "Contact" || currentAction == "Search" || currentAction == "About" || currentAction == "Privacy" ? "active" : "")"
+                            <a class="nav-link dropdown-toggle @(currentAction == "Contact" || currentAction == "Search" || currentAction == "About" || currentAction == "Privacy" ? "active" : "")"
                                href="#"
                                role="button"
                                data-bs-toggle="dropdown"
                                aria-expanded="false">
-                                <i class="bi bi-grid"></i>
+                                <i class="bi bi-grid-3x3-gap"></i>
                                 <span>More</span>
                             </a>
                             <ul class="dropdown-menu shadow-lg rounded-4 p-2 mt-2">
                                 <li>
-                                    <a class="dropdown-item py-2 rounded-3 fw-semibold text-warning-emphasis" asp-controller="Home" asp-action="Contact">
-                                        <i class="bi bi-headset me-2 text-warning fs-6"></i>Contact & Support
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item py-2 rounded-3" asp-controller="Announcements" asp-action="Index">
-                                        <i class="bi bi-megaphone me-2 text-danger fs-6"></i>Campus Bulletins
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item py-2 rounded-3" asp-controller="Community" asp-action="Index">
-                                        <i class="bi bi-people me-2 text-primary fs-6"></i>Student Community
-                                    </a>
-                                </li>
-                                <li>
                                     <a class="dropdown-item py-2 rounded-3" asp-controller="Events" asp-action="Search">
-                                        <i class="bi bi-search me-2 text-info fs-6"></i>Search Events
+                                        <i class="bi bi-search me-2 text-primary fs-6"></i>Search Events & Venues
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 rounded-3 fw-semibold text-warning-emphasis" asp-controller="Home" asp-action="Contact">
+                                        <i class="bi bi-headset me-2 text-warning fs-6"></i>Contact & Support Desk
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider my-1" /></li>
@@ -262,7 +239,7 @@
                                 </li>
                                 <li>
                                     <a class="dropdown-item py-2 rounded-3" asp-controller="Home" asp-action="Privacy">
-                                        <i class="bi bi-shield-check me-2 text-success fs-6"></i>Privacy Policy
+                                        <i class="bi bi-shield-check me-2 text-success fs-6"></i>Privacy & Data Governance
                                     </a>
                                 </li>
                             </ul>
@@ -357,10 +334,10 @@
                                     {
                                         <li>
                                             <a class="dropdown-item text-warning-emphasis fw-bold py-2 rounded-3"
-                                               asp-controller="SuperAdmin"
-                                               asp-action="Index">
-                                               <i class="bi bi-cpu-fill me-2 text-warning"></i>
-                                               SuperAdmin Master Console
+                                               asp-controller="Admin"
+                                               asp-action="DatabaseManagement">
+                                               <i class="bi bi-shield-lock-fill me-2 text-warning"></i>
+                                               SuperAdmin Security Vault
                                             </a>
                                         </li>
                                     }
@@ -540,119 +517,46 @@
                     </h5>
 
 
-                    <ul class="list-unstyled">
-
-
-                        <li class="mb-2">
-
-                            <a asp-controller="Home"
-                               asp-action="Index">
-
-                                <i class="bi bi-house me-1"></i>
-
-                                Home
-
-                            </a>
-
-                        </li>
-
-
-                        <li class="mb-2">
-
-                            <a asp-controller="Events"
-                               asp-action="Index">
-
-                                <i class="bi bi-calendar-event me-1"></i>
-
-                                Events
-
-                            </a>
-
-                        </li>
-
-
-                        <!-- SEARCH -->
-
-                        <li class="mb-2">
-
-                            <a asp-controller="Events"
-                               asp-action="Search">
-
-                                <i class="bi bi-search me-1"></i>
-
-                                Search Events
-
-                            </a>
-
-                        </li>
-
-
-                        <li class="mb-2">
-
-                            <a asp-controller="Community"
-                               asp-action="Index">
-
-                                <i class="bi bi-people me-1"></i>
-
-                                Community
-
-                            </a>
-
-                        </li>
-
-
-                        <li class="mb-2">
-
-                            <a asp-controller="Jobs"
-                               asp-action="Index">
-
-                                <i class="bi bi-briefcase me-1"></i>
-
-                                Jobs & Careers
-
-                            </a>
-
-                        </li>
-
-
-                        <li class="mb-2">
-
-                            <a asp-controller="Calendar"
-                               asp-action="Index">
-
-                                <i class="bi bi-calendar3 me-1"></i>
-
-                                Calendar
-
-                            </a>
-
-                        </li>
-
-
-                        <li class="mb-2">
-                            <a asp-controller="Home"
-                               asp-action="Contact">
-                                <i class="bi bi-headset me-1 text-warning"></i>
-                                Contact & Support
+                    <ul class="list-unstyled">                        <li class="mb-2">
+                            <a asp-controller="Home" asp-action="Index">
+                                <i class="bi bi-house me-1"></i>Home
                             </a>
                         </li>
-
                         <li class="mb-2">
-                            <a asp-controller="Announcements"
-                               asp-action="Index">
-                                <i class="bi bi-megaphone me-1 text-danger"></i>
-                                Announcements
+                            <a asp-controller="Events" asp-action="Index">
+                                <i class="bi bi-calendar-event me-1"></i>Explore Events
                             </a>
                         </li>
-
                         <li class="mb-2">
-                            <a asp-controller="Home"
-                               asp-action="About">
-                                <i class="bi bi-info-circle me-1"></i>
-                                About HUCEMS
+                            <a asp-controller="Calendar" asp-action="Index">
+                                <i class="bi bi-calendar3 me-1"></i>Event Calendar
                             </a>
                         </li>
-
+                        <li class="mb-2">
+                            <a asp-controller="Announcements" asp-action="Index">
+                                <i class="bi bi-megaphone me-1 text-danger"></i>Campus Announcements
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a asp-controller="Events" asp-action="Search">
+                                <i class="bi bi-search me-1"></i>Search Events & Venues
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a asp-controller="Home" asp-action="Contact">
+                                <i class="bi bi-headset me-1 text-warning"></i>Contact & Support Desk
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a asp-controller="Home" asp-action="About">
+                                <i class="bi bi-info-circle me-1"></i>About HUCEMS
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a asp-controller="Home" asp-action="Privacy">
+                                <i class="bi bi-shield-check me-1 text-success"></i>Privacy & Governance
+                            </a>
+                        </li>
                     </ul>
 
                 </div>
