@@ -1901,29 +1901,15 @@ INSERT INTO venues (id, name, building_name, room_number, description, capacity,
 (4, 'Hawassa University Central Stadium', 'Sports Complex', 'Stadium-Main', 'Standard grass pitch, running tracks, and shaded pavilion stands', 5000, 'SPORTS_FIELD', 'AVAILABLE'),
 (5, 'Senate Executive Conference Room', 'University Senate Hall', 'Senate-200', 'Executive conference suite for academic symposiums & board meets', 60, 'MEETING_ROOM', 'AVAILABLE');
 
--- 9. SEED USERS
--- Default password for all seeded accounts is: Admin@2026 (or 123456)
--- Password hash generated using standard PBKDF2/ASP.NET Core PasswordHasher
+-- 9. SEED MASTER SUPERADMIN USER
+-- Default password for master administrator: SuperAdmin@2026! (or Admin@2026)
+-- Password hash generated using standard SHA256 / PBKDF2
 INSERT INTO users (id, department_id, username, email, password_hash, first_name, last_name, student_id, employee_id, phone, account_type, account_status, email_verified, phone_verified) VALUES
-(1, 2, 'superadmin', 'superadmin@hawassa.edu.et', 'b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1', 'Dr. Ermias', 'SuperAdmin', NULL, 'EMP-SA-001', '+251911223344', 'SUPERADMIN', 'ACTIVE', TRUE, TRUE),
-(2, 2, 'superadmin_alt', 'superadmin@hawassauniversity.edu.et', 'b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1', 'Dr. Ermias', 'SuperAdmin', NULL, 'EMP-SA-002', '+251911223345', 'SUPERADMIN', 'ACTIVE', TRUE, TRUE),
-(3, 1, 'admin', 'admin@hawassa.edu.et', 'b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1', 'Campus', 'Administrator', NULL, 'EMP-ADM-010', '+251911334455', 'ADMIN', 'ACTIVE', TRUE, TRUE),
-(4, 1, 'admin_alt', 'admin@hawassauniversity.edu.et', 'b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1', 'Campus', 'Administrator', NULL, 'EMP-ADM-011', '+251911334456', 'ADMIN', 'ACTIVE', TRUE, TRUE),
-(5, 2, 'prof_abebe', 'faculty@hawassa.edu.et', 'b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1', 'Prof. Abebe', 'Bekele', NULL, 'EMP-FAC-102', '+251911445566', 'FACULTY', 'ACTIVE', TRUE, TRUE),
-(6, 3, 'staff_tigist', 'staff@hawassa.edu.et', 'b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1', 'Tigist', 'Alemu', NULL, 'EMP-STF-204', '+251911556677', 'STAFF', 'ACTIVE', TRUE, TRUE),
-(7, 1, 'hawassa_tech_club', 'org@hawassa.edu.et', 'b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1', 'Hawassa', 'Tech Club', NULL, 'EMP-ORG-301', '+251911667788', 'ORGANIZATION', 'ACTIVE', TRUE, TRUE),
-(8, 1, 'student_dawit', 'student@hawassa.edu.et', 'b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1', 'Dawit', 'Yohannes', 'HU/88421/15', NULL, '+251911778899', 'STUDENT', 'ACTIVE', TRUE, TRUE);
+(1, 2, 'superadmin', 'superadmin@hawassa.edu.et', 'b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1', 'Dr. Ermias', 'SuperAdmin', NULL, 'EMP-SA-001', '+251911223344', 'SUPERADMIN', 'ACTIVE', TRUE, TRUE);
 
--- 10. ASSIGN USER_ROLES
+-- 10. ASSIGN SUPERADMIN ROLE
 INSERT INTO user_roles (user_id, role_id, assigned_by) VALUES
-(1, 1, 1),
-(2, 1, 1),
-(3, 2, 1),
-(4, 2, 1),
-(5, 3, 1),
-(6, 4, 1),
-(7, 5, 1),
-(8, 6, 1);
+(1, 1, 1);
 
 -- 11. SAMPLE ORGANIZATIONS
 INSERT INTO organizations (id, department_id, name, short_name, description, organization_type, email, status) VALUES
@@ -1934,13 +1920,13 @@ INSERT INTO organizations (id, department_id, name, short_name, description, org
 -- 12. SAMPLE EVENTS
 INSERT INTO events (id, title, slug, description, short_description, category_id, organizer_id, organization_id, venue_id, start_at, end_at, capacity, registration_required, event_mode, status, approval_status, is_featured, is_public) VALUES
 (1, 'Hawassa National Tech Hackathon 2026', 'hawassa-national-tech-hackathon-2026', '48-hour continuous coding hackathon bringing together software engineers from across Ethiopian universities to build solutions in Fintech, Agriculture, and Healthtech.', '48-hour continuous hackathon for web, mobile, and AI solutions.', 1, 1, 1, 1, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 5 DAY), DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY), 300, TRUE, 'IN_PERSON', 'PUBLISHED', 'APPROVED', TRUE, TRUE),
-(2, 'Annual Campus Career & Internship Fair', 'annual-campus-career-fair-2026', 'Meet over 40 technology employers, financial institutions, telecom companies, and NGOs for on-campus interviews and direct internship offers.', 'Annual networking & job recruitment fair with leading companies.', 2, 3, NULL, 2, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 12 DAY), DATE_ADD(DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 12 DAY), INTERVAL 8 HOUR), 800, TRUE, 'IN_PERSON', 'PUBLISHED', 'APPROVED', TRUE, TRUE),
-(3, 'Inter-College Football Championship Cup', 'inter-college-football-championship-2026', 'The annual tournament clash between Institute of Technology, Informatics, Business School, and Health Sciences.', 'Annual inter-department soccer tournament.', 3, 6, 3, 4, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 18 DAY), DATE_ADD(DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 18 DAY), INTERVAL 4 HOUR), 2000, FALSE, 'IN_PERSON', 'PUBLISHED', 'APPROVED', TRUE, TRUE);
+(2, 'Annual Campus Career & Internship Fair', 'annual-campus-career-fair-2026', 'Meet over 40 technology employers, financial institutions, telecom companies, and NGOs for on-campus interviews and direct internship offers.', 'Annual networking & job recruitment fair with leading companies.', 2, 1, NULL, 2, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 12 DAY), DATE_ADD(DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 12 DAY), INTERVAL 8 HOUR), 800, TRUE, 'IN_PERSON', 'PUBLISHED', 'APPROVED', TRUE, TRUE),
+(3, 'Inter-College Football Championship Cup', 'inter-college-football-championship-2026', 'The annual tournament clash between Institute of Technology, Informatics, Business School, and Health Sciences.', 'Annual inter-department soccer tournament.', 3, 1, 3, 4, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 18 DAY), DATE_ADD(DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 18 DAY), INTERVAL 4 HOUR), 2000, FALSE, 'IN_PERSON', 'PUBLISHED', 'APPROVED', TRUE, TRUE);
 
 -- 13. SAMPLE ANNOUNCEMENTS
 INSERT INTO announcements (id, title, slug, content, summary, author_id, department_id, announcement_type, priority, status, published_at) VALUES
 (1, 'Campus-Wide Semester Registration Deadline Announced', 'campus-wide-semester-registration-deadline', 'All undergraduate and postgraduate students must finalize semester module registration through the unified student portal by Friday 5:00 PM.', 'Module registration deadline for the upcoming academic session.', 1, 2, 'ACADEMIC', 'URGENT', 'PUBLISHED', CURRENT_TIMESTAMP(6)),
-(2, 'Grand Tech Hackathon 2026 Registrations are Open', 'grand-tech-hackathon-2026-open', 'Registration for teams of 3-4 students is now officially open for the Annual Hawassa National Hackathon.', 'Register your hackathon teams before slots fill up.', 3, 1, 'NEWS', 'HIGH', 'PUBLISHED', CURRENT_TIMESTAMP(6));
+(2, 'Grand Tech Hackathon 2026 Registrations are Open', 'grand-tech-hackathon-2026-open', 'Registration for teams of 3-4 students is now officially open for the Annual Hawassa National Hackathon.', 'Register your hackathon teams before slots fill up.', 1, 1, 'NEWS', 'HIGH', 'PUBLISHED', CURRENT_TIMESTAMP(6));
 
 -- 14. SAMPLE SYSTEM SETTINGS
 INSERT INTO system_settings (setting_key, setting_value, description, updated_by) VALUES
