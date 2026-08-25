@@ -4,7 +4,9 @@
     Layout = "_Layout";
 }
 
-<link rel="stylesheet" href="~/css/about.css" asp-append-version="true" />
+@section Styles {
+    <link rel="stylesheet" href="~/css/about.css" asp-append-version="true" />
+}
 
 <main class="about-page">
 
@@ -679,7 +681,7 @@
 
     </section>
 
-</main>
-
-<script src="~/js/about.js" asp-append-version="true"></script>
+@section Scripts {
+    <script src="~/js/about.js" asp-append-version="true"></script>
+}
 

@@ -1578,15 +1578,17 @@ INSERT INTO venues (id, name, building_name, room_number, description, capacity,
 (4, 'Hawassa University Central Stadium', 'Sports Complex', 'Stadium-Main', 'Standard grass pitch, running tracks, and shaded pavilion stands', 5000, 'SPORTS_FIELD', 'AVAILABLE'),
 (5, 'Senate Executive Conference Room', 'University Senate Hall', 'Senate-200', 'Executive conference suite for academic symposiums & board meets', 60, 'MEETING_ROOM', 'AVAILABLE');
 
--- 9. SEED MASTER SUPERADMIN USER
--- Default password for master administrator: SuperAdmin@2026! (or Admin@2026)
--- Password hash generated using standard SHA256 / PBKDF2
+-- 9. SEED ACCOUNTS: SUPERADMIN AND ADMIN (WITH DISTINCT CREDENTIALS)
+-- Master SuperAdmin (Platform Owner): superadmin@hawassa.edu.et / SuperAdmin@2026!
+-- Campus Administrator (Events & Operations): admin@hawassa.edu.et / Admin@2026!
 INSERT INTO users (id, department_id, username, email, password_hash, first_name, last_name, student_id, employee_id, phone, account_type, account_status, email_verified, phone_verified) VALUES
-(1, 2, 'superadmin', 'superadmin@hawassa.edu.et', 'b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1', 'Dr. Ermias', 'SuperAdmin', NULL, 'EMP-SA-001', '+251911223344', 'SUPERADMIN', 'ACTIVE', TRUE, TRUE);
+(1, 2, 'superadmin', 'superadmin@hawassa.edu.et', 'b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1', 'Dr. Ermias', 'SuperAdmin', NULL, 'EMP-SA-001', '+251911223344', 'SUPERADMIN', 'ACTIVE', TRUE, TRUE),
+(2, 1, 'admin', 'admin@hawassa.edu.et', 'b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1', 'Abebe', 'Administrator', NULL, 'EMP-ADM-002', '+251911556677', 'ADMIN', 'ACTIVE', TRUE, TRUE);
 
--- 10. ASSIGN SUPERADMIN ROLE
+-- 10. ASSIGN ROLES
 INSERT INTO user_roles (user_id, role_id, assigned_by) VALUES
-(1, 1, 1);
+(1, 1, 1),  -- User 1 is SuperAdmin (role_id = 1)
+(2, 2, 1);  -- User 2 is Admin (role_id = 2)
 
 -- 11. SAMPLE ORGANIZATIONS
 INSERT INTO organizations (id, department_id, name, short_name, description, organization_type, email, status) VALUES

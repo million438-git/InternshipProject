@@ -147,4 +147,9 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+// ======================================================
+// 9. AUTOMATIC DATABASE SEEDING
+// ======================================================
+await DbInitializer.InitializeAsync(app.Services);
+
 app.Run();

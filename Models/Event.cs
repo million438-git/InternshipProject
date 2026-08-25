@@ -79,4 +79,12 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
             set => EventCount = value;
         }
     }
+
+    public class StudentMyEventsViewModel
+    {
+        public List<Event> RegisteredEvents { get; set; } = new();
+        public List<Event> OrganizedEvents { get; set; } = new();
+        public int TotalRegisteredCount => RegisteredEvents.Count;
+        public int TotalOrganizedCount => OrganizedEvents.Count;
+    }
 }

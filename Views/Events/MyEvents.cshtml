@@ -1,7 +1,7 @@
-@model IEnumerable<HawassaUnifiedCampusEventManagementSystem.Models.Event>
+@model HawassaUnifiedCampusEventManagementSystem.Models.StudentMyEventsViewModel
 
 @{
-    ViewData["Title"] = "My Events";
+    ViewData["Title"] = "My Events & Passes | HUCEMS";
     Layout = "_Layout";
 }
 
@@ -12,77 +12,236 @@
 <div class="events-page py-4">
     <div class="container">
 
+        <!-- HEADER -->
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 pb-3 border-bottom">
             <div>
                 <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-semibold mb-2">
-                    <i class="bi bi-calendar-event me-1"></i> EVENT MANAGEMENT
+                    <i class="bi bi-person-badge me-1"></i> STUDENT & ATTENDEE PORTAL
                 </span>
-                <h1 class="display-6 fw-bold text-dark mb-1">Events I Manage</h1>
-                <p class="text-muted mb-0">Review, manage, and coordinate events hosted by you or your department.</p>
+                <h1 class="display-6 fw-bold text-dark mb-1">My Campus Events & Schedule</h1>
+                <p class="text-muted mb-0">Manage your event registrations, attendee passes, and organized campus activities.</p>
             </div>
 
             <div class="d-flex align-items-center gap-2">
-                <a asp-controller="Events" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                <a asp-controller="Events" asp-action="Index" class="btn btn-outline-primary btn-sm px-3">
                     <i class="bi bi-compass me-1"></i> Explore All Events
                 </a>
+                <a asp-controller="Calendar" asp-action="Index" class="btn btn-outline-secondary btn-sm px-3">
+                    <i class="bi bi-calendar3 me-1"></i> Interactive Calendar
+                </a>
                 <a asp-controller="Events" asp-action="Create" class="btn btn-primary btn-sm px-3 fw-semibold">
-                    <i class="bi bi-plus-circle me-1"></i> Create New Event
+                    <i class="bi bi-plus-circle me-1"></i> Propose Event
                 </a>
             </div>
         </div>
 
-        @if (Model != null && Model.Any())
-        {
-            <div class="row g-4">
-                @foreach (var item in Model)
+        <!-- QUICK STATS CARDS -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm rounded-3 p-3 bg-white">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-3 bg-primary-subtle text-primary rounded-3 fs-4">
+                            <i class="bi bi-ticket-perforated-fill"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Registered Passes</span>
+                            <h3 class="fw-bold mb-0 text-dark">@Model.TotalRegisteredCount</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm rounded-3 p-3 bg-white">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-3 bg-success-subtle text-success rounded-3 fs-4">
+                            <i class="bi bi-calendar-check-fill"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Events I Host</span>
+                            <h3 class="fw-bold mb-0 text-dark">@Model.TotalOrganizedCount</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm rounded-3 p-3 bg-white">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-3 bg-warning-subtle text-warning-emphasis rounded-3 fs-4">
+                            <i class="bi bi-award-fill"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Hawassa Campus</span>
+                            <h5 class="fw-bold mb-0 text-dark">Main / IoT / CIC</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm rounded-3 p-3 bg-white">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-3 bg-info-subtle text-info rounded-3 fs-4">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Account Role</span>
+                            <h5 class="fw-bold mb-0 text-dark">Student Member</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 1: REGISTERED CAMPUS EVENTS (RSVPS) -->
+        <div class="card border-0 shadow-sm rounded-4 mb-5 overflow-hidden">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-ticket-detailed-fill text-primary fs-5"></i>
+                    <h2 class="h5 fw-bold mb-0 text-dark">My Registered Events (Attending)</h2>
+                </div>
+                <span class="badge bg-primary rounded-pill px-3 py-2">@Model.TotalRegisteredCount Enrolled</span>
+            </div>
+
+            <div class="card-body p-4">
+                @if (Model.RegisteredEvents.Any())
                 {
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
-                            <div class="card-body p-4 d-flex flex-column">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-1 small">
-                                        @item.Category
-                                    </span>
-                                    <span class="badge @(item.ApprovalStatus == "APPROVED" ? "bg-success" : item.ApprovalStatus == "PENDING" ? "bg-warning text-dark" : "bg-danger") rounded-pill px-2 py-1 small">
-                                        @item.ApprovalStatus
-                                    </span>
-                                </div>
+                    <div class="row g-4">
+                        @foreach (var item in Model.RegisteredEvents)
+                        {
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card h-100 border rounded-3 shadow-none hover-shadow transition">
+                                    <div class="card-body p-4 d-flex flex-column">
+                                        
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="badge bg-primary-subtle text-primary rounded-pill px-2 py-1 small">
+                                                @item.Category
+                                            </span>
+                                            <span class="badge bg-success rounded-pill px-2 py-1 small">
+                                                <i class="bi bi-check-circle me-1"></i> Registered
+                                            </span>
+                                        </div>
 
-                                <h5 class="fw-bold text-dark mb-2">@item.Title</h5>
+                                        <h5 class="fw-bold text-dark mb-2">
+                                            <a asp-controller="Events" asp-action="Details" asp-route-id="@item.Id" class="text-dark text-decoration-none hover-primary">
+                                                @item.Title
+                                            </a>
+                                        </h5>
 
-                                <div class="text-muted small d-flex flex-column gap-1 mb-3">
-                                    <div><i class="bi bi-calendar me-1 text-primary"></i>@item.EventDate.ToString("ddd, MMM dd, yyyy")</div>
-                                    <div><i class="bi bi-geo-alt me-1 text-danger"></i>@item.Venue</div>
-                                    <div><i class="bi bi-people me-1 text-info"></i>@item.RegisteredCount @(item.Capacity.HasValue ? $"/ {item.Capacity.Value} capacity" : "registered")</div>
-                                </div>
+                                        @if (!string.IsNullOrEmpty(item.ShortDescription))
+                                        {
+                                            <p class="text-muted small mb-3 text-truncate-2">@item.ShortDescription</p>
+                                        }
 
-                                <div class="mt-auto d-flex gap-2 pt-2 border-top">
-                                    <a asp-controller="Events" asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm w-100">
-                                        View Page
-                                    </a>
-                                    <a asp-controller="Events" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-secondary btn-sm" title="Edit Event">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
+                                        <div class="text-muted small d-flex flex-column gap-1 mb-3">
+                                            <div><i class="bi bi-calendar3 me-2 text-primary"></i>@item.EventDate.ToString("ddd, MMM dd, yyyy")</div>
+                                            <div><i class="bi bi-clock me-2 text-secondary"></i>@item.StartTime.ToString(@"hh\:mm")</div>
+                                            <div><i class="bi bi-geo-alt-fill me-2 text-danger"></i>@item.Venue</div>
+                                            @if (!string.IsNullOrEmpty(item.Organizer))
+                                            {
+                                                <div><i class="bi bi-person-fill me-2 text-info"></i>Hosted by @item.Organizer</div>
+                                            }
+                                        </div>
+
+                                        <div class="mt-auto pt-3 border-top d-flex gap-2">
+                                            <a asp-controller="Events" asp-action="Details" asp-route-id="@item.Id" class="btn btn-primary btn-sm flex-grow-1">
+                                                <i class="bi bi-eye me-1"></i> View Event & Pass
+                                            </a>
+                                            <form asp-controller="Events" asp-action="CancelRegistration" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to cancel your registration for this event?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Cancel Registration">
+                                                    <i class="bi bi-x-circle"></i> Cancel
+                                                </button>
+                                            </form>
+                                        </div>
+
+                                    </div>
                                 </div>
                             </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5 bg-light rounded-3 p-4">
+                        <div class="bg-white p-3 rounded-circle d-inline-block text-muted shadow-sm mb-3" style="width: 70px; height: 70px;">
+                            <i class="bi bi-ticket-perforated fs-1 text-primary"></i>
                         </div>
+                        <h4 class="h5 fw-bold text-dark mb-1">No Active Event Registrations</h4>
+                        <p class="text-muted small mb-3">You haven't reserved tickets for any upcoming events yet.</p>
+                        <a asp-controller="Events" asp-action="Index" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold">
+                            <i class="bi bi-compass me-1"></i> Browse & Register for Events
+                        </a>
                     </div>
                 }
             </div>
-        }
-        else
-        {
-            <div class="text-center py-5 bg-light rounded-4 p-5">
-                <div class="bg-white p-4 rounded-circle d-inline-block text-muted shadow-sm mb-3" style="width: 80px; height: 80px;">
-                    <i class="bi bi-calendar-plus fs-1 text-secondary"></i>
+        </div>
+
+        <!-- SECTION 2: EVENTS I MANAGE (ORGANIZED EVENTS) -->
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-kanban-fill text-success fs-5"></i>
+                    <h2 class="h5 fw-bold mb-0 text-dark">Events I Manage (Organizer)</h2>
                 </div>
-                <h3 class="h5 fw-bold text-dark mb-1">No Hosted Events Found</h3>
-                <p class="text-muted small mb-3">You haven't created any campus events yet.</p>
-                <a asp-controller="Events" asp-action="Create" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold">
-                    Create Your First Event
-                </a>
+                @if (Model.OrganizedEvents.Any())
+                {
+                    <span class="badge bg-success rounded-pill px-3 py-2">@Model.TotalOrganizedCount Hosted</span>
+                }
             </div>
-        }
+
+            <div class="card-body p-4">
+                @if (Model.OrganizedEvents.Any())
+                {
+                    <div class="row g-4">
+                        @foreach (var item in Model.OrganizedEvents)
+                        {
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card h-100 border rounded-3 shadow-none hover-shadow transition">
+                                    <div class="card-body p-4 d-flex flex-column">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-1 small">
+                                                @item.Category
+                                            </span>
+                                            <span class="badge @(item.ApprovalStatus == "APPROVED" ? "bg-success" : item.ApprovalStatus == "PENDING" ? "bg-warning text-dark" : "bg-danger") rounded-pill px-2 py-1 small">
+                                                @item.ApprovalStatus
+                                            </span>
+                                        </div>
+
+                                        <h5 class="fw-bold text-dark mb-2">@item.Title</h5>
+
+                                        <div class="text-muted small d-flex flex-column gap-1 mb-3">
+                                            <div><i class="bi bi-calendar3 me-2 text-primary"></i>@item.EventDate.ToString("ddd, MMM dd, yyyy")</div>
+                                            <div><i class="bi bi-geo-alt-fill me-2 text-danger"></i>@item.Venue</div>
+                                            <div><i class="bi bi-people-fill me-2 text-info"></i>@item.RegisteredCount @(item.Capacity.HasValue ? $"/ {item.Capacity.Value} capacity" : "registered")</div>
+                                        </div>
+
+                                        <div class="mt-auto d-flex gap-2 pt-3 border-top">
+                                            <a asp-controller="Events" asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm flex-grow-1">
+                                                View Page
+                                            </a>
+                                            <a asp-controller="Events" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-secondary btn-sm" title="Edit Event">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 bg-light rounded-3 p-4">
+                        <p class="text-muted small mb-2">You have not created or submitted any hosted events yet.</p>
+                        <a asp-controller="Events" asp-action="Create" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                            <i class="bi bi-plus-circle me-1"></i> Propose a New Campus Event
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
 
     </div>
 </div>

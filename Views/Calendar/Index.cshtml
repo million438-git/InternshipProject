@@ -3,9 +3,11 @@
     Layout = "_Layout";
 }
 
-<link rel="stylesheet"
-      href="~/css/calendar.css"
-      asp-append-version="true" />
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/calendar.css"
+          asp-append-version="true" />
+}
 
 <div class="calendar-page">
 
@@ -560,6 +562,8 @@
 </div>
 
 
-<script src="~/js/calendar.js"
-        asp-append-version="true">
-</script>
+@section Scripts {
+    <script src="~/js/calendar.js"
+            asp-append-version="true">
+    </script>
+}

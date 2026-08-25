@@ -144,58 +144,72 @@
                     </div>
 
                     <div class="card-body p-3">
-                        <div class="event-list d-flex flex-column gap-3">
-                            @foreach (var ev in Model.MyRegisteredEvents)
-                            {
-                                <article class="dashboard-event-item card border p-3 rounded-3 shadow-none hover-shadow transition">
-                                    <div class="d-flex flex-wrap flex-md-nowrap align-items-center gap-3">
-                                        
-                                        <!-- DATE BADGE -->
-                                        <div class="event-date-badge text-center rounded-3 p-2 bg-primary-subtle border border-primary-subtle flex-shrink-0" style="min-width: 70px;">
-                                            <span class="d-block small text-uppercase fw-bold text-primary">@ev.StartDate.ToString("MMM")</span>
-                                            <strong class="fs-4 d-block fw-bold text-dark">@ev.StartDate.Day</strong>
-                                            <span class="d-block text-muted" style="font-size: 11px;">@ev.StartDate.ToString("ddd")</span>
-                                        </div>
-
-                                        <!-- EVENT INFO -->
-                                        <div class="event-information flex-grow-1">
-                                            <div class="d-flex align-items-center gap-2 mb-1">
-                                                <span class="badge bg-primary text-white small px-2 py-1">
-                                                    @ev.CategoryName
-                                                </span>
-                                                <span class="badge bg-success-subtle text-success small px-2 py-1">
-                                                    <i class="bi bi-check-circle-fill me-1"></i>Registered
-                                                </span>
-                                                <small class="text-muted"><i class="bi bi-clock me-1"></i>@ev.StartDate.ToString("hh:mm tt")</small>
+                        @if (Model.MyRegisteredEvents.Any())
+                        {
+                            <div class="event-list d-flex flex-column gap-3">
+                                @foreach (var ev in Model.MyRegisteredEvents)
+                                {
+                                    <article class="dashboard-event-item card border p-3 rounded-3 shadow-none hover-shadow transition">
+                                        <div class="d-flex flex-wrap flex-md-nowrap align-items-center gap-3">
+                                            
+                                            <!-- DATE BADGE -->
+                                            <div class="event-date-badge text-center rounded-3 p-2 bg-primary-subtle border border-primary-subtle flex-shrink-0" style="min-width: 70px;">
+                                                <span class="d-block small text-uppercase fw-bold text-primary">@ev.StartDate.ToString("MMM")</span>
+                                                <strong class="fs-4 d-block fw-bold text-dark">@ev.StartDate.Day</strong>
+                                                <span class="d-block text-muted" style="font-size: 11px;">@ev.StartDate.ToString("ddd")</span>
                                             </div>
 
-                                            <h3 class="h6 fw-bold text-dark mb-1">
-                                                <a asp-controller="Events" asp-action="Details" asp-route-id="@ev.Id" class="text-dark text-decoration-none hover-primary">
-                                                    @ev.Title
+                                            <!-- EVENT INFO -->
+                                            <div class="event-information flex-grow-1">
+                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                    <span class="badge bg-primary text-white small px-2 py-1">
+                                                        @ev.CategoryName
+                                                    </span>
+                                                    <span class="badge bg-success-subtle text-success small px-2 py-1">
+                                                        <i class="bi bi-check-circle-fill me-1"></i>Registered
+                                                    </span>
+                                                    <small class="text-muted"><i class="bi bi-clock me-1"></i>@ev.StartDate.ToString("hh:mm tt")</small>
+                                                </div>
+
+                                                <h3 class="h6 fw-bold text-dark mb-1">
+                                                    <a asp-controller="Events" asp-action="Details" asp-route-id="@ev.Id" class="text-dark text-decoration-none hover-primary">
+                                                        @ev.Title
+                                                    </a>
+                                                </h3>
+
+                                                @if (!string.IsNullOrEmpty(ev.ShortDescription))
+                                                {
+                                                    <p class="text-muted small mb-2 text-truncate-2">@ev.ShortDescription</p>
+                                                }
+
+                                                <div class="d-flex flex-wrap align-items-center gap-3 text-muted small">
+                                                    <span><i class="bi bi-geo-alt-fill me-1 text-danger"></i>@ev.VenueName</span>
+                                                    <span><i class="bi bi-person-fill me-1 text-primary"></i>Hosted by @ev.OrganizerName</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- ACTION BUTTON -->
+                                            <div class="flex-shrink-0 text-end">
+                                                <a asp-controller="Events" asp-action="Details" asp-route-id="@ev.Id" class="btn btn-sm btn-outline-primary px-3">
+                                                    Ticket / Pass <i class="bi bi-qr-code ms-1"></i>
                                                 </a>
-                                            </h3>
-
-                                            @if (!string.IsNullOrEmpty(ev.ShortDescription))
-                                            {
-                                                <p class="text-muted small mb-2 text-truncate-2">@ev.ShortDescription</p>
-                                            }
-
-                                            <div class="d-flex flex-wrap align-items-center gap-3 text-muted small">
-                                                <span><i class="bi bi-geo-alt-fill me-1 text-danger"></i>@ev.VenueName</span>
-                                                <span><i class="bi bi-person-fill me-1 text-primary"></i>Hosted by @ev.OrganizerName</span>
                                             </div>
                                         </div>
-
-                                        <!-- ACTION BUTTON -->
-                                        <div class="flex-shrink-0 text-end">
-                                            <a asp-controller="Events" asp-action="Details" asp-route-id="@ev.Id" class="btn btn-sm btn-outline-primary px-3">
-                                                Ticket / Pass <i class="bi bi-qr-code ms-1"></i>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </article>
-                            }
-                        </div>
+                                    </article>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4 px-3 bg-light rounded-3">
+                                <i class="bi bi-ticket-perforated fs-1 text-primary d-block mb-2"></i>
+                                <h6 class="fw-bold text-dark mb-1">No Active Event Registrations</h6>
+                                <p class="text-muted small mb-3">Explore university hackathons, workshops, guest lectures, and tournaments.</p>
+                                <a asp-controller="Events" asp-action="Index" class="btn btn-sm btn-primary rounded-pill px-4 fw-semibold">
+                                    <i class="bi bi-compass me-1"></i> Browse Campus Events
+                                </a>
+                            </div>
+                        }
                     </div>
                 </div>
 

@@ -242,6 +242,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public uint Capacity { get; set; }
         public string VenueType { get; set; } = "AUDITORIUM";
         public string Status { get; set; } = "AVAILABLE";
+        public string? Amenities { get; set; }
+        public string? Description { get; set; }
         public int ScheduledEventsCount { get; set; }
     }
 

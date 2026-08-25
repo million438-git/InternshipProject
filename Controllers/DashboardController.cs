@@ -51,6 +51,52 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         {
             var (userId, userName, userEmail, userRole, userDept, formattedId, studentId, empId, bio) = await GetUserInfoAsync();
 
+            int realRegisteredCount = 0;
+            List<DashboardEventItem> studentRegisteredEvents = new();
+
+            if (userId.HasValue)
+            {
+                try
+                {
+                    realRegisteredCount = await _db.registrations
+                        .CountAsync(r => r.user_id == userId.Value && r.status == "REGISTERED");
+
+                    var registeredDbEvents = await _db.registrations
+                        .Where(r => r.user_id == userId.Value && r.status == "REGISTERED")
+                        .Include(r => r._event)
+                            .ThenInclude(e => e.category)
+                        .Include(r => r._event)
+                            .ThenInclude(e => e.venue)
+                        .Include(r => r._event)
+                            .ThenInclude(e => e.organizer)
+                        .Select(r => r._event)
+                        .Where(e => e != null)
+                        .OrderBy(e => e.start_at)
+                        .ToListAsync();
+
+                    if (registeredDbEvents.Any())
+                    {
+                        studentRegisteredEvents = registeredDbEvents.Select(e => new DashboardEventItem
+                        {
+                            Id = e.id,
+                            Title = e.title,
+                            ShortDescription = e.short_description ?? (e.description != null && e.description.Length > 90 ? e.description.Substring(0, 90) + "..." : e.description),
+                            ImageUrl = e.image_url,
+                            StartDate = e.start_at,
+                            VenueName = e.venue?.name ?? "Main Campus Hall",
+                            CategoryName = e.category?.name ?? "Academic",
+                            OrganizerName = e.organizer != null ? $"{e.organizer.first_name} {e.organizer.last_name}".Trim() : "Hawassa University",
+                            IsRegistered = true,
+                            Capacity = (int)(e.capacity ?? 100)
+                        }).ToList();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to load real student registered events.");
+                }
+            }
+
             var vm = new StudentDashboardViewModel
             {
                 UserName = userName,
@@ -58,11 +104,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 UserRole = "Student",
                 UserDepartment = userDept,
                 UserId = formattedId,
-                StudentId = studentId ?? "HU/2026/CS-883",
-                RegisteredEventsCount = 4,
-                AttendedEventsCount = 12,
-                EarnedCertificatesCount = 5,
-                UpcomingWorkshopsCount = 2
+                StudentId = !string.IsNullOrWhiteSpace(studentId) ? studentId : "HU/2026/CS-883",
+                RegisteredEventsCount = realRegisteredCount,
+                AttendedEventsCount = realRegisteredCount > 0 ? (int)Math.Ceiling(realRegisteredCount * 0.7) : 0,
+                EarnedCertificatesCount = realRegisteredCount > 0 ? (int)Math.Ceiling(realRegisteredCount * 0.5) : 0,
+                UpcomingWorkshopsCount = studentRegisteredEvents.Count(e => e.StartDate >= DateTime.Now)
             };
 
             await PopulateSharedStatsAsync(vm);
@@ -71,15 +117,42 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             PopulateNotifications(vm, "Student");
 
             // Student-specific data
-            vm.MyRegisteredEvents = vm.UpcomingEvents.Take(3).ToList();
-            foreach (var ev in vm.MyRegisteredEvents) ev.IsRegistered = true;
+            vm.MyRegisteredEvents = studentRegisteredEvents;
 
-            vm.RecommendedClubs = new List<DashboardClubItem>
+            // Load real campus organizations/clubs
+            try
             {
-                new() { Id = 1, Name = "Google Developer Student Club (GDSC)", Category = "Technology & Coding", MemberCount = 210, Description = "Peer-to-peer learning environment for students interested in software and AI technologies." },
-                new() { Id = 2, Name = "Hawassa Cyber Knights", Category = "Cybersecurity", MemberCount = 145, Description = "CTF competitions, ethical hacking workshops, and security defense challenges." },
-                new() { Id = 3, Name = "Campus Debate & Model UN", Category = "Leadership & Policy", MemberCount = 95, Description = "Sharpen public speaking, debate, and global diplomatic simulation skills." }
-            };
+                var dbClubs = await _db.organizations
+                    .Where(o => o.status == "ACTIVE")
+                    .Take(4)
+                    .ToListAsync();
+
+                if (dbClubs.Any())
+                {
+                    vm.RecommendedClubs = dbClubs.Select(c => new DashboardClubItem
+                    {
+                        Id = c.id,
+                        Name = c.name,
+                        Category = c.organization_type ?? "Student Club",
+                        MemberCount = 150,
+                        Description = c.description ?? "Official Hawassa University student organization."
+                    }).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load active clubs.");
+            }
+
+            if (!vm.RecommendedClubs.Any())
+            {
+                vm.RecommendedClubs = new List<DashboardClubItem>
+                {
+                    new() { Id = 1, Name = "Google Developer Student Club (GDSC HU)", Category = "Technology & Coding", MemberCount = 210, Description = "Peer-to-peer learning environment for students interested in software and AI technologies." },
+                    new() { Id = 2, Name = "Hawassa Cyber Knights Security Guild", Category = "Cybersecurity", MemberCount = 145, Description = "CTF competitions, ethical hacking workshops, and security defense challenges." },
+                    new() { Id = 3, Name = "Hawassa University Student Union (HUSU)", Category = "Student Governance", MemberCount = 500, Description = "Official student leadership and campus representation guild." }
+                };
+            }
 
             return View("Student", vm);
         }

@@ -448,6 +448,37 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         }
 
         // =========================================================
+        // GET: /Events/Delete/5
+        // Allowed: Event Organizer (Owner) OR Admin / SuperAdmin
+        // =========================================================
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> Delete(ulong? id)
+        {
+            if (id == null || id == 0) return NotFound();
+
+            var currentUserId = GetCurrentUserId();
+            var isAdmin = IsAdminOrSuperAdmin();
+
+            var e = await _db.events
+                .Include(x => x.category)
+                .Include(x => x.venue)
+                .Include(x => x.organizer)
+                .FirstOrDefaultAsync(x => x.id == id.Value);
+
+            if (e == null) return NotFound();
+
+            // Enforce ownership or admin privilege
+            if (e.organizer_id != currentUserId && !isAdmin)
+            {
+                TempData["ErrorMessage"] = "You are not authorized to delete this event.";
+                return Forbid();
+            }
+
+            return View(ToViewModel(e, currentUserId));
+        }
+
+        // =========================================================
         // POST: /Events/Delete/5
         // Allowed: Event Organizer (Owner) OR Admin / SuperAdmin
         // =========================================================
@@ -604,10 +635,26 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var currentUserId = GetCurrentUserId();
             if (!currentUserId.HasValue)
             {
-                return View(Enumerable.Empty<Event>());
+                return View(new StudentMyEventsViewModel());
             }
 
-            var userEvents = await _db.events
+            // 1. Events the user has registered to attend (Student RSVPs)
+            var registeredEventIds = await _db.registrations
+                .Where(r => r.user_id == currentUserId.Value && r.status == "REGISTERED")
+                .Select(r => r.event_id)
+                .ToListAsync();
+
+            var registeredEvents = await _db.events
+                .Include(x => x.category)
+                .Include(x => x.venue)
+                .Include(x => x.organizer)
+                .Include(x => x.registrations)
+                .Where(x => registeredEventIds.Contains(x.id))
+                .OrderBy(x => x.start_at)
+                .ToListAsync();
+
+            // 2. Events organized by the user (if any)
+            var organizedEvents = await _db.events
                 .Include(x => x.category)
                 .Include(x => x.venue)
                 .Include(x => x.organizer)
@@ -616,7 +663,12 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 .OrderByDescending(x => x.start_at)
                 .ToListAsync();
 
-            var vm = userEvents.Select(e => ToViewModel(e, currentUserId)).ToList();
+            var vm = new StudentMyEventsViewModel
+            {
+                RegisteredEvents = registeredEvents.Select(e => ToViewModel(e, currentUserId)).ToList(),
+                OrganizedEvents = organizedEvents.Select(e => ToViewModel(e, currentUserId)).ToList()
+            };
+
             return View(vm);
         }
 

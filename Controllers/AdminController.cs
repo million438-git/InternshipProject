@@ -329,29 +329,76 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UserDelete(ulong id)
         {
-            var user = await _db.users.FindAsync(id);
-            if (user != null)
+            try
             {
-                var targetType = user.account_type?.ToUpperInvariant() ?? "STUDENT";
-                if ((targetType == "ADMIN" || targetType == "SUPERADMIN") && !IsSuperAdmin())
+                var user = await _db.users.FindAsync(id);
+                if (user != null)
                 {
-                    TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin can delete administrator accounts.";
-                    return RedirectToAction(nameof(Users));
-                }
+                    var targetType = user.account_type?.ToUpperInvariant() ?? "STUDENT";
+                    if ((targetType == "ADMIN" || targetType == "SUPERADMIN") && !IsSuperAdmin())
+                    {
+                        TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin can delete administrator accounts.";
+                        return RedirectToAction(nameof(Users));
+                    }
 
-                if (targetType == "SUPERADMIN")
+                    if (targetType == "SUPERADMIN")
+                    {
+                        TempData["ErrorMessage"] = "Safety restriction: SuperAdmin accounts cannot be deleted directly.";
+                        return RedirectToAction(nameof(Users));
+                    }
+
+                    var currentAdminId = GetCurrentUserId() ?? 1;
+
+                    // Unlink/cascade associated records
+                    var userRoles = await _db.user_roles.Where(ur => ur.user_id == id).ToListAsync();
+                    if (userRoles.Any()) _db.user_roles.RemoveRange(userRoles);
+
+                    var userSessions = await _db.sessions.Where(s => s.user_id == id).ToListAsync();
+                    if (userSessions.Any()) _db.sessions.RemoveRange(userSessions);
+
+                    var userNotifs = await _db.notifications.Where(n => n.user_id == id).ToListAsync();
+                    if (userNotifs.Any()) _db.notifications.RemoveRange(userNotifs);
+
+                    var userRegs = await _db.registrations.Where(r => r.user_id == id).ToListAsync();
+                    if (userRegs.Any()) _db.registrations.RemoveRange(userRegs);
+
+                    var userFeedbacks = await _db.event_feedbacks.Where(f => f.user_id == id).ToListAsync();
+                    if (userFeedbacks.Any()) _db.event_feedbacks.RemoveRange(userFeedbacks);
+
+                    var userComments = await _db.event_comments.Where(c => c.user_id == id).ToListAsync();
+                    if (userComments.Any()) _db.event_comments.RemoveRange(userComments);
+
+                    var orgMembers = await _db.organization_members.Where(m => m.user_id == id).ToListAsync();
+                    if (orgMembers.Any()) _db.organization_members.RemoveRange(orgMembers);
+
+                    // Reassign organized events or announcements to current admin so they aren't orphaned
+                    var organizedEvents = await _db.events.Where(e => e.organizer_id == id).ToListAsync();
+                    foreach (var e in organizedEvents) e.organizer_id = currentAdminId;
+
+                    var authoredAnnouncements = await _db.announcements.Where(a => a.author_id == id).ToListAsync();
+                    foreach (var a in authoredAnnouncements) a.author_id = currentAdminId;
+
+                    _db.users.Remove(user);
+                    await _db.SaveChangesAsync();
+                    await LogAuditAsync("USER_DELETED", "USER", id, $"Deleted user {user.username} ({user.email})");
+                    TempData["SuccessMessage"] = $"User {user.username} has been deleted.";
+                }
+                else
                 {
-                    TempData["ErrorMessage"] = "Safety restriction: SuperAdmin accounts cannot be deleted directly.";
-                    return RedirectToAction(nameof(Users));
+                    TempData["ErrorMessage"] = "User not found.";
                 }
-
-                _db.users.Remove(user);
-                await _db.SaveChangesAsync();
-                await LogAuditAsync("USER_DELETED", "USER", id, $"Deleted user {user.username} ({user.email})");
-                TempData["SuccessMessage"] = $"User {user.username} has been deleted.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting user");
+                TempData["ErrorMessage"] = "Failed to delete user: " + ex.Message;
             }
             return RedirectToAction(nameof(Users));
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteUser(ulong id) => await UserDelete(id);
 
         // =========================================================
         // 3. EVENT MANAGEMENT
@@ -481,16 +528,54 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EventDelete(ulong id)
         {
-            var evt = await _db.events.FindAsync(id);
-            if (evt != null)
+            try
             {
-                _db.events.Remove(evt);
-                await _db.SaveChangesAsync();
-                await LogAuditAsync("EVENT_DELETED", "EVENT", id, $"Deleted event: {evt.title}");
-                TempData["SuccessMessage"] = $"Event '{evt.title}' deleted successfully.";
+                var evt = await _db.events.FindAsync(id);
+                if (evt != null)
+                {
+                    // Safely remove child registrations, feedbacks, and comments
+                    var regs = await _db.registrations.Where(r => r.event_id == id).ToListAsync();
+                    if (regs.Any()) _db.registrations.RemoveRange(regs);
+
+                    var fbs = await _db.event_feedbacks.Where(f => f.event_id == id).ToListAsync();
+                    if (fbs.Any()) _db.event_feedbacks.RemoveRange(fbs);
+
+                    var coms = await _db.event_comments.Where(c => c.event_id == id).ToListAsync();
+                    if (coms.Any()) _db.event_comments.RemoveRange(coms);
+
+                    _db.events.Remove(evt);
+                    await _db.SaveChangesAsync();
+                    await LogAuditAsync("EVENT_DELETED", "EVENT", id, $"Deleted event: {evt.title}");
+                    TempData["SuccessMessage"] = $"Event '{evt.title}' deleted successfully.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Event not found.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting event");
+                TempData["ErrorMessage"] = "Failed to delete event: " + ex.Message;
             }
             return RedirectToAction(nameof(Events));
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteEvent(ulong id) => await EventDelete(id);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveEvent(ulong id) => await EventApprove(id);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectEvent(ulong id, string? reason) => await EventReject(id, reason);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> FeatureEvent(ulong id) => await EventToggleFeature(id);
 
         // =========================================================
         // 4. ANNOUNCEMENT MANAGEMENT
@@ -540,7 +625,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AnnouncementCreate(string title, string content, string priority, bool isPinned)
+        public async Task<IActionResult> AnnouncementCreate(string title, string content, string? priority, bool isPinned)
         {
             try
             {
@@ -587,18 +672,75 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AnnouncementDelete(ulong id)
+        public async Task<IActionResult> CreateAnnouncement(string title, string content, string? priority, bool isPinned)
+            => await AnnouncementCreate(title, content, priority, isPinned);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AnnouncementEdit(ulong id, string title, string content, string? priority, string? type)
         {
-            var ann = await _db.announcements.FindAsync(id);
-            if (ann != null)
+            try
             {
-                _db.announcements.Remove(ann);
+                var ann = await _db.announcements.FindAsync(id);
+                if (ann == null)
+                {
+                    TempData["ErrorMessage"] = "Announcement not found.";
+                    return RedirectToAction(nameof(Announcements));
+                }
+
+                ann.title = title;
+                ann.content = content;
+                if (!string.IsNullOrEmpty(priority)) ann.priority = priority;
+                if (!string.IsNullOrEmpty(type)) ann.announcement_type = type;
+                ann.updated_at = DateTime.UtcNow;
+
                 await _db.SaveChangesAsync();
-                await LogAuditAsync("ANNOUNCEMENT_DELETED", "ANNOUNCEMENT", id, $"Deleted announcement: {ann.title}");
-                TempData["SuccessMessage"] = "Announcement deleted successfully.";
+                await LogAuditAsync("ANNOUNCEMENT_UPDATED", "ANNOUNCEMENT", id, $"Updated announcement: {title}");
+                TempData["SuccessMessage"] = "Announcement updated successfully.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating announcement");
+                TempData["ErrorMessage"] = "Failed to update announcement: " + ex.Message;
             }
             return RedirectToAction(nameof(Announcements));
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditAnnouncement(ulong id, string title, string content, string? priority, string? type)
+            => await AnnouncementEdit(id, title, content, priority, type);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AnnouncementDelete(ulong id)
+        {
+            try
+            {
+                var ann = await _db.announcements.FindAsync(id);
+                if (ann != null)
+                {
+                    _db.announcements.Remove(ann);
+                    await _db.SaveChangesAsync();
+                    await LogAuditAsync("ANNOUNCEMENT_DELETED", "ANNOUNCEMENT", id, $"Deleted announcement: {ann.title}");
+                    TempData["SuccessMessage"] = "Announcement deleted successfully.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Announcement not found.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting announcement");
+                TempData["ErrorMessage"] = "Failed to delete announcement: " + ex.Message;
+            }
+            return RedirectToAction(nameof(Announcements));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteAnnouncement(ulong id) => await AnnouncementDelete(id);
 
         // =========================================================
         // 5. ORGANIZATION MANAGEMENT
@@ -649,7 +791,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> OrganizationCreate(string name, string? shortName, string organizationType, string? email, string? phone)
+        public async Task<IActionResult> OrganizationCreate(string name, string? shortName, string? description, string organizationType, ulong? departmentId, string? email, string? phone)
         {
             try
             {
@@ -657,6 +799,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 {
                     name = name,
                     short_name = shortName,
+                    description = description,
+                    department_id = departmentId,
                     organization_type = string.IsNullOrEmpty(organizationType) ? "CLUB" : organizationType,
                     email = email,
                     phone = phone,
@@ -672,10 +816,55 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating organization");
-                TempData["ErrorMessage"] = "Failed to create organization.";
+                TempData["ErrorMessage"] = "Failed to create organization: " + ex.Message;
             }
             return RedirectToAction(nameof(Organizations));
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateOrganization(string name, string? shortName, string? description, string organizationType, ulong? departmentId, string? email, string? phone)
+            => await OrganizationCreate(name, shortName, description, organizationType, departmentId, email, phone);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> OrganizationEdit(ulong id, string name, string? shortName, string? description, string organizationType, ulong? departmentId, string? email, string? phone, string status)
+        {
+            try
+            {
+                var org = await _db.organizations.FindAsync(id);
+                if (org == null)
+                {
+                    TempData["ErrorMessage"] = "Organization not found.";
+                    return RedirectToAction(nameof(Organizations));
+                }
+
+                org.name = name;
+                org.short_name = shortName;
+                org.description = description;
+                org.organization_type = organizationType;
+                org.department_id = departmentId;
+                org.email = email;
+                org.phone = phone;
+                org.status = status.ToUpper();
+                org.updated_at = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync();
+                await LogAuditAsync("ORGANIZATION_UPDATED", "ORGANIZATION", id, $"Updated organization: {name}");
+                TempData["SuccessMessage"] = $"Organization '{name}' updated successfully.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating organization");
+                TempData["ErrorMessage"] = "Failed to update organization: " + ex.Message;
+            }
+            return RedirectToAction(nameof(Organizations));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditOrganization(ulong id, string name, string? shortName, string? description, string organizationType, ulong? departmentId, string? email, string? phone, string status)
+            => await OrganizationEdit(id, name, shortName, description, organizationType, departmentId, email, phone, status);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -696,16 +885,43 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> OrganizationDelete(ulong id)
         {
-            var org = await _db.organizations.FindAsync(id);
-            if (org != null)
+            try
             {
-                _db.organizations.Remove(org);
-                await _db.SaveChangesAsync();
-                await LogAuditAsync("ORGANIZATION_DELETED", "ORGANIZATION", id, $"Deleted organization: {org.name}");
-                TempData["SuccessMessage"] = $"Organization '{org.name}' deleted successfully.";
+                var org = await _db.organizations.FindAsync(id);
+                if (org != null)
+                {
+                    // Safely unlink events and remove members
+                    var linkedEvents = await _db.events.Where(e => e.organization_id == id).ToListAsync();
+                    foreach (var e in linkedEvents)
+                    {
+                        e.organization_id = null;
+                        e.updated_at = DateTime.UtcNow;
+                    }
+
+                    var members = await _db.organization_members.Where(m => m.organization_id == id).ToListAsync();
+                    if (members.Any()) _db.organization_members.RemoveRange(members);
+
+                    _db.organizations.Remove(org);
+                    await _db.SaveChangesAsync();
+                    await LogAuditAsync("ORGANIZATION_DELETED", "ORGANIZATION", id, $"Deleted organization: {org.name}");
+                    TempData["SuccessMessage"] = $"Organization '{org.name}' deleted successfully.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Organization not found.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting organization");
+                TempData["ErrorMessage"] = "Failed to delete organization: " + ex.Message;
             }
             return RedirectToAction(nameof(Organizations));
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteOrganization(ulong id) => await OrganizationDelete(id);
 
         // =========================================================
         // 6. FACULTIES & DEPARTMENTS
@@ -765,25 +981,115 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding faculty");
-                TempData["ErrorMessage"] = "Failed to add faculty.";
+                TempData["ErrorMessage"] = "Failed to add faculty: " + ex.Message;
             }
             return RedirectToAction(nameof(Faculties));
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> FacultyDelete(ulong id)
+        public async Task<IActionResult> CreateFaculty(string name, string? code, string? deanName, string? email, string? phone)
+            => await FacultyCreate(name, code, deanName, email, phone);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> FacultyEdit(ulong id, string name, string? code, string? deanName, string? email, string? phone, bool isActive)
         {
-            var f = await _db.faculties.FindAsync(id);
-            if (f != null)
+            try
             {
-                _db.faculties.Remove(f);
+                var f = await _db.faculties.FindAsync(id);
+                if (f == null)
+                {
+                    TempData["ErrorMessage"] = "Faculty not found.";
+                    return RedirectToAction(nameof(Faculties));
+                }
+
+                f.name = name;
+                f.code = code;
+                f.dean_name = deanName;
+                f.email = email;
+                f.phone = phone;
+                f.is_active = isActive;
+                f.updated_at = DateTime.UtcNow;
+
                 await _db.SaveChangesAsync();
-                await LogAuditAsync("FACULTY_DELETED", "FACULTY", id, $"Deleted faculty: {f.name}");
-                TempData["SuccessMessage"] = $"Faculty '{f.name}' deleted successfully.";
+                await LogAuditAsync("FACULTY_UPDATED", "FACULTY", id, $"Updated faculty: {name}");
+                TempData["SuccessMessage"] = $"Faculty '{name}' updated successfully.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating faculty");
+                TempData["ErrorMessage"] = "Failed to update faculty: " + ex.Message;
             }
             return RedirectToAction(nameof(Faculties));
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditFaculty(ulong id, string name, string? code, string? deanName, string? email, string? phone, bool isActive)
+            => await FacultyEdit(id, name, code, deanName, email, phone, isActive);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> FacultyDelete(ulong id)
+        {
+            try
+            {
+                var f = await _db.faculties
+                    .Include(x => x.departments)
+                    .FirstOrDefaultAsync(x => x.id == id);
+
+                if (f != null)
+                {
+                    // If child departments exist, safely reassign or unlink them
+                    var fallbackFaculty = await _db.faculties.FirstOrDefaultAsync(x => x.id != id);
+                    if (f.departments.Any())
+                    {
+                        if (fallbackFaculty != null)
+                        {
+                            foreach (var dept in f.departments)
+                            {
+                                dept.faculty_id = fallbackFaculty.id;
+                                dept.updated_at = DateTime.UtcNow;
+                            }
+                        }
+                        else
+                        {
+                            // Unlink users and organizations pointing to child departments before removing
+                            foreach (var dept in f.departments)
+                            {
+                                var linkedUsers = await _db.users.Where(u => u.department_id == dept.id).ToListAsync();
+                                foreach (var u in linkedUsers) u.department_id = null;
+
+                                var linkedOrgs = await _db.organizations.Where(o => o.department_id == dept.id).ToListAsync();
+                                foreach (var o in linkedOrgs) o.department_id = null;
+
+                                _db.departments.Remove(dept);
+                            }
+                        }
+                    }
+
+                    _db.faculties.Remove(f);
+                    await _db.SaveChangesAsync();
+                    await LogAuditAsync("FACULTY_DELETED", "FACULTY", id, $"Deleted faculty: {f.name}");
+                    TempData["SuccessMessage"] = $"Faculty '{f.name}' deleted successfully.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Faculty not found.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting faculty");
+                TempData["ErrorMessage"] = "Failed to delete faculty: " + ex.Message;
+            }
+            return RedirectToAction(nameof(Faculties));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteFaculty(ulong id) => await FacultyDelete(id);
 
         public async Task<IActionResult> Departments()
         {
@@ -844,25 +1150,91 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding department");
-                TempData["ErrorMessage"] = "Failed to add department.";
+                TempData["ErrorMessage"] = "Failed to add department: " + ex.Message;
             }
             return RedirectToAction(nameof(Departments));
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DepartmentDelete(ulong id)
+        public async Task<IActionResult> CreateDepartment(string name, string? code, ulong facultyId, string? headName, string? email)
+            => await DepartmentCreate(name, code, facultyId, headName, email);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DepartmentEdit(ulong id, string name, string? code, ulong facultyId, string? headName, string? email, bool isActive)
         {
-            var d = await _db.departments.FindAsync(id);
-            if (d != null)
+            try
             {
-                _db.departments.Remove(d);
+                var d = await _db.departments.FindAsync(id);
+                if (d == null)
+                {
+                    TempData["ErrorMessage"] = "Department not found.";
+                    return RedirectToAction(nameof(Departments));
+                }
+
+                d.name = name;
+                d.code = code;
+                d.faculty_id = facultyId;
+                d.head_name = headName;
+                d.email = email;
+                d.is_active = isActive;
+                d.updated_at = DateTime.UtcNow;
+
                 await _db.SaveChangesAsync();
-                await LogAuditAsync("DEPARTMENT_DELETED", "DEPARTMENT", id, $"Deleted department: {d.name}");
-                TempData["SuccessMessage"] = $"Department '{d.name}' deleted successfully.";
+                await LogAuditAsync("DEPARTMENT_UPDATED", "DEPARTMENT", id, $"Updated department: {name}");
+                TempData["SuccessMessage"] = $"Department '{name}' updated successfully.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating department");
+                TempData["ErrorMessage"] = "Failed to update department: " + ex.Message;
             }
             return RedirectToAction(nameof(Departments));
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditDepartment(ulong id, string name, string? code, ulong facultyId, string? headName, string? email, bool isActive)
+            => await DepartmentEdit(id, name, code, facultyId, headName, email, isActive);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DepartmentDelete(ulong id)
+        {
+            try
+            {
+                var d = await _db.departments.FindAsync(id);
+                if (d != null)
+                {
+                    // Safely unlink users and organizations pointing to this department
+                    var linkedUsers = await _db.users.Where(u => u.department_id == id).ToListAsync();
+                    foreach (var u in linkedUsers) u.department_id = null;
+
+                    var linkedOrgs = await _db.organizations.Where(o => o.department_id == id).ToListAsync();
+                    foreach (var o in linkedOrgs) o.department_id = null;
+
+                    _db.departments.Remove(d);
+                    await _db.SaveChangesAsync();
+                    await LogAuditAsync("DEPARTMENT_DELETED", "DEPARTMENT", id, $"Deleted department: {d.name}");
+                    TempData["SuccessMessage"] = $"Department '{d.name}' deleted successfully.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Department not found.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting department");
+                TempData["ErrorMessage"] = "Failed to delete department: " + ex.Message;
+            }
+            return RedirectToAction(nameof(Departments));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteDepartment(ulong id) => await DepartmentDelete(id);
 
         // =========================================================
         // 7. VENUE MANAGEMENT
@@ -886,6 +1258,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     Capacity = v.capacity,
                     VenueType = v.venue_type,
                     Status = v.status,
+                    Amenities = v.amenities,
+                    Description = v.description,
                     ScheduledEventsCount = v._events.Count
                 }).ToList();
 
@@ -902,7 +1276,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> VenueCreate(string name, string? buildingName, string? roomNumber, uint capacity, string venueType, string status)
+        public async Task<IActionResult> VenueCreate(string name, string? buildingName, string? roomNumber, uint capacity, string venueType, string? amenities, string? description, string status)
         {
             try
             {
@@ -913,6 +1287,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     room_number = roomNumber,
                     capacity = capacity > 0 ? capacity : 100,
                     venue_type = string.IsNullOrEmpty(venueType) ? "AUDITORIUM" : venueType,
+                    amenities = amenities,
+                    description = description,
                     status = string.IsNullOrEmpty(status) ? "AVAILABLE" : status,
                     created_at = DateTime.UtcNow,
                     updated_at = DateTime.UtcNow
@@ -925,25 +1301,94 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating venue");
-                TempData["ErrorMessage"] = "Failed to add venue.";
+                TempData["ErrorMessage"] = "Failed to add venue: " + ex.Message;
             }
             return RedirectToAction(nameof(Venues));
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> VenueDelete(ulong id)
+        public async Task<IActionResult> CreateVenue(string name, string? buildingName, string? roomNumber, uint capacity, string venueType, string? amenities, string? description, string status)
+            => await VenueCreate(name, buildingName, roomNumber, capacity, venueType, amenities, description, status);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VenueEdit(ulong id, string name, string? buildingName, string? roomNumber, uint capacity, string venueType, string? amenities, string? description, string status)
         {
-            var v = await _db.venues.FindAsync(id);
-            if (v != null)
+            try
             {
-                _db.venues.Remove(v);
+                var v = await _db.venues.FindAsync(id);
+                if (v == null)
+                {
+                    TempData["ErrorMessage"] = "Venue not found.";
+                    return RedirectToAction(nameof(Venues));
+                }
+
+                v.name = name;
+                v.building_name = buildingName;
+                v.room_number = roomNumber;
+                v.capacity = capacity > 0 ? capacity : 100;
+                v.venue_type = string.IsNullOrEmpty(venueType) ? "AUDITORIUM" : venueType;
+                v.amenities = amenities;
+                v.description = description;
+                v.status = string.IsNullOrEmpty(status) ? "AVAILABLE" : status;
+                v.updated_at = DateTime.UtcNow;
+
                 await _db.SaveChangesAsync();
-                await LogAuditAsync("VENUE_DELETED", "VENUE", id, $"Deleted venue: {v.name}");
-                TempData["SuccessMessage"] = $"Venue '{v.name}' deleted successfully.";
+                await LogAuditAsync("VENUE_UPDATED", "VENUE", id, $"Updated venue: {name}");
+                TempData["SuccessMessage"] = $"Venue '{name}' updated successfully.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating venue");
+                TempData["ErrorMessage"] = "Failed to update venue: " + ex.Message;
             }
             return RedirectToAction(nameof(Venues));
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditVenue(ulong id, string name, string? buildingName, string? roomNumber, uint capacity, string venueType, string? amenities, string? description, string status)
+            => await VenueEdit(id, name, buildingName, roomNumber, capacity, venueType, amenities, description, status);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VenueDelete(ulong id)
+        {
+            try
+            {
+                var v = await _db.venues.FindAsync(id);
+                if (v != null)
+                {
+                    // Safely unlink events referencing this venue
+                    var linkedEvents = await _db.events.Where(e => e.venue_id == id).ToListAsync();
+                    foreach (var e in linkedEvents)
+                    {
+                        e.venue_id = null;
+                        e.updated_at = DateTime.UtcNow;
+                    }
+
+                    _db.venues.Remove(v);
+                    await _db.SaveChangesAsync();
+                    await LogAuditAsync("VENUE_DELETED", "VENUE", id, $"Deleted venue: {v.name}");
+                    TempData["SuccessMessage"] = $"Venue '{v.name}' deleted successfully.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Venue not found.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting venue");
+                TempData["ErrorMessage"] = "Failed to delete venue: " + ex.Message;
+            }
+            return RedirectToAction(nameof(Venues));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteVenue(ulong id) => await VenueDelete(id);
 
         // =========================================================
         // 9. REGISTRATIONS MANAGEMENT
@@ -1444,25 +1889,108 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating category");
-                TempData["ErrorMessage"] = "Failed to add category.";
+                TempData["ErrorMessage"] = "Failed to add category: " + ex.Message;
             }
             return RedirectToAction(nameof(Categories));
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CategoryDelete(ulong id)
+        public async Task<IActionResult> CreateCategory(string name, string? description, string? icon)
+            => await CategoryCreate(name, description, icon);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CategoryEdit(ulong id, string name, string? description, string? icon, bool isActive)
         {
-            var c = await _db.event_categories.FindAsync(id);
-            if (c != null)
+            try
             {
-                _db.event_categories.Remove(c);
+                var c = await _db.event_categories.FindAsync(id);
+                if (c == null)
+                {
+                    TempData["ErrorMessage"] = "Category not found.";
+                    return RedirectToAction(nameof(Categories));
+                }
+
+                c.name = name;
+                c.slug = name.Trim().ToLower().Replace(" ", "-");
+                c.description = description;
+                c.icon = icon ?? "bi-calendar";
+                c.is_active = isActive;
+                c.updated_at = DateTime.UtcNow;
+
                 await _db.SaveChangesAsync();
-                await LogAuditAsync("CATEGORY_DELETED", "CATEGORY", id, $"Deleted category: {c.name}");
-                TempData["SuccessMessage"] = $"Category '{c.name}' deleted.";
+                await LogAuditAsync("CATEGORY_UPDATED", "CATEGORY", id, $"Updated category: {name}");
+                TempData["SuccessMessage"] = $"Category '{name}' updated successfully.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating category");
+                TempData["ErrorMessage"] = "Failed to update category: " + ex.Message;
             }
             return RedirectToAction(nameof(Categories));
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditCategory(ulong id, string name, string? description, string? icon, bool isActive)
+            => await CategoryEdit(id, name, description, icon, isActive);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CategoryDelete(ulong id)
+        {
+            try
+            {
+                var c = await _db.event_categories.FindAsync(id);
+                if (c != null)
+                {
+                    // Find fallback category or create one
+                    var fallbackCategory = await _db.event_categories.FirstOrDefaultAsync(x => x.id != id);
+                    if (fallbackCategory == null)
+                    {
+                        fallbackCategory = new event_category
+                        {
+                            name = "General",
+                            slug = "general",
+                            description = "General Campus Events",
+                            icon = "bi-calendar-event",
+                            is_active = true,
+                            created_at = DateTime.UtcNow,
+                            updated_at = DateTime.UtcNow
+                        };
+                        _db.event_categories.Add(fallbackCategory);
+                        await _db.SaveChangesAsync();
+                    }
+
+                    var linkedEvents = await _db.events.Where(e => e.category_id == id).ToListAsync();
+                    foreach (var e in linkedEvents)
+                    {
+                        e.category_id = fallbackCategory.id;
+                        e.updated_at = DateTime.UtcNow;
+                    }
+
+                    _db.event_categories.Remove(c);
+                    await _db.SaveChangesAsync();
+                    await LogAuditAsync("CATEGORY_DELETED", "CATEGORY", id, $"Deleted category: {c.name}");
+                    TempData["SuccessMessage"] = $"Category '{c.name}' deleted successfully.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Category not found.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting category");
+                TempData["ErrorMessage"] = "Failed to delete category: " + ex.Message;
+            }
+            return RedirectToAction(nameof(Categories));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteCategory(ulong id) => await CategoryDelete(id);
 
         // =========================================================
         // 17. SECURITY & AUDIT LOGS
@@ -1570,9 +2098,40 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // 19. SYSTEM SETTINGS
         // =========================================================
         [HttpGet]
-        public IActionResult Settings()
+        public async Task<IActionResult> Settings()
         {
             var vm = new AdminSettingsViewModel();
+            try
+            {
+                var settingsList = await _db.system_settings.ToListAsync();
+                var settingsDict = settingsList.ToDictionary(s => s.setting_key, s => s.setting_value, StringComparer.OrdinalIgnoreCase);
+
+                if (settingsDict.TryGetValue("university_name", out var uniName) && !string.IsNullOrWhiteSpace(uniName))
+                    vm.UniversityName = uniName;
+                if (settingsDict.TryGetValue("campus_name", out var campusName) && !string.IsNullOrWhiteSpace(campusName))
+                    vm.CampusName = campusName;
+                if (settingsDict.TryGetValue("website_title", out var title) && !string.IsNullOrWhiteSpace(title))
+                    vm.WebsiteTitle = title;
+                if (settingsDict.TryGetValue("contact_email", out var email) && !string.IsNullOrWhiteSpace(email))
+                    vm.ContactEmail = email;
+                if (settingsDict.TryGetValue("contact_phone", out var phone) && !string.IsNullOrWhiteSpace(phone))
+                    vm.ContactPhone = phone;
+                if (settingsDict.TryGetValue("default_timezone", out var tz) && !string.IsNullOrWhiteSpace(tz))
+                    vm.DefaultTimezone = tz;
+                if (settingsDict.TryGetValue("require_event_approval", out var reqApp))
+                    vm.RequireEventApproval = bool.TryParse(reqApp, out var b1) ? b1 : true;
+                if (settingsDict.TryGetValue("allow_public_registrations", out var allowPub))
+                    vm.AllowPublicRegistrations = bool.TryParse(allowPub, out var b2) ? b2 : true;
+                if (settingsDict.TryGetValue("enable_email_notifications", out var enEmail))
+                    vm.EnableEmailNotifications = bool.TryParse(enEmail, out var b3) ? b3 : true;
+                if (settingsDict.TryGetValue("maintenance_mode", out var maint))
+                    vm.MaintenanceMode = bool.TryParse(maint, out var b4) ? b4 : false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not retrieve system settings from database, utilizing defaults.");
+            }
+
             return View(vm);
         }
 
@@ -1586,8 +2145,57 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 return RedirectToAction(nameof(Settings));
             }
 
-            await LogAuditAsync("SYSTEM_SETTINGS_UPDATED", "SYSTEM", null, "Updated core campus portal system settings");
-            TempData["SuccessMessage"] = "System settings updated and synchronized successfully.";
+            var currentUserId = GetCurrentUserId();
+            try
+            {
+                var kvPairs = new Dictionary<string, string>
+                {
+                    ["university_name"] = model.UniversityName ?? "Hawassa University",
+                    ["campus_name"] = model.CampusName ?? "Main Campus",
+                    ["website_title"] = model.WebsiteTitle ?? "HUCEMS",
+                    ["contact_email"] = model.ContactEmail ?? "events@hawassauniversity.edu.et",
+                    ["contact_phone"] = model.ContactPhone ?? "+251 46 220 9676",
+                    ["default_timezone"] = model.DefaultTimezone ?? "East Africa Time (UTC+3)",
+                    ["require_event_approval"] = model.RequireEventApproval.ToString().ToLower(),
+                    ["allow_public_registrations"] = model.AllowPublicRegistrations.ToString().ToLower(),
+                    ["enable_email_notifications"] = model.EnableEmailNotifications.ToString().ToLower(),
+                    ["maintenance_mode"] = model.MaintenanceMode.ToString().ToLower()
+                };
+
+                var existingSettings = await _db.system_settings.ToListAsync();
+                foreach (var kv in kvPairs)
+                {
+                    var existing = existingSettings.FirstOrDefault(s => s.setting_key.Equals(kv.Key, StringComparison.OrdinalIgnoreCase));
+                    if (existing != null)
+                    {
+                        existing.setting_value = kv.Value;
+                        existing.updated_by = currentUserId;
+                        existing.updated_at = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        _db.system_settings.Add(new SystemSetting
+                        {
+                            setting_key = kv.Key,
+                            setting_value = kv.Value,
+                            description = $"Global configuration key {kv.Key}",
+                            updated_by = currentUserId,
+                            created_at = DateTime.UtcNow,
+                            updated_at = DateTime.UtcNow
+                        });
+                    }
+                }
+
+                await _db.SaveChangesAsync();
+                await LogAuditAsync("SYSTEM_SETTINGS_UPDATED", "SYSTEM", null, "Updated and persisted global platform configurations to system_settings");
+                TempData["SuccessMessage"] = "System settings updated and synchronized successfully to the database.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error persisting system settings.");
+                TempData["ErrorMessage"] = "Could not persist system settings: " + ex.Message;
+            }
+
             return View(model);
         }
 

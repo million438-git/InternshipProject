@@ -81,43 +81,27 @@
 
 
                     <div class="event-form-field">
-
                         <label asp-for="Category">
                             Category
                         </label>
-
-                        <select asp-for="Category">
-
-                            <option>
-                                Academic
-                            </option>
-
-                            <option>
-                                Technology
-                            </option>
-
-                            <option>
-                                Cybersecurity
-                            </option>
-
-                            <option>
-                                Business
-                            </option>
-
-                            <option>
-                                Culture
-                            </option>
-
-                            <option>
-                                Sports
-                            </option>
-
-                            <option>
-                                Social
-                            </option>
-
+                        <select asp-for="Category" class="form-select">
+                            <option value="">Select category</option>
+                            @if (ViewBag.Categories != null)
+                            {
+                                foreach (var cat in (IEnumerable<HawassaUnifiedCampusEventManagementSystem.Models.event_category>)ViewBag.Categories)
+                                {
+                                    <option value="@cat.name" selected="@(Model.Category == cat.name)">@cat.name</option>
+                                }
+                            }
+                            else
+                            {
+                                <option value="Academic">Academic</option>
+                                <option value="Technology">Technology</option>
+                                <option value="Culture">Culture</option>
+                                <option value="Sports">Sports</option>
+                            }
                         </select>
-
+                        <span asp-validation-for="Category" class="text-danger"></span>
                     </div>
 
 
@@ -178,13 +162,26 @@
 
 
                     <div class="event-form-field">
-
                         <label asp-for="Venue">
-                            Venue
+                            Venue / Campus Hall
                         </label>
-
-                        <input asp-for="Venue" />
-
+                        <select asp-for="Venue" class="form-select">
+                            <option value="">Select venue</option>
+                            @if (ViewBag.Venues != null)
+                            {
+                                foreach (var v in (IEnumerable<HawassaUnifiedCampusEventManagementSystem.Models.Venue>)ViewBag.Venues)
+                                {
+                                    <option value="@v.name" selected="@(Model.Venue == v.name)">@v.name (@v.capacity capacity)</option>
+                                }
+                            }
+                            else
+                            {
+                                <option value="Main Campus Auditorium">Main Campus Auditorium</option>
+                                <option value="Technology Amphitheater">Technology Amphitheater</option>
+                                <option value="Campus Sports Stadium">Campus Sports Stadium</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Venue" class="text-danger"></span>
                     </div>
 
 
