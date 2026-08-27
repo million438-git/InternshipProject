@@ -1,0 +1,326 @@
+@model HawassaUnifiedCampusEventManagementSystem.Models.NotificationCenterViewModel
+
+@{
+    ViewData["Title"] = "Notification & Alert Center | HUCEMS";
+}
+
+@section Styles {
+    <style>
+        .notif-center-hero {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%);
+            border-radius: 1rem;
+            color: #ffffff;
+            padding: 2.25rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .notif-stat-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+            color: #ffffff;
+            transition: all 0.2s ease;
+        }
+        .notif-stat-card:hover {
+            background: rgba(255, 255, 255, 0.14);
+            transform: translateY(-2px);
+        }
+        .notif-item-card {
+            border-radius: 0.85rem;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            transition: all 0.2s ease;
+        }
+        .notif-item-card.unread {
+            background: #f8fafc;
+            border-left: 4px solid #0284c7;
+            box-shadow: 0 2px 8px rgba(2, 132, 199, 0.08);
+        }
+        .notif-item-card:hover {
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+            transform: translateY(-1px);
+        }
+        .notif-icon-box {
+            width: 44px;
+            height: 44px;
+            border-radius: 0.65rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+        .filter-pill {
+            border-radius: 2rem;
+            padding: 0.4rem 1rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+    </style>
+}
+
+<div class="container py-4">
+
+    <!-- =========================================================================
+         1. HERO HEADER & NOTIFICATION METRICS
+         ========================================================================= -->
+    <div class="notif-center-hero mb-4 shadow-sm">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1 small text-white-50">
+                        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-white-50 text-decoration-none">Home</a></li>
+                        <li class="breadcrumb-item active text-white" aria-current="page">Notification Center</li>
+                    </ol>
+                </nav>
+                <h1 class="h2 fw-bold mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-bell-fill text-warning"></i> Campus Notification & Alert Hub
+                </h1>
+                <p class="text-white-50 mb-0 small">
+                    Real-time alerts, department updates, event ticket confirmations, and official campus announcements for <strong class="text-white">@Model.UserName</strong>.
+                </p>
+            </div>
+
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                @if (Model.UnreadCount > 0)
+                {
+                    <form asp-controller="Notifications" asp-action="MarkAllAsRead" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                        <button type="submit" class="btn btn-warning btn-sm rounded-pill fw-semibold px-3 shadow-sm d-inline-flex align-items-center gap-1">
+                            <i class="bi bi-check2-all"></i>
+                            <span>Mark All Read (@Model.UnreadCount)</span>
+                        </button>
+                    </form>
+                }
+                <a asp-controller="Account" asp-action="Preferences" class="btn btn-outline-light btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-sliders"></i>
+                    <span>Alert Settings</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- STATS KPI ROW -->
+        <div class="row g-3">
+            <div class="col-6 col-md-3">
+                <div class="notif-stat-card">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="small text-white-50">Unread Alerts</span>
+                        <i class="bi bi-bell text-warning fs-5"></i>
+                    </div>
+                    <div class="fs-3 fw-bold mt-1">@Model.UnreadCount</div>
+                    <div class="small text-warning" style="font-size: 11px;">Requires your attention</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="notif-stat-card">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="small text-white-50">Campus Bulletins</span>
+                        <i class="bi bi-megaphone text-info fs-5"></i>
+                    </div>
+                    <div class="fs-3 fw-bold mt-1">@Model.AnnouncementAlertsCount</div>
+                    <div class="small text-white-50" style="font-size: 11px;">Official announcements</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="notif-stat-card">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="small text-white-50">Event & Dept Alerts</span>
+                        <i class="bi bi-calendar-event text-primary fs-5"></i>
+                    </div>
+                    <div class="fs-3 fw-bold mt-1">@Model.EventAlertsCount</div>
+                    <div class="small text-white-50" style="font-size: 11px;">From followed departments</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="notif-stat-card">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="small text-white-50">Tickets & Passes</span>
+                        <i class="bi bi-ticket-perforated text-success fs-5"></i>
+                    </div>
+                    <div class="fs-3 fw-bold mt-1">@Model.RegistrationAlertsCount</div>
+                    <div class="small text-white-50" style="font-size: 11px;">Event registrations</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         2. FILTER BAR & SEARCH
+         ========================================================================= -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 p-3 bg-white">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            
+            <!-- FILTER TABS -->
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <a asp-controller="Notifications" asp-action="Index" asp-route-filter="ALL"
+                   class="filter-pill @(Model.ActiveFilter == "ALL" ? "bg-primary text-white" : "bg-light text-secondary hover-bg")">
+                    All (@Model.TotalCount)
+                </a>
+                <a asp-controller="Notifications" asp-action="Index" asp-route-filter="UNREAD"
+                   class="filter-pill @(Model.ActiveFilter == "UNREAD" ? "bg-warning text-dark fw-bold" : "bg-light text-secondary hover-bg")">
+                    Unread (@Model.UnreadCount)
+                </a>
+                <a asp-controller="Notifications" asp-action="Index" asp-route-filter="ANNOUNCEMENT"
+                   class="filter-pill @(Model.ActiveFilter == "ANNOUNCEMENT" ? "bg-primary text-white" : "bg-light text-secondary hover-bg")">
+                    <i class="bi bi-megaphone me-1"></i> Announcements (@Model.AnnouncementAlertsCount)
+                </a>
+                <a asp-controller="Notifications" asp-action="Index" asp-route-filter="EVENT"
+                   class="filter-pill @(Model.ActiveFilter == "EVENT" ? "bg-primary text-white" : "bg-light text-secondary hover-bg")">
+                    <i class="bi bi-calendar-event me-1"></i> Events (@Model.EventAlertsCount)
+                </a>
+                <a asp-controller="Notifications" asp-action="Index" asp-route-filter="REGISTRATION"
+                   class="filter-pill @(Model.ActiveFilter == "REGISTRATION" ? "bg-primary text-white" : "bg-light text-secondary hover-bg")">
+                    <i class="bi bi-ticket-perforated me-1"></i> Passes (@Model.RegistrationAlertsCount)
+                </a>
+                <a asp-controller="Notifications" asp-action="Index" asp-route-filter="SYSTEM"
+                   class="filter-pill @(Model.ActiveFilter == "SYSTEM" ? "bg-primary text-white" : "bg-light text-secondary hover-bg")">
+                    <i class="bi bi-shield-check me-1"></i> System (@Model.SystemAlertsCount)
+                </a>
+            </div>
+
+            <!-- SEARCH FORM -->
+            <form asp-controller="Notifications" asp-action="Index" method="get" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="filter" value="@Model.ActiveFilter" />
+                <div class="input-group input-group-sm" style="min-width: 220px;">
+                    <input type="text" name="search" value="@Model.SearchTerm" class="form-control rounded-start-pill" placeholder="Search alerts..." />
+                    <button class="btn btn-outline-secondary rounded-end-pill px-3" type="submit">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.SearchTerm))
+                {
+                    <a asp-controller="Notifications" asp-action="Index" asp-route-filter="@Model.ActiveFilter" class="btn btn-sm btn-link text-muted p-0" title="Clear Search">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </a>
+                }
+            </form>
+
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         3. NOTIFICATIONS FEED LIST
+         ========================================================================= -->
+    @if (Model.Notifications.Any())
+    {
+        <div class="d-flex flex-column gap-3">
+            @foreach (var n in Model.Notifications)
+            {
+                <article class="notif-item-card p-3 p-md-4 @(n.IsRead ? "" : "unread")">
+                    <div class="d-flex align-items-start gap-3">
+                        
+                        <!-- ICON BOX -->
+                        <div class="notif-icon-box @n.BadgeClass">
+                            <i class="bi @n.IconClass"></i>
+                        </div>
+
+                        <!-- CONTENT BODY -->
+                        <div class="flex-grow-1">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge @n.BadgeClass font-monospace small px-2 py-1" style="font-size: 10px;">
+                                        @n.NotificationType
+                                    </span>
+                                    @if (!n.IsRead)
+                                    {
+                                        <span class="badge bg-danger rounded-pill px-2 py-1" style="font-size: 9px;">NEW</span>
+                                    }
+                                    <h2 class="h6 fw-bold text-dark mb-0">@n.Title</h2>
+                                </div>
+                                <span class="small text-muted d-inline-flex align-items-center gap-1">
+                                    <i class="bi bi-clock"></i>
+                                    <span>@n.TimeAgoFormatted</span>
+                                </span>
+                            </div>
+
+                            <p class="text-secondary small mb-2 text-break" style="line-height: 1.5;">
+                                @n.Message
+                            </p>
+
+                            <!-- ACTION & CONTROLS FOOTER -->
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2 border-top">
+                                <div>
+                                    @if (!string.IsNullOrEmpty(n.ActionUrl))
+                                    {
+                                        <a href="@n.ActionUrl" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
+                                            @if (n.NotificationType == "ANNOUNCEMENT")
+                                            {
+                                                <span><i class="bi bi-megaphone me-1"></i> Read Announcement &rarr;</span>
+                                            }
+                                            else if (n.NotificationType == "EVENT")
+                                            {
+                                                <span><i class="bi bi-calendar-check me-1"></i> View Event Details &rarr;</span>
+                                            }
+                                            else if (n.NotificationType == "REGISTRATION")
+                                            {
+                                                <span><i class="bi bi-qr-code me-1"></i> Open Ticket Pass &rarr;</span>
+                                            }
+                                            else if (n.NotificationType == "CLUB")
+                                            {
+                                                <span><i class="bi bi-people me-1"></i> View Club &rarr;</span>
+                                            }
+                                            else
+                                            {
+                                                <span>View Action &rarr;</span>
+                                            }
+                                        </a>
+                                    }
+                                </div>
+
+                                <div class="d-flex align-items-center gap-1">
+                                    @if (!n.IsRead)
+                                    {
+                                        <form asp-controller="Notifications" asp-action="MarkAsRead" asp-route-id="@n.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                            <button type="submit" class="btn btn-sm btn-light border rounded-pill px-2 py-1 small text-muted" title="Mark as read">
+                                                <i class="bi bi-check-lg text-success me-1"></i> Mark read
+                                            </button>
+                                        </form>
+                                    }
+                                    <form asp-controller="Notifications" asp-action="Delete" asp-route-id="@n.Id" method="post" class="d-inline" onsubmit="return confirm('Delete this notification?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                        <button type="submit" class="btn btn-sm btn-light border rounded-pill px-2 py-1 text-danger small" title="Delete notification">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm rounded-4 text-center py-5 px-4 bg-white">
+            <div class="py-4">
+                <div class="p-3 bg-light rounded-circle d-inline-flex mb-3 text-muted">
+                    <i class="bi bi-bell-slash fs-1 text-primary"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-1">You're all caught up!</h4>
+                <p class="text-muted small mb-4" style="max-width: 420px; margin: 0 auto;">
+                    There are no @(Model.ActiveFilter != "ALL" ? Model.ActiveFilter.ToLower() : "") notifications in your inbox.
+                    You will receive instant alerts when campus events, department notices, or announcements are published.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a asp-controller="Events" asp-action="Index" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold">
+                        <i class="bi bi-compass me-1"></i> Explore Events
+                    </a>
+                    <a asp-controller="Announcements" asp-action="Index" class="btn btn-outline-secondary btn-sm rounded-pill px-4">
+                        <i class="bi bi-megaphone me-1"></i> Campus Bulletins
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+
+</div>

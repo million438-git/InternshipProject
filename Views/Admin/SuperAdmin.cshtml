@@ -1,0 +1,388 @@
+@model HawassaUnifiedCampusEventManagementSystem.Models.SuperAdminMasterDashboardViewModel
+
+@{
+    Layout = "_SuperAdminLayout";
+    ViewData["Title"] = "SuperAdmin Master Command Center";
+}
+
+<!-- =========================================================================
+     1. SUPERADMIN EXECUTIVE HERO BANNER
+     ========================================================================= -->
+<div class="admin-card p-4 mb-4 border-0 text-white shadow-sm" style="background: linear-gradient(135deg, #070a12 0%, #0f172a 40%, #1e3a8a 100%); border-radius: 14px;">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small text-white-50">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-white-50 text-decoration-none">Home</a></li>
+                    <li class="breadcrumb-item text-white-50">Central Authority</li>
+                    <li class="breadcrumb-item active text-white" aria-current="page">Master Command Center</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h1 class="h3 fw-bold text-white mb-0">SuperAdmin Master Command Center</h1>
+                <span class="badge bg-warning text-dark fw-bold rounded-pill px-3 py-1 shadow-sm" style="font-size: 11px;">
+                    <i class="bi bi-shield-check me-1"></i> Central Authority • Full Control
+                </span>
+            </div>
+            <p class="text-white-50 small mb-0">
+                Logged in as <strong class="text-white">@Model.SuperAdminName</strong> (@Model.SuperAdminEmail) &bull; Master governance over all campus administrators, user activations, and system infrastructure.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            @if (Model.PendingUserApprovalsCount > 0)
+            {
+                <form asp-controller="Admin" asp-action="ApproveAllPending" method="post" class="d-inline" onsubmit="return confirm('Activate all @Model.PendingUserApprovalsCount pending user registrations immediately?');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                    <button type="submit" class="btn btn-success btn-sm rounded-pill fw-semibold px-3 shadow-sm d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-check-all fs-6"></i>
+                        <span>Approve All (@Model.PendingUserApprovalsCount Users)</span>
+                    </button>
+                </form>
+            }
+            <a asp-controller="Admin" asp-action="UserApprovals" class="btn btn-warning btn-sm text-dark rounded-pill fw-semibold px-3 shadow-sm d-inline-flex align-items-center gap-1">
+                <i class="bi bi-person-check"></i>
+                <span>Approval Queue (@Model.PendingUserApprovalsCount)</span>
+            </a>
+            <a asp-controller="Admin" asp-action="DatabaseManagement" class="btn btn-outline-light btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1">
+                <i class="bi bi-database"></i>
+                <span>DB Vault</span>
+            </a>
+            <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-light btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1" title="Switch to Campus Operations View">
+                <i class="bi bi-calendar-event"></i>
+                <span>Operations Dashboard</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================================
+     2. KEY GOVERNANCE METRICS (6 KPI CARDS)
+     ========================================================================= -->
+<div class="row g-3 mb-4">
+    <!-- TOTAL PLATFORM USERS -->
+    <div class="col-sm-6 col-xl-2">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-primary-subtle text-primary"><i class="bi bi-people"></i></div>
+            <div>
+                <div class="stat-num">@Model.TotalPlatformUsers</div>
+                <div class="stat-desc">Total Users</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PENDING USER ACTIVATIONS -->
+    <div class="col-sm-6 col-xl-2">
+        <div class="admin-stat-card border @(Model.PendingUserApprovalsCount > 0 ? "border-warning bg-warning-subtle bg-opacity-10" : "")">
+            <div class="stat-icon-box bg-warning-subtle text-warning"><i class="bi bi-person-exclamation"></i></div>
+            <div>
+                <div class="stat-num text-dark">@Model.PendingUserApprovalsCount</div>
+                <div class="stat-desc fw-semibold text-warning-emphasis">Awaiting Activation</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CAMPUS EVENTS -->
+    <div class="col-sm-6 col-xl-2">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-info-subtle text-info"><i class="bi bi-calendar-event"></i></div>
+            <div>
+                <div class="stat-num">@Model.TotalCampusEvents</div>
+                <div class="stat-desc">Campus Events</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CLUBS & ORGANIZATIONS -->
+    <div class="col-sm-6 col-xl-2">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-mortarboard"></i></div>
+            <div>
+                <div class="stat-num">@(Model.TotalClubsCount + Model.TotalOrganizationsCount)</div>
+                <div class="stat-desc">Clubs & Orgs</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUDIT TRAIL LOGS -->
+    <div class="col-sm-6 col-xl-2">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-secondary-subtle text-secondary"><i class="bi bi-shield-lock"></i></div>
+            <div>
+                <div class="stat-num">@Model.TotalAuditLogsCount</div>
+                <div class="stat-desc">Audit Logs</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SYSTEM HEALTH -->
+    <div class="col-sm-6 col-xl-2">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-cpu"></i></div>
+            <div>
+                <div class="stat-num text-success">100%</div>
+                <div class="stat-desc">System Health</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================================
+     3. MAIN TWO-COLUMN SECTION: PENDING USER ACTIVATIONS & ADMIN ACTIVITY
+     ========================================================================= -->
+<div class="row g-4 mb-4">
+    
+    <!-- LEFT COLUMN: LIVE PENDING USER ACTIVATIONS QUEUE -->
+    <div class="col-lg-7">
+        <div class="admin-card overflow-hidden h-100 shadow-sm">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-check text-warning fs-5"></i>
+                    <h2 class="h6 fw-bold mb-0">Pending User Registrations Awaiting SuperAdmin Activation</h2>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark rounded-pill px-2 py-1">@Model.PendingUserApprovalsCount Pending</span>
+                    <a asp-controller="Admin" asp-action="UserApprovals" class="btn btn-sm btn-outline-primary" style="font-size: 11.5px;">View Full Queue</a>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table admin-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>User Name & Profile</th>
+                            <th>Role / ID</th>
+                            <th>Department</th>
+                            <th>Registered By</th>
+                            <th class="text-end">Activation Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.PendingApprovalsList.Any())
+                        {
+                            @foreach (var user in Model.PendingApprovalsList)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">@user.FullName</div>
+                                        <small class="text-muted">@user.Email</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" style="font-size: 10.5px;">@user.AccountType</span>
+                                        @if (!string.IsNullOrEmpty(user.StudentId ?? user.EmployeeId))
+                                        {
+                                            <div class="small text-muted font-monospace mt-1">ID: @(user.StudentId ?? user.EmployeeId)</div>
+                                        }
+                                    </td>
+                                    <td class="small">@(user.DepartmentName ?? "General")</td>
+                                    <td>
+                                        <small class="badge bg-light text-secondary border">@user.RegisteredByAdminName</small>
+                                        <div class="small text-muted" style="font-size: 10.5px;">@user.RegisteredAt.ToString("MMM dd, hh:mm tt")</div>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <form asp-controller="Admin" asp-action="UserApprove" asp-route-id="@user.Id" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                                                <button type="submit" class="btn btn-sm btn-success px-2 py-1" title="Approve and activate account immediately">
+                                                    <i class="bi bi-check-lg me-1"></i>Approve
+                                                </button>
+                                            </form>
+                                            <form asp-controller="Admin" asp-action="UserReject" asp-route-id="@user.Id" method="post" class="d-inline ms-1" onsubmit="return confirm('Reject registration for @user.FullName?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1" title="Reject registration">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    <i class="bi bi-check-circle fs-4 text-success d-block mb-1"></i>
+                                    All user registration queues are clear. Zero pending activations.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: ADMIN ACTIVITY PULSE -->
+    <div class="col-lg-5">
+        <div class="admin-card overflow-hidden h-100 shadow-sm">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-check text-primary fs-5"></i>
+                    <h2 class="h6 fw-bold mb-0">Campus Administrator Activity Pulse</h2>
+                </div>
+                <a asp-controller="Admin" asp-action="AuditLogs" class="btn btn-sm btn-outline-secondary" style="font-size: 11.5px;">All Audit Logs</a>
+            </div>
+
+            <div class="p-3" style="max-height: 480px; overflow-y: auto;">
+                @if (Model.AdminActivityFeed.Any())
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @foreach (var log in Model.AdminActivityFeed)
+                        {
+                            <div class="d-flex align-items-start gap-3 p-2 rounded border bg-light bg-opacity-50">
+                                <div class="stat-icon-box bg-primary-subtle text-primary flex-shrink-0" style="width: 34px; height: 34px; font-size: 14px;">
+                                    <i class="bi bi-activity"></i>
+                                </div>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong class="text-dark small text-truncate">@log.AdminName</strong>
+                                        <small class="text-muted" style="font-size: 10.5px;">@log.Timestamp.ToString("MMM dd, hh:mm tt")</small>
+                                    </div>
+                                    <div class="badge bg-secondary-subtle text-secondary font-monospace" style="font-size: 9.5px;">@log.Action</div>
+                                    <div class="small text-muted text-break mt-1">@log.Description</div>
+                                    @if (!string.IsNullOrEmpty(log.IpAddress))
+                                    {
+                                        <small class="text-muted font-monospace d-block" style="font-size: 10px;">IP: @log.IpAddress</small>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-shield-slash fs-4 d-block mb-1"></i>
+                        No administrative logs recorded in this session.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- =========================================================================
+     4. SECOND ROW: PENDING EVENT APPROVALS & PLATFORM VAULT CONTROLS
+     ========================================================================= -->
+<div class="row g-4 mb-4">
+
+    <!-- PENDING EVENT APPROVALS -->
+    <div class="col-lg-7">
+        <div class="admin-card overflow-hidden shadow-sm">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-calendar-check text-info fs-5"></i>
+                    <h2 class="h6 fw-bold mb-0">Campus Events Awaiting SuperAdmin / Admin Approval</h2>
+                </div>
+                <a asp-controller="Admin" asp-action="Events" class="btn btn-sm btn-outline-info" style="font-size: 11.5px;">Manage Events</a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table admin-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Event Title</th>
+                            <th>Organizer</th>
+                            <th>Venue</th>
+                            <th>Schedule</th>
+                            <th class="text-end">Quick Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.PendingEventsList.Any())
+                        {
+                            @foreach (var ev in Model.PendingEventsList)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">@ev.Title</div>
+                                        <span class="badge bg-light text-secondary border">@ev.Category</span>
+                                    </td>
+                                    <td class="small">@ev.Organizer</td>
+                                    <td class="small">@ev.Venue</td>
+                                    <td class="small text-muted">@ev.StartAt.ToString("MMM dd, yyyy")</td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <form asp-controller="Admin" asp-action="EventApprove" asp-route-id="@ev.Id" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-success px-2 py-1" title="Approve event">
+                                                    <i class="bi bi-check-lg me-1"></i>Approve
+                                                </button>
+                                            </form>
+                                            <a asp-controller="Events" asp-action="Details" asp-route-id="@ev.Id" class="btn btn-sm btn-outline-secondary ms-1">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    <i class="bi bi-calendar-check fs-4 text-success d-block mb-1"></i>
+                                    All campus events are approved and published.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLATFORM INFRASTRUCTURE & VAULT COMMANDS -->
+    <div class="col-lg-5">
+        <div class="admin-card p-3 shadow-sm">
+            <h2 class="h6 fw-bold mb-3 d-flex align-items-center gap-2 border-bottom pb-2">
+                <i class="bi bi-shield-shaded text-primary"></i> SuperAdmin Infrastructure Controls
+            </h2>
+
+            <div class="d-flex flex-column gap-2 mb-3">
+                <div class="p-3 bg-light rounded border d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold small text-dark">Database Recovery Vault</div>
+                        <small class="text-muted">MySQL 8.0 &bull; Estimated @Model.TotalDatabaseRowsEstimated Active Rows</small>
+                    </div>
+                    <a asp-controller="Admin" asp-action="DatabaseManagement" class="btn btn-sm btn-primary">
+                        <i class="bi bi-database-check me-1"></i>Vault
+                    </a>
+                </div>
+
+                <div class="p-3 bg-light rounded border d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold small text-dark">Role-Based Access Control (RBAC)</div>
+                        <small class="text-muted">@Model.TotalAdministratorsCount Registered Administrators on File</small>
+                    </div>
+                    <a asp-controller="Admin" asp-action="Roles" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-shield-lock me-1"></i>RBAC
+                    </a>
+                </div>
+
+                <div class="p-3 bg-light rounded border d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold small text-dark">Platform System Settings</div>
+                        <small class="text-muted">Security rules, notifications, maintenance mode</small>
+                    </div>
+                    <a asp-controller="Admin" asp-action="Settings" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-gear me-1"></i>Settings
+                    </a>
+                </div>
+            </div>
+
+            <div class="alert alert-info py-2 px-3 mb-0 small rounded border border-info-subtle d-flex align-items-center gap-2">
+                <i class="bi bi-info-circle-fill fs-6 text-info"></i>
+                <div>
+                    <strong>SuperAdmin Authority:</strong> You have unrestricted master access to all campus operations, database tables, and user registrations.
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

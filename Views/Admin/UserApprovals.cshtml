@@ -1,0 +1,467 @@
+@model HawassaUnifiedCampusEventManagementSystem.Models.AdminUserApprovalViewModel
+
+@{
+    Layout = "_SuperAdminLayout";
+    ViewData["Title"] = "User Registration Approvals & Activation";
+}
+
+<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+                <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Index" class="text-decoration-none">Admin Dashboard</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Users" class="text-decoration-none">Users Directory</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Registration Approvals</li>
+            </ol>
+        </nav>
+        <div class="d-flex align-items-center gap-2">
+            <h1 class="h3 fw-bold text-dark mb-0">SuperAdmin User Approvals & Activation</h1>
+            <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill">
+                <i class="bi bi-clock-history me-1"></i>@Model.TotalPendingCount Pending
+            </span>
+        </div>
+        <p class="text-muted small mb-0 mt-1">Review accounts registered by Campus Administrators and grant verified access to the platform.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2 mt-3 mt-md-0">
+        @if (Model.IsSuperAdmin && Model.TotalPendingCount > 0)
+        {
+            <form asp-controller="Admin" asp-action="ApproveAllPending" method="post" class="d-inline" onsubmit="return confirm('Approve and activate ALL @Model.TotalPendingCount pending user registrations at once?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                <button type="submit" class="btn btn-success btn-sm fw-semibold shadow-sm d-inline-flex align-items-center gap-1 px-3">
+                    <i class="bi bi-check-all fs-6"></i>
+                    <span>Approve All Pending (@Model.TotalPendingCount)</span>
+                </button>
+            </form>
+        }
+        <a asp-controller="Admin" asp-action="RegisterUser" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3">
+            <i class="bi bi-person-plus-fill"></i>
+            <span>Register New User</span>
+        </a>
+        <a asp-controller="Admin" asp-action="Users" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>All Users
+        </a>
+    </div>
+</div>
+
+<!-- =======================================================
+     METRIC SUMMARY CARDS
+     ======================================================= -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="admin-stat-card border border-warning bg-warning-subtle bg-opacity-10">
+            <div class="stat-icon-box bg-warning-subtle text-warning"><i class="bi bi-hourglass-split"></i></div>
+            <div>
+                <div class="stat-num text-dark">@Model.TotalPendingCount</div>
+                <div class="stat-desc fw-semibold text-warning-emphasis">Total Awaiting Action</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-primary-subtle text-primary"><i class="bi bi-mortarboard"></i></div>
+            <div>
+                <div class="stat-num">@Model.StudentPendingCount</div>
+                <div class="stat-desc">Pending Students</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-person-video3"></i></div>
+            <div>
+                <div class="stat-num">@Model.FacultyPendingCount</div>
+                <div class="stat-desc">Pending Faculty</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-info-subtle text-info"><i class="bi bi-briefcase"></i></div>
+            <div>
+                <div class="stat-num">@(Model.StaffPendingCount + Model.OrganizationPendingCount)</div>
+                <div class="stat-desc">Staff & Organizations</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =======================================================
+     ROLE POLICY ALERT BANNER
+     ======================================================= -->
+<div class="alert alert-info border-info-subtle d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 rounded-3 shadow-sm mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <div class="bg-primary text-white rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+            <i class="bi bi-shield-check fs-5"></i>
+        </div>
+        <div>
+            <h6 class="fw-bold mb-0 text-primary">Two-Tier Governance Policy Active</h6>
+            <p class="mb-0 text-dark small">
+                Standard Campus Administrators can provision accounts, but only SuperAdministrators hold cryptographic authority to activate login credentials.
+            </p>
+        </div>
+    </div>
+    <span class="badge bg-white text-primary border font-monospace px-3 py-2">
+        <i class="bi bi-lock-fill me-1"></i>SuperAdmin Authority Required
+    </span>
+</div>
+
+<!-- =======================================================
+     SEARCH & FILTER BAR
+     ======================================================= -->
+<div class="admin-card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-center">
+        <div class="col-md-7">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input type="search" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search pending by name, username, email, student ID, employee ID..." />
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="ALL" selected="@(Model.RoleFilter == null || Model.RoleFilter == "ALL")">All Pending Roles (@Model.TotalPendingCount)</option>
+                <option value="STUDENT" selected="@(Model.RoleFilter == "STUDENT")">Students (@Model.StudentPendingCount)</option>
+                <option value="FACULTY" selected="@(Model.RoleFilter == "FACULTY")">Faculty (@Model.FacultyPendingCount)</option>
+                <option value="STAFF" selected="@(Model.RoleFilter == "STAFF")">Staff (@Model.StaffPendingCount)</option>
+                <option value="ORGANIZATION" selected="@(Model.RoleFilter == "ORGANIZATION")">Clubs & Orgs (@Model.OrganizationPendingCount)</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Filter</button>
+            <a asp-controller="Admin" asp-action="UserApprovals" class="btn btn-sm btn-light border" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- =======================================================
+     BATCH APPROVAL FORM & PENDING USERS TABLE
+     ======================================================= -->
+<div class="admin-card overflow-hidden">
+    <form asp-controller="Admin" asp-action="BatchApproveUsers" method="post" id="batchApproveForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+
+        <!-- BULK ACTIONS STRIP (Visible when items selected) -->
+        <div class="bg-light border-bottom p-3 d-flex flex-wrap align-items-center justify-content-between gap-3" id="batchActionBar">
+            <div class="d-flex align-items-center gap-3">
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" />
+                    <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="selectAllCheckbox">
+                        Select All (<span id="selectedCountDisplay">0</span>)
+                    </label>
+                </div>
+                <span class="text-muted small">Select multiple users to approve simultaneously.</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="submit" class="btn btn-success btn-sm fw-semibold shadow-sm" id="batchApproveBtn" disabled>
+                    <i class="bi bi-check-circle me-1"></i> Approve Selected
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table admin-table align-middle mb-0" id="approvalsTable">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th>Applicant Student / Staff</th>
+                        <th>Role & Category</th>
+                        <th>Academic Unit</th>
+                        <th>Registered By (Admin)</th>
+                        <th>Submission Date</th>
+                        <th class="text-end">Verification Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.PendingUsers.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-check2-all fs-1 d-block mb-2 text-success"></i>
+                                <h5 class="fw-bold text-dark mb-1">Approval Queue is Clear</h5>
+                                <p class="small text-muted mb-3">There are currently no user registration requests awaiting SuperAdmin review.</p>
+                                <a asp-controller="Admin" asp-action="RegisterUser" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-person-plus me-1"></i>Register New Account
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var user in Model.PendingUsers)
+                    {
+                        <tr class="table-warning bg-opacity-25">
+                            <td>
+                                <input type="checkbox" name="userIds" value="@user.Id" class="form-check-input user-select-chk" onchange="updateBatchState()" />
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="admin-avatar bg-warning text-dark fw-bold" style="width: 38px; height: 38px; font-size: 14px;">
+                                        @(string.IsNullOrEmpty(user.FullName) ? "U" : user.FullName.Substring(0, 1).ToUpper())
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold text-dark">
+                                            @user.FullName
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning ms-1" style="font-size: 10px;">Pending</span>
+                                        </div>
+                                        <div class="small text-muted d-flex align-items-center gap-2">
+                                            <span>@@@user.Username</span>
+                                            <span>&bull;</span>
+                                            <span>@user.Email</span>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(user.StudentId))
+                                        {
+                                            <span class="badge bg-light text-primary border" style="font-size: 11px;"><i class="bi bi-card-text me-1"></i>ID: @user.StudentId</span>
+                                        }
+                                        else if (!string.IsNullOrEmpty(user.EmployeeId))
+                                        {
+                                            <span class="badge bg-light text-secondary border" style="font-size: 11px;"><i class="bi bi-badge-ad me-1"></i>EMP: @user.EmployeeId</span>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge @(user.AccountType == "STUDENT" ? "bg-primary-subtle text-primary" : user.AccountType == "FACULTY" ? "bg-success-subtle text-success" : user.AccountType == "STAFF" ? "bg-info-subtle text-info" : "bg-warning-subtle text-warning-emphasis") border px-2 py-1 fw-semibold">
+                                    @user.AccountType
+                                </span>
+                            </td>
+                            <td>
+                                <div class="small fw-semibold text-dark">@user.DepartmentName</div>
+                                @if (!string.IsNullOrEmpty(user.FacultyName))
+                                {
+                                    <small class="text-muted">@user.FacultyName</small>
+                                }
+                            </td>
+                            <td>
+                                <div class="small fw-semibold text-dark">
+                                    <i class="bi bi-person-gear me-1 text-primary"></i>@(user.RegisteredByAdminName ?? "Campus Administrator")
+                                </div>
+                                <small class="text-muted" style="font-size: 11px;">Authorizing Staff</small>
+                            </td>
+                            <td>
+                                <div class="small text-dark">@user.RegisteredAt.ToString("MMM dd, yyyy")</div>
+                                <small class="text-muted">@user.RegisteredAt.ToString("hh:mm tt")</small>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    @if (Model.IsSuperAdmin)
+                                    {
+                                        <!-- ONE-CLICK APPROVE -->
+                                        <button type="button" class="btn btn-sm btn-success py-1 px-3 fw-semibold shadow-sm" onclick="approveSingleUser(@user.Id, '@user.FullName')">
+                                            <i class="bi bi-check-lg me-1"></i>Approve & Activate
+                                        </button>
+
+                                        <!-- REJECT BUTTON (OPEN MODAL) -->
+                                        <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2" onclick="openRejectModal(@user.Id, '@user.FullName', '@user.Username')">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary small py-1 px-2">
+                                            <i class="bi bi-lock-fill me-1"></i>Awaiting SuperAdmin
+                                        </span>
+                                    }
+
+                                    <!-- INSPECT DETAILS MODAL BUTTON -->
+                                    <button type="button" class="btn btn-sm btn-light border py-1 px-2" onclick="openInspectModal(@user.Id, '@user.FullName', '@user.Username', '@user.Email', '@(user.Phone ?? "N/A")', '@user.AccountType', '@user.DepartmentName', '@(user.StudentId ?? user.EmployeeId ?? "N/A")', '@user.RegisteredByAdminName', '@user.RegisteredAt.ToString("MMM dd, yyyy hh:mm tt")', '@(user.Bio ?? "Standard campus registration note.")')">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </form>
+</div>
+
+<!-- =======================================================
+     STANDALONE APPROVAL FORM (FOR JS ONE-CLICK)
+     ======================================================= -->
+<form asp-controller="Admin" asp-action="UserApprove" method="post" id="singleApproveForm" class="d-none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="approveUserIdInput" />
+    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+</form>
+
+<!-- =======================================================
+     REJECT MODAL WITH REASON
+     ======================================================= -->
+<div class="modal fade" id="rejectUserModal" tabindex="-1" aria-labelledby="rejectUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form asp-controller="Admin" asp-action="UserReject" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="rejectUserIdInput" />
+                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold" id="rejectUserModalLabel">
+                        <i class="bi bi-x-circle-fill me-2"></i>Decline Registration Request
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-dark mb-2">
+                        You are declining the account registration for <strong id="rejectUserNameDisplay"></strong> (<span id="rejectUserHandleDisplay" class="font-monospace"></span>).
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Reason / Rejection Note (Sent to applicant & registering admin):</label>
+                        <textarea name="reason" class="form-control rounded-3" rows="3" placeholder="e.g. Student ID could not be verified in the SIS registry..."></textarea>
+                    </div>
+                    <div class="alert alert-warning p-2 small mb-0">
+                        <i class="bi bi-exclamation-triangle me-1"></i> The user status will be marked <strong>INACTIVE</strong> and access will remain revoked.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger btn-sm px-3 fw-semibold">
+                        Confirm Rejection
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- =======================================================
+     INSPECT USER DETAILS MODAL
+     ======================================================= -->
+<div class="modal fade" id="inspectUserModal" tabindex="-1" aria-labelledby="inspectUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="inspectUserModalLabel">
+                    <i class="bi bi-person-badge-fill me-2"></i>Registration Dossier Review
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Full Legal Name</span>
+                        <strong class="text-dark fs-6" id="inspectFullName"></strong>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">System Username</span>
+                        <strong class="text-primary font-monospace" id="inspectUsername"></strong>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Official Email</span>
+                        <strong class="text-dark" id="inspectEmail"></strong>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Contact Phone</span>
+                        <strong class="text-dark" id="inspectPhone"></strong>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Role & Account Type</span>
+                        <span class="badge bg-primary" id="inspectRole"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Identification Number</span>
+                        <strong class="text-dark" id="inspectIdNumber"></strong>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Academic Department</span>
+                        <strong class="text-dark" id="inspectDept"></strong>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Registered By (Administrator)</span>
+                        <strong class="text-success" id="inspectAdmin"></strong>
+                    </div>
+                    <div class="col-md-12">
+                        <span class="text-muted small d-block">Registration Timestamp</span>
+                        <span class="text-secondary small" id="inspectTimestamp"></span>
+                    </div>
+                    <div class="col-md-12">
+                        <span class="text-muted small d-block">Bio / Registration Metadata</span>
+                        <div class="p-3 bg-light rounded-3 text-secondary small" id="inspectBio"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light justify-content-between">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                @if (Model.IsSuperAdmin)
+                {
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-danger btn-sm" id="inspectRejectBtn">
+                            <i class="bi bi-x-lg me-1"></i>Decline
+                        </button>
+                        <button type="button" class="btn btn-success btn-sm fw-semibold shadow-sm" id="inspectApproveBtn">
+                            <i class="bi bi-check-lg me-1"></i>Approve & Activate Account
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleSelectAll(master) {
+            const checkboxes = document.querySelectorAll('.user-select-chk');
+            checkboxes.forEach(c => c.checked = master.checked);
+            updateBatchState();
+        }
+
+        function updateBatchState() {
+            const checkboxes = document.querySelectorAll('.user-select-chk:checked');
+            const count = checkboxes.length;
+            document.getElementById('selectedCountDisplay').innerText = count;
+            const btn = document.getElementById('batchApproveBtn');
+            if (btn) {
+                btn.disabled = count === 0;
+            }
+        }
+
+        function approveSingleUser(id, name) {
+            if (confirm(`Approve and activate user '${name}'? The user will immediately be permitted to sign in.`)) {
+                document.getElementById('approveUserIdInput').value = id;
+                document.getElementById('singleApproveForm').submit();
+            }
+        }
+
+        function openRejectModal(id, name, username) {
+            document.getElementById('rejectUserIdInput').value = id;
+            document.getElementById('rejectUserNameDisplay').innerText = name;
+            document.getElementById('rejectUserHandleDisplay').innerText = '@@' + username;
+            var modal = new bootstrap.Modal(document.getElementById('rejectUserModal'));
+            modal.show();
+        }
+
+        function openInspectModal(id, name, username, email, phone, role, dept, idNum, adminName, time, bio) {
+            document.getElementById('inspectFullName').innerText = name;
+            document.getElementById('inspectUsername').innerText = '@@' + username;
+            document.getElementById('inspectEmail').innerText = email;
+            document.getElementById('inspectPhone').innerText = phone;
+            document.getElementById('inspectRole').innerText = role;
+            document.getElementById('inspectIdNumber').innerText = idNum;
+            document.getElementById('inspectDept').innerText = dept;
+            document.getElementById('inspectAdmin').innerText = adminName;
+            document.getElementById('inspectTimestamp').innerText = time;
+            document.getElementById('inspectBio').innerText = bio;
+
+            const approveBtn = document.getElementById('inspectApproveBtn');
+            const rejectBtn = document.getElementById('inspectRejectBtn');
+            if (approveBtn) {
+                approveBtn.onclick = function () {
+                    var inspectModalEl = bootstrap.Modal.getInstance(document.getElementById('inspectUserModal'));
+                    if (inspectModalEl) inspectModalEl.hide();
+                    approveSingleUser(id, name);
+                };
+            }
+            if (rejectBtn) {
+                rejectBtn.onclick = function () {
+                    var inspectModalEl = bootstrap.Modal.getInstance(document.getElementById('inspectUserModal'));
+                    if (inspectModalEl) inspectModalEl.hide();
+                    openRejectModal(id, name, username);
+                };
+            }
+
+            var modal = new bootstrap.Modal(document.getElementById('inspectUserModal'));
+            modal.show();
+        }
+    </script>
+}

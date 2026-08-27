@@ -24,9 +24,9 @@
                         </ol>
                     </nav>
                     <div class="d-flex align-items-center gap-2 mb-1">
-                        <h1 class="hero-title h2 fw-bold text-white mb-0">@Model.OrganizationName 🌟</h1>
-                        <span class="badge role-badge bg-white text-warning fw-bold px-3 py-1 shadow-sm">
-                            <i class="bi bi-people-fill me-1"></i> HOST / CLUB
+                        <h1 class="hero-title h2 fw-bold text-white mb-0">@Model.OrganizationName</h1>
+                        <span class="badge role-badge bg-white text-dark fw-bold px-3 py-1 shadow-sm">
+                            <i class="bi bi-people-fill me-1"></i> STUDENT ORGANIZATION
                         </span>
                     </div>
                     <p class="text-white-50 mb-0 small">
@@ -217,6 +217,14 @@
                             <a asp-controller="Events" asp-action="Create" class="btn btn-warning text-dark text-start d-flex align-items-center justify-content-between p-2 px-3 fw-bold">
                                 <span><i class="bi bi-plus-circle-fill me-2"></i>Create New Event</span>
                                 <i class="bi bi-arrow-right"></i>
+                            </a>
+                            <a asp-controller="Clubs" asp-action="Index" class="btn btn-light border text-start d-flex align-items-center justify-content-between p-2 px-3">
+                                <span><i class="bi bi-stars me-2 text-warning"></i>Campus Clubs & Societies</span>
+                                <i class="bi bi-chevron-right text-muted"></i>
+                            </a>
+                            <a asp-controller="Clubs" asp-action="MyClubs" class="btn btn-light border text-start d-flex align-items-center justify-content-between p-2 px-3">
+                                <span><i class="bi bi-collection-fill me-2 text-primary"></i>My Managed Clubs</span>
+                                <i class="bi bi-chevron-right text-muted"></i>
                             </a>
                             <a asp-controller="Events" asp-action="MyEvents" class="btn btn-light border text-start d-flex align-items-center justify-content-between p-2 px-3">
                                 <span><i class="bi bi-card-checklist me-2 text-primary"></i>Attendee Registration List</span>

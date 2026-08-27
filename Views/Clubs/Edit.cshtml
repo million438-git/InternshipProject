@@ -1,0 +1,181 @@
+@model HawassaUnifiedCampusEventManagementSystem.Models.ClubCreateEditViewModel
+
+@{
+    ViewData["Title"] = $"Edit {Model.Name} | Hawassa University";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/clubs.css" asp-append-version="true" />
+}
+
+<div class="container py-4" style="max-width: 860px;">
+
+    <!-- BREADCRUMB -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Clubs" asp-action="Index">Clubs</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Clubs" asp-action="Details" asp-route-id="@Model.Slug">@Model.Name</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit Settings</li>
+        </ol>
+    </nav>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+        <div class="p-4 bg-dark text-white">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <i class="bi bi-gear-fill fs-4 text-warning"></i>
+                <h1 class="h4 fw-bold mb-0 text-white">Edit Club Settings & Interests</h1>
+            </div>
+            <p class="small text-white text-opacity-80 mb-0">
+                Update details, leadership designation, and active interest categories for <strong>@Model.Name</strong>.
+            </p>
+        </div>
+
+        <form method="post" asp-action="Edit" asp-route-id="@Model.Id" class="p-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="Slug" />
+
+            <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">1. Club Identity</h5>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-8">
+                    <label asp-for="Name" class="form-label small fw-semibold">Club Name *</label>
+                    <input asp-for="Name" class="form-control rounded-3" required />
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="ShortName" class="form-label small fw-semibold">Short Code</label>
+                    <input asp-for="ShortName" class="form-control rounded-3" />
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label small fw-semibold">Description *</label>
+                    <textarea asp-for="Description" class="form-control rounded-3" rows="4" required></textarea>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="LogoUrl" class="form-label small fw-semibold">Logo URL</label>
+                    <input asp-for="LogoUrl" class="form-control rounded-3" />
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="CoverImageUrl" class="form-label small fw-semibold">Cover Image URL</label>
+                    <input asp-for="CoverImageUrl" class="form-control rounded-3" />
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Status" class="form-label small fw-semibold">Club Status</label>
+                    <select asp-for="Status" class="form-select rounded-3">
+                        <option value="ACTIVE">ACTIVE (Published & Verified)</option>
+                        <option value="PENDING">PENDING (Under Review)</option>
+                        <option value="SUSPENDED">SUSPENDED (Applications Paused)</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                    </select>
+                </div>
+            </div>
+
+            <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">2. Affiliations & Leadership</h5>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label asp-for="DepartmentId" class="form-label small fw-semibold">Department</label>
+                    <select asp-for="DepartmentId" asp-items="Model.AvailableDepartments" class="form-select rounded-3">
+                        <option value="">-- None --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="FacultyId" class="form-label small fw-semibold">Faculty / College</label>
+                    <select asp-for="FacultyId" asp-items="Model.AvailableFaculties" class="form-select rounded-3">
+                        <option value="">-- None --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="OrganizationId" class="form-label small fw-semibold">Parent Directorate</label>
+                    <select asp-for="OrganizationId" asp-items="Model.AvailableOrganizations" class="form-select rounded-3">
+                        <option value="">-- Standalone --</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="PresidentId" class="form-label small fw-semibold">Club President / Student Lead</label>
+                    <select asp-for="PresidentId" asp-items="Model.AvailableUsers" class="form-select rounded-3">
+                        <option value="">-- Select Active User --</option>
+                    </select>
+                </div>
+            </div>
+
+            <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">3. Update Interest Categories</h5>
+
+            <div class="row g-2 mb-4">
+                @for (int i = 0; i < Model.AvailableCategories.Count; i++)
+                {
+                    var cat = Model.AvailableCategories[i];
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-check p-2 border rounded-3 bg-light d-flex align-items-center gap-2">
+                            <input class="form-check-input ms-1"
+                                   type="checkbox"
+                                   name="SelectedCategoryIds"
+                                   value="@cat.Id"
+                                   id="cat_edit_@cat.Id"
+                                   @(Model.SelectedCategoryIds.Contains(cat.Id) ? "checked" : "") />
+                            <label class="form-check-label small fw-semibold text-dark cursor-pointer flex-grow-1" for="cat_edit_@cat.Id">
+                                <i class="bi @(cat.Icon ?? "bi-tag") text-primary me-1"></i> @cat.Name
+                            </label>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                <div class="d-flex align-items-center gap-2">
+                    <a asp-action="Details" asp-route-id="@Model.Slug" class="btn btn-light rounded-pill px-4">Cancel</a>
+                    @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN"))
+                    {
+                        <button type="button" class="btn btn-outline-danger rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#deleteClubModal">
+                            <i class="bi bi-trash-fill me-1"></i> Delete Club
+                        </button>
+                    }
+                </div>
+                <button type="submit" class="btn btn-primary rounded-pill px-5 fw-semibold shadow-sm">
+                    <i class="bi bi-check2-circle me-1"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<!-- DELETE MODAL FOR ADMINS -->
+@if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN"))
+{
+    <div class="modal fade" id="deleteClubModal" tabindex="-1" aria-labelledby="deleteClubModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <form method="post" asp-action="Delete" asp-route-id="@Model.Id">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold text-danger" id="deleteClubModalLabel">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Delete Club
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body py-3">
+                        <p class="text-dark mb-2">
+                            Are you sure you want to permanently delete <strong>@Model.Name</strong>?
+                        </p>
+                        <p class="small text-danger mb-0">
+                            This action cannot be undone. All membership rosters, followers, and interest mappings for this club will be purged.
+                        </p>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger rounded-pill px-4 fw-semibold shadow-sm">Permanently Delete</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

@@ -1,0 +1,111 @@
+@model HawassaUnifiedCampusEventManagementSystem.Models.UserInterestsViewModel
+
+@{
+    ViewData["Title"] = "My Campus Interests | Hawassa University";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/clubs.css" asp-append-version="true" />
+}
+
+<div class="container py-4" style="max-width: 900px;">
+
+    <!-- HEADER BANNER -->
+    <div class="clubs-hero mb-4">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge bg-white bg-opacity-20 text-white fw-semibold px-3 py-1">
+                <i class="bi bi-sliders2 me-1"></i> PERSONALIZATION ENGINE
+            </span>
+        </div>
+        <h1 class="h2 fw-bold text-white mb-2">What Are You Interested In?</h1>
+        <p class="text-white text-opacity-85 mb-0" style="max-width: 600px; line-height: 1.5;">
+            Select the topics, technologies, and activities you are passionate about. We will tailor your student dashboard and recommend matching campus clubs, hackathons, and symposiums.
+        </p>
+    </div>
+
+    <!-- INTEREST SELECTION FORM -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <form method="post" asp-action="SaveInterests">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold text-dark mb-0">Select Categories & Focus Areas</h5>
+                    <small class="text-muted">Click any card to select or deselect.</small>
+                </div>
+                <div>
+                    <span class="badge bg-primary px-3 py-2 rounded-pill" id="selectedCountBadge">
+                        @Model.TotalSelectedCount Selected
+                    </span>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                @for (int i = 0; i < Model.Categories.Count; i++)
+                {
+                    var cat = Model.Categories[i];
+                    <div class="col-md-6 col-lg-4">
+                        <div class="interest-checkbox-card @(cat.IsSelected ? "selected" : "")"
+                             onclick="toggleInterestCard(this, '@cat.Id')">
+                            <input type="checkbox"
+                                   name="categoryIds"
+                                   value="@cat.Id"
+                                   id="cat_@cat.Id"
+                                   class="d-none interest-checkbox"
+                                   @(cat.IsSelected ? "checked" : "") />
+                            
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="p-2 rounded-3 bg-primary-subtle text-primary fs-4 flex-shrink-0">
+                                    <i class="bi @(cat.Icon ?? "bi-tag")"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <strong class="d-block text-dark small fw-bold mb-1">@cat.Name</strong>
+                                    <p class="text-muted mb-0" style="font-size: 11.5px; line-height: 1.4;">
+                                        @cat.Description
+                                    </p>
+                                </div>
+                                <div class="check-indicator text-primary @(cat.IsSelected ? "" : "d-none")">
+                                    <i class="bi bi-check-circle-fill fs-5"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 pt-3 border-top">
+                <a asp-action="Index" class="btn btn-light rounded-pill px-4">
+                    &larr; Back to Clubs Directory
+                </a>
+                <button type="submit" class="btn btn-primary rounded-pill px-5 py-2 fw-semibold shadow-sm">
+                    <i class="bi bi-check2-circle me-1"></i> Save My Campus Interests
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        function toggleInterestCard(card, catId) {
+            const checkbox = card.querySelector('.interest-checkbox');
+            checkbox.checked = !checkbox.checked;
+
+            const checkIcon = card.querySelector('.check-indicator');
+
+            if (checkbox.checked) {
+                card.classList.add('selected');
+                checkIcon.classList.remove('d-none');
+            } else {
+                card.classList.remove('selected');
+                checkIcon.classList.add('d-none');
+            }
+
+            // Update badge counter
+            const total = document.querySelectorAll('.interest-checkbox:checked').length;
+            document.getElementById('selectedCountBadge').innerText = `${total} Selected`;
+        }
+    </script>
+}

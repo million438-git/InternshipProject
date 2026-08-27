@@ -1,0 +1,943 @@
+@{
+    ViewData["Title"] = "All Pages Directory & Sitemap | HUCEMS";
+}
+
+<div class="container py-5">
+    <!-- PAGE HEADER -->
+    <div class="text-center mb-5">
+        <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-semibold mb-2">
+            <i class="bi bi-compass me-1"></i> Comprehensive Sitemap & Navigation Hub
+        </span>
+        <h1 class="display-5 fw-bold text-dark mb-2">All Pages Directory</h1>
+        <p class="text-muted lead mx-auto" style="max-width: 680px;">
+            Instant access to all modules, dashboards, public services, and administrative control centers across Hawassa University.
+        </p>
+
+        <!-- LIVE SEARCH BAR -->
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-7 col-lg-6">
+                <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden border">
+                    <span class="input-group-text bg-white border-0 ps-4"><i class="bi bi-search text-muted"></i></span>
+                    <input type="search" id="sitemapSearchInput" class="form-control border-0" placeholder="Search any page, module, or URL..." oninput="filterSitemapCards(this.value)" />
+                    <button type="button" class="btn btn-primary px-4 fw-semibold" onclick="document.getElementById('sitemapSearchInput').value=''; filterSitemapCards('');">Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUICK CATEGORY PILLS -->
+    <div class="d-flex flex-wrap justify-content-center gap-2 mb-5 pb-3 border-bottom" id="categoryFilterPills">
+        <button class="btn btn-sm btn-dark rounded-pill px-3 active" onclick="filterByCategory('ALL', this)">All Pages (46)</button>
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="filterByCategory('PUBLIC', this)">Public & Portal (4)</button>
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="filterByCategory('EVENTS', this)">Events & Discovery (9)</button>
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="filterByCategory('CLUBS', this)">Clubs & Societies (4)</button>
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="filterByCategory('BROADCASTS', this)">Broadcasts & Calendar (3)</button>
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="filterByCategory('DASHBOARDS', this)">Role Dashboards (7)</button>
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="filterByCategory('AUTH', this)">Auth & Identity (6)</button>
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="filterByCategory('ADMIN', this)">Admin Control Center (21)</button>
+    </div>
+
+    <!-- SITEMAP GRID -->
+    <div class="row g-4" id="sitemapGrid">
+
+        <!-- =========================================================================
+             1. PUBLIC & PORTAL PAGES
+             ========================================================================= -->
+        <div class="col-12 sitemap-section" data-category="PUBLIC">
+            <h4 class="fw-bold text-dark mb-3 pb-2 border-bottom d-flex align-items-center gap-2">
+                <i class="bi bi-house-door-fill text-primary"></i>
+                <span>1. Public Campus Portal</span>
+            </h4>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="PUBLIC" data-keywords="home main landing portal index events highlights">
+            <a asp-controller="Home" asp-action="Index" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-primary-subtle text-primary rounded-3 p-2">
+                        <i class="bi bi-house fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Home Landing Page</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Main public entrance, campus statistics, and featured activities.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="PUBLIC" data-keywords="about university campus history facts mission features">
+            <a asp-controller="Home" asp-action="About" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-info-subtle text-info-emphasis rounded-3 p-2">
+                        <i class="bi bi-info-circle fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">About HUCEMS</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Home/About</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">University background, unified platform purpose, and capabilities.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="PUBLIC" data-keywords="contact help support desk map faq inquiries location">
+            <a asp-controller="Home" asp-action="Contact" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-success-subtle text-success rounded-3 p-2">
+                        <i class="bi bi-headset fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Contact & Support</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Home/Contact</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Inquiry desk, campus map, emergency contacts, and support FAQ.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="PUBLIC" data-keywords="privacy terms policy security ferpa compliance gdpr">
+            <a asp-controller="Home" asp-action="Privacy" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-secondary-subtle text-secondary rounded-3 p-2">
+                        <i class="bi bi-shield-check fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Privacy Policy</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Home/Privacy</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Institutional data privacy, user consent policies, and compliance.</p>
+            </a>
+        </div>
+
+
+        <!-- =========================================================================
+             2. AUTHENTICATION & IDENTITY
+             ========================================================================= -->
+        <div class="col-12 sitemap-section mt-4" data-category="AUTH">
+            <h4 class="fw-bold text-dark mb-3 pb-2 border-bottom d-flex align-items-center gap-2">
+                <i class="bi bi-lock-fill text-warning"></i>
+                <span>2. Authentication & Identity Portal</span>
+            </h4>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="AUTH" data-keywords="login signin auth credentials password session account">
+            <a asp-controller="Account" asp-action="Login" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-primary-subtle text-primary rounded-3 p-2">
+                        <i class="bi bi-box-arrow-in-right fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Campus Login Portal</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Account/Login</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Sign in with campus email/username for Students, Faculty, Staff & Admins.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="AUTH" data-keywords="profile settings password change bio user details account">
+            <a asp-controller="Account" asp-action="Profile" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-info-subtle text-info-emphasis rounded-3 p-2">
+                        <i class="bi bi-person-gear fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">My User Profile</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Account/Profile</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Update account details, change password, and campus identity.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="AUTH" data-keywords="personalization preferences departments subscriptions category interests push alerts notification">
+            <a asp-controller="Account" asp-action="Preferences" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all border-start border-primary border-4">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-primary text-white rounded-3 p-2">
+                        <i class="bi bi-sliders2-vertical fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Personalization Hub</h6>
+                        <span class="badge bg-primary text-white font-monospace" style="font-size: 10px;">/Account/Preferences</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Manage department subscriptions (`USER_DEPT_SUBSCRIPTIONS`) and category interests (`USER_CATEGORY_INTERESTS`).</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="AUTH" data-keywords="forgot password recovery email reset token">
+            <a asp-controller="Account" asp-action="ForgotPassword" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-warning-subtle text-warning-emphasis rounded-3 p-2">
+                        <i class="bi bi-key fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Forgot Password</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Account/ForgotPassword</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Request a secure password reset link to your university email.</p>
+            </a>
+        </div>
+
+
+        <!-- =========================================================================
+             3. EVENT DISCOVERY & OPERATIONS
+             ========================================================================= -->
+        <div class="col-12 sitemap-section mt-4" data-category="EVENTS">
+            <h4 class="fw-bold text-dark mb-3 pb-2 border-bottom d-flex align-items-center gap-2">
+                <i class="bi bi-calendar-event-fill text-danger"></i>
+                <span>3. Event Discovery & Hosting</span>
+            </h4>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="EVENTS" data-keywords="events browse catalog list workshops seminars conferences">
+            <a asp-controller="Events" asp-action="Index" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-danger-subtle text-danger rounded-3 p-2">
+                        <i class="bi bi-calendar2-range fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Browse All Events</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Events</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Explore workshops, sports, concerts, academic seminars & hackathons.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="EVENTS" data-keywords="create host event submit proposal faculty staff club">
+            <a asp-controller="Events" asp-action="Create" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-success-subtle text-success rounded-3 p-2">
+                        <i class="bi bi-plus-circle fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Create / Host Event</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Events/Create</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Publish official department events, guest lectures, or club meets.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="EVENTS" data-keywords="my events tickets organized rsvp bookings passes">
+            <a asp-controller="Events" asp-action="MyEvents" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-primary-subtle text-primary rounded-3 p-2">
+                        <i class="bi bi-ticket-perforated fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">My Events & Tickets</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Events/MyEvents</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Access your registered event passes and managed activities.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="EVENTS" data-keywords="venues campus halls auditoriums stadium capacity">
+            <a asp-controller="Events" asp-action="Venues" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-info-subtle text-info-emphasis rounded-3 p-2">
+                        <i class="bi bi-geo-alt fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Campus Venues</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Events/Venues</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Browse university auditoriums, conference halls, and sports venues.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="EVENTS" data-keywords="categories taxonomies academic sports cultural tech">
+            <a asp-controller="Events" asp-action="Categories" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-warning-subtle text-warning-emphasis rounded-3 p-2">
+                        <i class="bi bi-tags fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Event Categories</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Events/Categories</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Filter and discover activities classified by specialized themes.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="EVENTS" data-keywords="search advanced filter find dates keywords">
+            <a asp-controller="Events" asp-action="Search" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-secondary-subtle text-secondary rounded-3 p-2">
+                        <i class="bi bi-search fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Advanced Search</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Events/Search</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Detailed search across organizers, departments, and dates.</p>
+            </a>
+        </div>
+
+
+        <!-- =========================================================================
+             3. CAMPUS CLUBS & STUDENT SOCIETIES
+             ========================================================================= -->
+        <div class="col-12 sitemap-section mt-4" data-category="CLUBS">
+            <h4 class="fw-bold text-dark mb-3 pb-2 border-bottom d-flex align-items-center gap-2">
+                <i class="bi bi-stars text-warning"></i>
+                <span>3. Campus Clubs & Student Societies</span>
+            </h4>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="CLUBS" data-keywords="clubs societies communities interest matching hub organizations groups">
+            <a asp-controller="Clubs" asp-action="Index" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-warning-subtle text-warning-emphasis rounded-3 p-2">
+                        <i class="bi bi-stars fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Campus Clubs Directory</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Clubs</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Browse interest-matched student societies, hackathon guilds, and communities.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="CLUBS" data-keywords="interests personal preferences categories topics tags recommendations">
+            <a asp-controller="Clubs" asp-action="Interests" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-primary-subtle text-primary rounded-3 p-2">
+                        <i class="bi bi-sliders2 fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">My Campus Interests</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Clubs/Interests</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Customize your interest topics to receive tailored event and club recommendations.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="CLUBS" data-keywords="my clubs memberships leadership president follow roster">
+            <a asp-controller="Clubs" asp-action="MyClubs" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-success-subtle text-success rounded-3 p-2">
+                        <i class="bi bi-collection-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">My Clubs & Memberships</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Clubs/MyClubs</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Hub for managing your followed societies, active memberships, and leadership roles.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 sitemap-card-wrapper" data-category="CLUBS" data-keywords="create charter register new club start society organization">
+            <a asp-controller="Clubs" asp-action="Create" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-info-subtle text-info-emphasis rounded-3 p-2">
+                        <i class="bi bi-patch-plus-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Charter New Club</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Clubs/Create</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Register an official student society and assign academic/department affiliations.</p>
+            </a>
+        </div>
+
+
+        <!-- =========================================================================
+             4. BROADCASTS & CALENDAR
+             ========================================================================= -->
+        <div class="col-12 sitemap-section mt-4" data-category="BROADCASTS">
+            <h4 class="fw-bold text-dark mb-3 pb-2 border-bottom d-flex align-items-center gap-2">
+                <i class="bi bi-megaphone-fill text-info"></i>
+                <span>4. Broadcasts & Interactive Calendar</span>
+            </h4>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="BROADCASTS" data-keywords="announcements circulars news notices broadcasts official">
+            <a asp-controller="Announcements" asp-action="Index" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-info-subtle text-info-emphasis rounded-3 p-2">
+                        <i class="bi bi-megaphone fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Campus Announcements Feed</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Announcements</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Official university circulars, academic notices, and emergency broadcasts.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="BROADCASTS" data-keywords="notifications alerts push reminders direct inbox tickets unread">
+            <a asp-controller="Notifications" asp-action="Index" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-warning-subtle text-warning-emphasis rounded-3 p-2">
+                        <i class="bi bi-bell-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Notification & Alert Center</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Notifications</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Direct user push alerts, department broadcasts, event ticket updates, and reminder inbox.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="BROADCASTS" data-keywords="calendar interactive timetable monthly weekly daily schedule">
+            <a asp-controller="Calendar" asp-action="Index" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-success-subtle text-success rounded-3 p-2">
+                        <i class="bi bi-calendar3 fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Unified Campus Calendar</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Calendar</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Master multi-view schedule of all university events and hall bookings.</p>
+            </a>
+        </div>
+
+
+        <!-- =========================================================================
+             5. ROLE-SPECIFIC DASHBOARDS
+             ========================================================================= -->
+        <div class="col-12 sitemap-section mt-4" data-category="DASHBOARDS">
+            <h4 class="fw-bold text-dark mb-3 pb-2 border-bottom d-flex align-items-center gap-2">
+                <i class="bi bi-speedometer2 text-success"></i>
+                <span>5. Role-Specific Dashboards</span>
+            </h4>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="DASHBOARDS" data-keywords="dashboard student registered tickets badges schedule">
+            <a asp-controller="Dashboard" asp-action="Student" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-primary-subtle text-primary rounded-3 p-2">
+                        <i class="bi bi-mortarboard fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Student Dashboard</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Dashboard/Student</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Student attendance tracking, registered event passes, and class schedule.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="DASHBOARDS" data-keywords="dashboard faculty academic professors symposiums seminars">
+            <a asp-controller="Dashboard" asp-action="Faculty" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-success-subtle text-success rounded-3 p-2">
+                        <i class="bi bi-person-video3 fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Faculty Dashboard</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Dashboard/Faculty</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Department seminars, academic guest lectures, and student attendance rosters.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="DASHBOARDS" data-keywords="dashboard staff logistics operations venues services facilities">
+            <a asp-controller="Dashboard" asp-action="Staff" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-info-subtle text-info-emphasis rounded-3 p-2">
+                        <i class="bi bi-briefcase fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Staff Dashboard</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Dashboard/Staff</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Campus venue bookings, logistical support, and administrative desk operations.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="DASHBOARDS" data-keywords="dashboard organization club society union members feedback">
+            <a asp-controller="Dashboard" asp-action="Organization" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-warning-subtle text-warning-emphasis rounded-3 p-2">
+                        <i class="bi bi-building fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Club / Organization Portal</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Dashboard/Organization</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Club membership rosters, organized activities, and attendee feedback.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="DASHBOARDS" data-keywords="dashboard admin command center operational stats approvals">
+            <a asp-controller="Dashboard" asp-action="Admin" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-danger-subtle text-danger rounded-3 p-2">
+                        <i class="bi bi-shield-shaded fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Campus Admin Dashboard</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Dashboard/Admin</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Operational KPIs, quick shortcuts, event reviews, and user provisioning.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="DASHBOARDS" data-keywords="dashboard superadmin master security audit telemetry db user approvals">
+            <a asp-controller="Dashboard" asp-action="SuperAdmin" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all border border-warning">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-dark text-white rounded-3 p-2">
+                        <i class="bi bi-shield-lock fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">SuperAdmin Dashboard</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Dashboard/SuperAdmin</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">User approvals queue, platform health, security incidents & database telemetry.</p>
+            </a>
+        </div>
+
+
+        <!-- =========================================================================
+             6. ADMIN CONTROL CENTER (ALL MODULES)
+             ========================================================================= -->
+        <div class="col-12 sitemap-section mt-4" data-category="ADMIN">
+            <h4 class="fw-bold text-dark mb-3 pb-2 border-bottom d-flex align-items-center gap-2">
+                <i class="bi bi-sliders text-danger"></i>
+                <span>6. Administration Control Center (21 Operational Modules)</span>
+            </h4>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="register user provisioning student faculty staff role based full form">
+            <a asp-controller="Admin" asp-action="RegisterUser" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all border-start border-primary border-4">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-primary text-white rounded-3 p-2">
+                        <i class="bi bi-person-plus-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Register New User (Full Form)</h6>
+                        <span class="badge bg-primary text-white font-monospace" style="font-size: 10px;">/Admin/RegisterUser</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Multi-tier role-based registration form for Students, Faculty, Staff & Clubs.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="approvals queue activation superadmin pending review verify bulk">
+            <a asp-controller="Admin" asp-action="UserApprovals" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all border-start border-warning border-4">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-warning text-dark rounded-3 p-2">
+                        <i class="bi bi-person-check-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">User Approvals & Activation</h6>
+                        <span class="badge bg-warning text-dark font-monospace" style="font-size: 10px;">/Admin/UserApprovals</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">SuperAdmin hub to review admin-registered accounts, inspect credentials, and batch activate.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="users directory approvals queue status activate suspend delete">
+            <a asp-controller="Admin" asp-action="Users" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-primary-subtle text-primary rounded-3 p-2">
+                        <i class="bi bi-people fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">User Directory & Accounts</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Users</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Manage all users, filter by role and status, and view registering admin attribution.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="superadmin master command center platform governance user approvals audit">
+            <a asp-controller="Admin" asp-action="SuperAdmin" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all border-start border-warning border-4">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-dark text-warning rounded-3 p-2">
+                        <i class="bi bi-shield-check fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">SuperAdmin Master Console</h6>
+                        <span class="badge bg-warning text-dark font-monospace" style="font-size: 10px;">/Admin/SuperAdmin</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Central authority platform governance, live user activations, and admin activity monitoring.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="admin overview operations command center kpi metrics">
+            <a asp-controller="Admin" asp-action="Index" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-primary text-white rounded-3 p-2">
+                        <i class="bi bi-speedometer2 fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Campus Operations Dashboard</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Index</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Operational dashboard for campus events, venues, student clubs, and attendee registrations.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="events approvals approve reject cancel lifecycle">
+            <a asp-controller="Admin" asp-action="Events" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-danger-subtle text-danger rounded-3 p-2">
+                        <i class="bi bi-calendar-check fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Event Lifecycle & Approvals</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Events</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Review submitted event proposals, approve, decline, and feature events.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="registrations attendee checkin desk tickets csv export">
+            <a asp-controller="Admin" asp-action="Registrations" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-success-subtle text-success rounded-3 p-2">
+                        <i class="bi bi-ticket-detailed fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Registrations & Check-In Desk</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Registrations</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Manage attendee check-in statuses, ticket lists, and export data to CSV.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="categories event taxonomies icons colors">
+            <a asp-controller="Admin" asp-action="Categories" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-warning-subtle text-warning-emphasis rounded-3 p-2">
+                        <i class="bi bi-tags fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Event Categories Management</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Categories</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Configure categories, custom colors, icons, and display ordering.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="venues halls auditoriums buildings facilities capacity">
+            <a asp-controller="Admin" asp-action="Venues" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-info-subtle text-info-emphasis rounded-3 p-2">
+                        <i class="bi bi-geo-alt fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Campus Venues & Facilities</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Venues</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Manage halls, auditorium seat capacities, equipment, and availability.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="calendar admin master schedule conflicts bookings">
+            <a asp-controller="Admin" asp-action="Calendar" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-success-subtle text-success rounded-3 p-2">
+                        <i class="bi bi-calendar3 fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Master Schedule Calendar</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Calendar</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">University-wide timetable, conflicting bookings detector, and hall schedules.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="clubs organizations societies union verification verify">
+            <a asp-controller="Admin" asp-action="Organizations" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-warning-subtle text-warning-emphasis rounded-3 p-2">
+                        <i class="bi bi-building fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Clubs & Student Societies</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Organizations</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Verify student organizations, assign advisors, and manage authorizations.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="faculties colleges deans academic structure">
+            <a asp-controller="Admin" asp-action="Faculties" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-primary-subtle text-primary rounded-3 p-2">
+                        <i class="bi bi-bank fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Academic Faculties & Colleges</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Faculties</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Directory of university faculties, deans, building codes, and descriptions.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="departments heads academic unit codes">
+            <a asp-controller="Admin" asp-action="Departments" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-info-subtle text-info-emphasis rounded-3 p-2">
+                        <i class="bi bi-mortarboard fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Academic Departments</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Departments</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Academic department directory, department heads, and faculty mapping.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="roles rbac permissions matrix superadmin">
+            <a asp-controller="Admin" asp-action="Roles" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-secondary-subtle text-secondary rounded-3 p-2">
+                        <i class="bi bi-shield-check fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Roles & RBAC Permissions</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Roles</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Role definitions, user counts, and role-based access control matrix.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="announcements broadcasts publish notices circulars">
+            <a asp-controller="Admin" asp-action="Announcements" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-info-subtle text-info-emphasis rounded-3 p-2">
+                        <i class="bi bi-megaphone fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Campus Broadcast Notices</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Announcements</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Author and publish official circulars with target audience filters.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="notifications push instant alerts dispatch">
+            <a asp-controller="Admin" asp-action="Notifications" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-primary-subtle text-primary rounded-3 p-2">
+                        <i class="bi bi-bell fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Push Notifications Dispatcher</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Notifications</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Send instant priority push alerts to students, faculty, or all accounts.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="comments feedback reviews moderation delete rating">
+            <a asp-controller="Admin" asp-action="Comments" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-danger-subtle text-danger rounded-3 p-2">
+                        <i class="bi bi-chat-heart fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Feedback & Review Moderation</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Comments</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Moderate attendee comments, investigate flagged feedback, and manage ratings.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="reports analytics attendance trends charts export">
+            <a asp-controller="Admin" asp-action="Reports" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-success-subtle text-success rounded-3 p-2">
+                        <i class="bi bi-graph-up-arrow fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Analytics & Reports Desk</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Reports</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Statistical reports, attendance trends, engagement charts & CSV exports.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="audit logs security immutable logins role changes superadmin">
+            <a asp-controller="Admin" asp-action="AuditLogs" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-dark text-white rounded-3 p-2">
+                        <i class="bi bi-shield-lock fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Security Audit Logs</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/AuditLogs</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Immutable record of security events, administrative logins, and approvals.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="sessions active logins jwt devices ip tracking revoke">
+            <a asp-controller="Admin" asp-action="Sessions" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-secondary-subtle text-secondary rounded-3 p-2">
+                        <i class="bi bi-laptop fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Active User Sessions</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Sessions</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Monitor online user sessions, IP locations, devices, and force revoke.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="database backup restore sql dump snapshots mysql health">
+            <a asp-controller="Admin" asp-action="DatabaseManagement" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-danger-subtle text-danger rounded-3 p-2">
+                        <i class="bi bi-database fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Database Backup & Health</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/DatabaseManagement</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">SQL backups, restore snapshots, database engine telemetry, and diagnostics.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="database records raw tables explorer visualizer editor">
+            <a asp-controller="Admin" asp-action="DatabaseRecords" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-warning-subtle text-warning-emphasis rounded-3 p-2">
+                        <i class="bi bi-table fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Live Database Records Explorer</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/DatabaseRecords</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">Direct visual explorer and record editor for all MySQL entity tables.</p>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="settings platform configuration smtp email policies superadmin">
+            <a asp-controller="Admin" asp-action="Settings" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="icon-box bg-dark text-white rounded-3 p-2">
+                        <i class="bi bi-gear fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Global Platform Settings</h6>
+                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Settings</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">SMTP email sender configuration, security rules, and global portal branding.</p>
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .sitemap-card {
+        background: #ffffff;
+        transition: all 0.25s ease-in-out;
+        border: 1px solid rgba(0,0,0,0.06) !important;
+    }
+    .sitemap-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08) !important;
+        border-color: #2563eb !important;
+    }
+</style>
+
+<script>
+    function filterSitemapCards(query) {
+        var q = query.trim().toLowerCase();
+        var cards = document.querySelectorAll('.sitemap-card-wrapper');
+        var sections = document.querySelectorAll('.sitemap-section');
+
+        cards.forEach(function(card) {
+            var text = card.textContent.toLowerCase() + ' ' + (card.getAttribute('data-keywords') || '');
+            if (!q || text.includes(q)) {
+                card.classList.remove('d-none');
+            } else {
+                card.classList.add('d-none');
+            }
+        });
+
+        // Hide empty sections
+        sections.forEach(function(sec) {
+            var cat = sec.getAttribute('data-category');
+            var hasVisible = Array.from(document.querySelectorAll('.sitemap-card-wrapper[data-category="' + cat + '"]'))
+                                  .some(c => !c.classList.contains('d-none'));
+            if (hasVisible) {
+                sec.classList.remove('d-none');
+            } else {
+                sec.classList.add('d-none');
+            }
+        });
+    }
+
+    function filterByCategory(category, btn) {
+        // Update active button
+        document.querySelectorAll('#categoryFilterPills button').forEach(b => {
+            b.classList.remove('btn-dark', 'active');
+            b.classList.add('btn-outline-primary');
+        });
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-dark', 'active');
+
+        var cards = document.querySelectorAll('.sitemap-card-wrapper');
+        var sections = document.querySelectorAll('.sitemap-section');
+
+        cards.forEach(function(card) {
+            var cardCat = card.getAttribute('data-category');
+            if (category === 'ALL' || cardCat === category) {
+                card.classList.remove('d-none');
+            } else {
+                card.classList.add('d-none');
+            }
+        });
+
+        sections.forEach(function(sec) {
+            var secCat = sec.getAttribute('data-category');
+            if (category === 'ALL' || secCat === category) {
+                sec.classList.remove('d-none');
+            } else {
+                sec.classList.add('d-none');
+            }
+        });
+    }
+</script>

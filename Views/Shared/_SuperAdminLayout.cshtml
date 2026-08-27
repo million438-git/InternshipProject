@@ -1,0 +1,352 @@
+@inject HawassaUnifiedCampusEventManagementSystem.Data.ApplicationDbContext DbContext
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Hawassa University SuperAdmin Master Center</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Theme & Sidebar Initialization Script (Prevents FOUC) -->
+    <script>
+        (function() {
+            var saved = localStorage.getItem('hucems-theme');
+            var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var theme = saved ? saved : (prefersDark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+            if (theme === 'dark') document.documentElement.classList.add('dark-theme');
+
+            if (localStorage.getItem('hucems-admin-sidebar-mini') === 'true' && window.innerWidth >= 992) {
+                document.documentElement.classList.add('sidebar-mini');
+            }
+        })();
+    </script>
+
+    <!-- Global Site CSS (Tokens & Theme Styles) -->
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <!-- Admin CSS -->
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="admin-body">
+
+    @{
+        int pendingUserApprovals = 0;
+        int pendingEventApprovals = 0;
+        try
+        {
+            pendingUserApprovals = DbContext.users.Count(u => u.account_status == "PENDING" || u.account_status == "PENDING_APPROVAL");
+            pendingEventApprovals = DbContext.events.Count(e => e.approval_status == "PENDING");
+        }
+        catch { }
+
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    }
+
+    <!-- ADMIN WRAPPER -->
+    <div class="admin-wrapper" id="adminWrapper">
+
+        <!-- =======================================================
+             SUPERADMIN SIDEBAR (CENTRAL GOVERNANCE & FULL OVERSIGHT)
+             ======================================================= -->
+        <aside class="admin-sidebar" id="adminSidebar">
+            <!-- BRAND HEADER -->
+            <div class="admin-brand">
+                <a asp-controller="Admin" asp-action="SuperAdmin" class="admin-brand-link text-decoration-none d-flex align-items-center gap-3">
+                    <img src="~/images/hawassa-logo.png" alt="Hawassa University" class="admin-brand-logo bg-white rounded-circle p-1" style="width: 36px; height: 36px; object-fit: contain;" />
+                    <div class="admin-brand-text">
+                        <span class="brand-title">Hawassa SuperAdmin</span>
+                        <span class="brand-subtitle">Central Governance</span>
+                    </div>
+                </a>
+                <button type="button" class="btn-close-sidebar d-lg-none" id="adminCloseSidebar" aria-label="Close menu">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <!-- SIDEBAR NAVIGATION MENU -->
+            <nav class="admin-nav-menu" id="adminNavMenu">
+
+                <!-- 1. CENTRAL GOVERNANCE -->
+                <div class="nav-section-title"><span>Central Governance</span></div>
+                <a asp-controller="Admin" asp-action="SuperAdmin" class="admin-nav-item @(currentController == "Admin" && currentAction == "SuperAdmin" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="SuperAdmin Master Command Center">
+                    <i class="bi bi-speedometer2 text-warning"></i>
+                    <span class="nav-label">Master Command</span>
+                </a>
+                <a asp-controller="Admin" asp-action="UserApprovals" class="admin-nav-item @(currentController == "Admin" && currentAction == "UserApprovals" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Account Approvals & Activation Queue">
+                    <i class="bi bi-person-check"></i>
+                    <span class="nav-label">Account Approvals</span>
+                    @if (pendingUserApprovals > 0)
+                    {
+                        <span class="badge bg-danger rounded-pill ms-auto nav-badge">@pendingUserApprovals</span>
+                    }
+                </a>
+                <a asp-controller="Admin" asp-action="AuditLogs" class="admin-nav-item @(currentController == "Admin" && currentAction == "AuditLogs" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Platform Security & Activity Audit Trail">
+                    <i class="bi bi-shield-check"></i>
+                    <span class="nav-label">Security Audit Logs</span>
+                </a>
+                <a asp-controller="Admin" asp-action="DatabaseManagement" class="admin-nav-item @(currentController == "Admin" && currentAction == "DatabaseManagement" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Database Recovery Vault & Telemetry">
+                    <i class="bi bi-database-check"></i>
+                    <span class="nav-label">Database Vault</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Roles" class="admin-nav-item @(currentController == "Admin" && currentAction == "Roles" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Role-Based Access Control (RBAC)">
+                    <i class="bi bi-shield-lock"></i>
+                    <span class="nav-label">Roles & RBAC</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Settings" class="admin-nav-item @(currentController == "Admin" && currentAction == "Settings" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Global Platform Settings">
+                    <i class="bi bi-gear"></i>
+                    <span class="nav-label">System Settings</span>
+                </a>
+
+                <!-- 2. CAMPUS OVERSIGHT & OPERATIONS -->
+                <div class="nav-section-title"><span>Operations Oversight</span></div>
+                <a asp-controller="Admin" asp-action="Index" class="admin-nav-item @(currentController == "Admin" && currentAction == "Index" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Campus Operations Dashboard">
+                    <i class="bi bi-grid-1x2"></i>
+                    <span class="nav-label">Operations Dashboard</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Events" class="admin-nav-item @(currentController == "Admin" && currentAction == "Events" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="All Campus Events">
+                    <i class="bi bi-calendar-event"></i>
+                    <span class="nav-label">Events</span>
+                    @if (pendingEventApprovals > 0)
+                    {
+                        <span class="badge bg-warning text-dark rounded-pill ms-auto nav-badge">@pendingEventApprovals</span>
+                    }
+                </a>
+                <a asp-controller="Admin" asp-action="Registrations" class="admin-nav-item @(currentController == "Admin" && currentAction == "Registrations" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Event Registrations & Ticket Codes">
+                    <i class="bi bi-ticket-perforated"></i>
+                    <span class="nav-label">Registrations</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Venues" class="admin-nav-item @(currentController == "Admin" && currentAction == "Venues" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Campus Venues & Facilities">
+                    <i class="bi bi-geo-alt"></i>
+                    <span class="nav-label">Venues & Facilities</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Categories" class="admin-nav-item @(currentController == "Admin" && currentAction == "Categories" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Event Categories">
+                    <i class="bi bi-tags"></i>
+                    <span class="nav-label">Categories</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Calendar" class="admin-nav-item @(currentController == "Admin" && currentAction == "Calendar" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Master Schedule Calendar">
+                    <i class="bi bi-calendar3"></i>
+                    <span class="nav-label">Master Calendar</span>
+                </a>
+
+                <!-- 3. PEOPLE & CAMPUS UNITS -->
+                <div class="nav-section-title"><span>People & Units</span></div>
+                <a asp-controller="Admin" asp-action="Users" class="admin-nav-item @(currentController == "Admin" && currentAction == "Users" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Master User Directory">
+                    <i class="bi bi-people"></i>
+                    <span class="nav-label">User Directory</span>
+                </a>
+                <a asp-controller="Admin" asp-action="RegisterUser" class="admin-nav-item @(currentController == "Admin" && currentAction == "RegisterUser" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Register New User Account">
+                    <i class="bi bi-person-plus"></i>
+                    <span class="nav-label">Register User</span>
+                </a>
+                <a asp-controller="Clubs" asp-action="Index" class="admin-nav-item @(currentController == "Clubs" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Student Clubs & Societies">
+                    <i class="bi bi-mortarboard"></i>
+                    <span class="nav-label">Student Clubs</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Organizations" class="admin-nav-item @(currentController == "Admin" && currentAction == "Organizations" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Campus Organizations">
+                    <i class="bi bi-building"></i>
+                    <span class="nav-label">Organizations</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Faculties" class="admin-nav-item @(currentAction == "Faculties" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Academic Faculties">
+                    <i class="bi bi-bank"></i>
+                    <span class="nav-label">Faculties</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Departments" class="admin-nav-item @(currentAction == "Departments" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Academic Departments">
+                    <i class="bi bi-diagram-3"></i>
+                    <span class="nav-label">Departments</span>
+                </a>
+
+                <!-- 4. COMMUNICATIONS -->
+                <div class="nav-section-title"><span>Communications</span></div>
+                <a asp-controller="Admin" asp-action="Announcements" class="admin-nav-item @(currentAction == "Announcements" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Campus Announcements">
+                    <i class="bi bi-megaphone"></i>
+                    <span class="nav-label">Announcements</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Notifications" class="admin-nav-item @(currentAction == "Notifications" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Notification Alerts & Direct Messages">
+                    <i class="bi bi-bell"></i>
+                    <span class="nav-label">Notifications</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Comments" class="admin-nav-item @(currentAction == "Comments" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Attendee Feedback & Comments">
+                    <i class="bi bi-chat-dots"></i>
+                    <span class="nav-label">Attendee Feedback</span>
+                </a>
+
+                <!-- 5. ANALYTICS & TELEMETRY -->
+                <div class="nav-section-title"><span>System Telemetry</span></div>
+                <a asp-controller="Admin" asp-action="Reports" class="admin-nav-item @(currentAction == "Reports" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Reports & Analytics">
+                    <i class="bi bi-bar-chart-line"></i>
+                    <span class="nav-label">Reports & Analytics</span>
+                </a>
+                <a asp-controller="Admin" asp-action="DatabaseRecords" class="admin-nav-item @(currentAction == "DatabaseRecords" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Live Database Grid">
+                    <i class="bi bi-table"></i>
+                    <span class="nav-label">Database Grid</span>
+                </a>
+                <a asp-controller="Admin" asp-action="Sessions" class="admin-nav-item @(currentAction == "Sessions" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Active User Sessions">
+                    <i class="bi bi-laptop"></i>
+                    <span class="nav-label">Active Sessions</span>
+                </a>
+
+                <!-- 6. ACCOUNT & SESSION -->
+                <div class="nav-section-title"><span>Session</span></div>
+                <a asp-controller="Dashboard" asp-action="SuperAdmin" class="admin-nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Switch to SuperAdmin User Portal">
+                    <i class="bi bi-person-workspace"></i>
+                    <span class="nav-label">User Portal</span>
+                </a>
+                <a asp-controller="Account" asp-action="Logout" class="admin-nav-item text-danger logout-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Sign Out">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span class="nav-label">Sign Out</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- =======================================================
+             MAIN SUPERADMIN CONTENT AREA
+             ======================================================= -->
+        <div class="admin-main-container">
+
+            <!-- TOP NAVBAR -->
+            <header class="admin-topbar">
+                <!-- LEFT SECTION: TOGGLE & SEARCH -->
+                <div class="d-flex align-items-center gap-3">
+                    <button type="button" class="admin-toggle-btn" id="adminSidebarToggle" title="Toggle Sidebar (Ctrl+B)" aria-label="Toggle Sidebar Menu" aria-expanded="true">
+                        <i class="bi bi-list fs-4"></i>
+                    </button>
+                    
+                    <div class="admin-topbar-search d-none d-md-flex align-items-center">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" class="form-control form-control-sm admin-search-input" id="adminGlobalSearch" placeholder="Master search (users, events, audits)... (Ctrl+K)" />
+                    </div>
+
+                    <div class="system-status-indicator d-none d-xl-flex align-items-center gap-2">
+                        <span class="status-dot online"></span>
+                        <span class="status-label">SuperAdmin Master Clearance Active</span>
+                    </div>
+                </div>
+
+                <!-- RIGHT SECTION: QUICK ACTIONS & PROFILE -->
+                <div class="d-flex align-items-center gap-2 gap-sm-3">
+                    <!-- APPROVALS SHORTCUT -->
+                    @if (pendingUserApprovals > 0)
+                    {
+                        <a asp-controller="Admin" asp-action="UserApprovals" class="btn btn-sm btn-warning text-dark fw-semibold rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1">
+                            <i class="bi bi-person-check"></i>
+                            <span>@pendingUserApprovals Pending Activations</span>
+                        </a>
+                    }
+
+                    <!-- CREATE EVENT QUICK ACTION -->
+                    <a asp-controller="Events" asp-action="Create" class="btn btn-sm btn-primary d-none d-sm-inline-flex align-items-center gap-1 fw-semibold shadow-sm rounded-pill px-3">
+                        <i class="bi bi-plus-lg"></i>
+                        <span>New Event</span>
+                    </a>
+
+                    <!-- THEME TOGGLE (DARK / LIGHT MODE) -->
+                    <button type="button"
+                            class="theme-toggle-btn admin-theme-toggle"
+                            id="themeToggleBtnAdmin"
+                            aria-label="Toggle Dark / Light Mode"
+                            title="Toggle Dark / Light Mode">
+                        <i class="bi bi-moon-stars-fill theme-icon-dark"></i>
+                        <i class="bi bi-sun-fill theme-icon-light"></i>
+                        <span class="visually-hidden">Toggle Theme</span>
+                    </button>
+
+                    <!-- NOTIFICATIONS BELL -->
+                    <a asp-controller="Notifications" asp-action="Index" class="admin-icon-btn position-relative" title="Notifications & Alert Center">
+                        <i class="bi bi-bell"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                    </a>
+
+                    <!-- SUPERADMIN PROFILE PILL -->
+                    <div class="dropdown">
+                        <button class="admin-profile-pill dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="admin-avatar" style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%);">
+                                @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "S")
+                            </div>
+                            <div class="admin-info text-start d-none d-md-block">
+                                <span class="admin-name">@(User.Identity?.Name ?? "SuperAdmin")</span>
+                                <span class="admin-badge text-warning-emphasis">Super Administrator</span>
+                            </div>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg rounded-3 border">
+                            <li class="dropdown-header small text-muted px-3 py-2">
+                                <div class="fw-bold text-dark">@(User.Identity?.Name ?? "Super Administrator")</div>
+                                <span class="badge bg-dark text-warning small" style="font-size: 10px;">
+                                    SuperAdmin Clearance (Master)
+                                </span>
+                            </li>
+                            <li><hr class="dropdown-divider my-1" /></li>
+                            <li><a class="dropdown-item py-2 fw-semibold text-warning-emphasis" asp-controller="Admin" asp-action="SuperAdmin"><i class="bi bi-shield-check me-2 text-warning"></i>Master Command Center</a></li>
+                            <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="UserApprovals"><i class="bi bi-person-check me-2 text-primary"></i>User Approvals Queue</a></li>
+                            <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="DatabaseManagement"><i class="bi bi-database-check me-2 text-info"></i>Database Recovery Vault</a></li>
+                            <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="AuditLogs"><i class="bi bi-shield-lock me-2 text-secondary"></i>Security Audit Logs</a></li>
+                            <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="Roles"><i class="bi bi-shield-shaded me-2 text-secondary"></i>Roles & RBAC</a></li>
+                            <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="Settings"><i class="bi bi-gear me-2 text-secondary"></i>System Settings</a></li>
+                            <li><hr class="dropdown-divider my-1" /></li>
+                            <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="Index"><i class="bi bi-grid-1x2 me-2 text-primary"></i>Operations Dashboard</a></li>
+                            <li><a class="dropdown-item py-2" asp-controller="Dashboard" asp-action="SuperAdmin"><i class="bi bi-person-workspace me-2 text-primary"></i>SuperAdmin User Portal</a></li>
+                            <li><a class="dropdown-item py-2" asp-controller="Notifications" asp-action="Index"><i class="bi bi-bell me-2 text-warning"></i>Notification Inbox</a></li>
+                            <li><a class="dropdown-item py-2" asp-controller="Account" asp-action="Profile"><i class="bi bi-person me-2 text-secondary"></i>My Profile</a></li>
+                            <li><hr class="dropdown-divider my-1" /></li>
+                            <li><a class="dropdown-item py-2 text-danger" asp-controller="Account" asp-action="Logout"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <!-- FLASH ALERTS -->
+            <div class="admin-alerts-container px-4 pt-3">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show shadow-sm d-flex align-items-center gap-2 rounded-3" role="alert">
+                        <i class="bi bi-check-circle-fill fs-5"></i>
+                        <div>@TempData["SuccessMessage"]</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show shadow-sm d-flex align-items-center gap-2 rounded-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                        <div>@TempData["ErrorMessage"]</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+            </div>
+
+            <!-- BODY CONTENT -->
+            <main class="admin-content px-4 py-3">
+                @RenderBody()
+            </main>
+
+            <!-- FOOTER -->
+            <footer class="admin-footer px-4 py-3 text-muted border-top d-flex flex-wrap justify-content-between align-items-center bg-white">
+                <small>&copy; @DateTime.UtcNow.Year <strong>Hawassa University</strong> — Central Platform Governance</small>
+                <small class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1" style="font-size: 11px;">● Central Governance Active</span>
+                    <span class="badge bg-dark text-warning border font-monospace" style="font-size: 10px;">SuperAdmin Master v2.0</span>
+                </small>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Global Site JS (Theme & Helpers) -->
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <!-- Admin JS -->
+    <script src="~/js/admin.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

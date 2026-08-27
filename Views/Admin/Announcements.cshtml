@@ -7,7 +7,7 @@
 
 <div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h3 fw-bold text-dark mb-1">📢 Announcement Management</h1>
+        <h1 class="h3 fw-bold text-dark mb-1">Announcement & Bulletin Management</h1>
         <p class="text-muted small mb-0">Publish official campus notices, pin important updates, and archive old bulletins.</p>
     </div>
     <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#newAnnouncementModal">
@@ -128,10 +128,10 @@
      CREATE ANNOUNCEMENT MODAL
      ======================================================= -->
 <div class="modal fade" id="newAnnouncementModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow">
             <div class="modal-header">
-                <h5 class="modal-title fw-bold">📢 Publish Campus Announcement</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-megaphone me-1 text-primary"></i>Publish Campus Announcement & Alerts</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-controller="Admin" asp-action="AnnouncementCreate" method="post">
@@ -139,34 +139,88 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label small fw-semibold">Title</label>
-                        <input type="text" name="title" class="form-control form-control-sm" required placeholder="e.g. Campus Wi-Fi Maintenance Window" />
+                        <input type="text" name="title" class="form-control form-control-sm" required placeholder="e.g. Campus Wi-Fi Maintenance Window / Graduation Rehearsal Schedule" />
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Announcement Content</label>
-                        <textarea name="content" rows="4" class="form-control form-control-sm" required placeholder="Details about this official announcement..."></textarea>
+                        <label class="form-label small fw-semibold">Announcement Content & Details</label>
+                        <textarea name="content" rows="4" class="form-control form-control-sm" required placeholder="Type full details of the announcement..."></textarea>
                     </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold">Priority</label>
-                            <select name="priority" class="form-select form-select-sm">
-                                <option value="NORMAL">Normal</option>
-                                <option value="HIGH">High</option>
-                                <option value="URGENT">Urgent</option>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Target Audience</label>
+                            <select name="targetAudience" class="form-select form-select-sm" id="annAudienceSelect" onchange="toggleAnnDeptSelect(this.value)">
+                                <option value="ALL">All Campus Members (Broadcast)</option>
+                                <option value="STUDENTS">Students Only</option>
+                                <option value="FACULTY">Faculty & Staff Only</option>
+                                <option value="ORGANIZERS">Club Leaders & Organizers</option>
+                                <option value="DEPARTMENT">Specific Academic Department</option>
                             </select>
                         </div>
-                        <div class="col-6 d-flex align-items-center pt-3">
-                            <div class="form-check">
-                                <input type="checkbox" name="isPinned" value="true" class="form-check-input" id="isPinnedCheck" />
-                                <label class="form-check-label small fw-semibold" for="isPinnedCheck">Pin to Top</label>
-                            </div>
+                        <div class="col-md-6" id="annDeptGroup" style="display: none;">
+                            <label class="form-label small fw-semibold">Specific Department</label>
+                            <select name="departmentId" class="form-select form-select-sm">
+                                <option value="">-- Choose Target Department --</option>
+                                @foreach (var d in Model.Departments)
+                                {
+                                    <option value="@d.id">@d.name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Announcement Type</label>
+                            <select name="announcementType" class="form-select form-select-sm">
+                                <option value="GENERAL">General Notice</option>
+                                <option value="NEWS">Campus News</option>
+                                <option value="ALERT">Safety / Urgent Alert</option>
+                                <option value="ACADEMIC">Academic Bulletin</option>
+                                <option value="CLOSURE">Facility Closure</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Priority</label>
+                            <select name="priority" class="form-select form-select-sm">
+                                <option value="NORMAL">Normal Priority</option>
+                                <option value="HIGH">High Priority</option>
+                                <option value="URGENT">Urgent Priority (Critical)</option>
+                            </select>
                         </div>
                     </div>
+
+                    <div class="p-3 bg-light rounded-3 border">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" name="sendNotificationAlert" value="true" id="sendAlertCheck" checked />
+                            <label class="form-check-label small fw-semibold text-dark" for="sendAlertCheck">
+                                <i class="bi bi-bell-fill text-warning me-1"></i> Send Instant In-App Notification Alert to All Target Users
+                            </label>
+                            <div class="text-muted" style="font-size: 11px;">Targeted recipients will receive an alert popup and in-app notification in their personal Notification Center.</div>
+                        </div>
+
+                        <div class="form-check">
+                            <input type="checkbox" name="isPinned" value="true" class="form-check-input" id="isPinnedCheck" />
+                            <label class="form-check-label small fw-semibold" for="isPinnedCheck">
+                                <i class="bi bi-pin-angle-fill text-warning me-1"></i> Pin Bulletin to Top of Feeds
+                            </label>
+                        </div>
+                    </div>
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-primary px-3">Publish Now</button>
+                    <button type="submit" class="btn btn-sm btn-primary px-3">
+                        <i class="bi bi-send me-1"></i> Publish & Dispatch Alerts
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+    function toggleAnnDeptSelect(val) {
+        var group = document.getElementById('annDeptGroup');
+        if (group) {
+            group.style.display = val === 'DEPARTMENT' ? 'block' : 'none';
+        }
+    }
+</script>

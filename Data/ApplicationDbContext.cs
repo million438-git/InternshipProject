@@ -78,6 +78,14 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<UserSuspension> user_suspensions { get; set; }
 
+    // ============================================================
+    // INTEREST-BASED CLUB & COMMUNITY SYSTEM
+    // ============================================================
+    public virtual DbSet<Club> clubs { get; set; }
+    public virtual DbSet<ClubInterest> club_interests { get; set; }
+    public virtual DbSet<ClubFollower> club_followers { get; set; }
+    public virtual DbSet<ClubMember> club_members { get; set; }
+
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -692,11 +700,7 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<user_category_interest>(entity =>
         {
-            entity.HasKey(e => new
-            {
-                e.user_id,
-                e.category_id
-            }).HasName("PRIMARY");
+            entity.HasKey(e => e.interest_id).HasName("PRIMARY");
 
             entity.Property(e => e.created_at)
                 .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
@@ -706,10 +710,12 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.category)
                 .WithMany(p => p.user_category_interests)
+                .HasForeignKey(d => d.category_id)
                 .HasConstraintName("fk_user_category_category");
 
             entity.HasOne(d => d.user)
                 .WithMany(p => p.user_category_interests)
+                .HasForeignKey(d => d.user_id)
                 .HasConstraintName("fk_user_category_user");
         });
 
@@ -720,21 +726,22 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<user_dept_subscription>(entity =>
         {
-            entity.HasKey(e => new
-            {
-                e.user_id,
-                e.department_id
-            }).HasName("PRIMARY");
+            entity.HasKey(e => e.sub_id).HasName("PRIMARY");
+
+            entity.Property(e => e.notify_on_new_event)
+                .HasDefaultValueSql("'1'");
 
             entity.Property(e => e.subscribed_at)
                 .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
 
             entity.HasOne(d => d.department)
                 .WithMany(p => p.user_dept_subscriptions)
+                .HasForeignKey(d => d.department_id)
                 .HasConstraintName("fk_user_dept_sub_department");
 
             entity.HasOne(d => d.user)
                 .WithMany(p => p.user_dept_subscriptions)
+                .HasForeignKey(d => d.user_id)
                 .HasConstraintName("fk_user_dept_sub_user");
         });
 
@@ -1003,6 +1010,122 @@ public partial class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.suspended_by)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_user_suspensions_admin");
+        });
+
+
+        // ============================================================
+        // CLUBS & COMMUNITIES
+        // ============================================================
+
+        modelBuilder.Entity<Club>(entity =>
+        {
+            entity.HasKey(e => e.id).HasName("PRIMARY");
+
+            entity.Property(e => e.created_at)
+                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
+
+            entity.Property(e => e.status)
+                .HasDefaultValueSql("'ACTIVE'");
+
+            entity.Property(e => e.updated_at)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
+
+            entity.HasOne(d => d.faculty)
+                .WithMany()
+                .HasForeignKey(d => d.faculty_id)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_clubs_faculty");
+
+            entity.HasOne(d => d.department)
+                .WithMany()
+                .HasForeignKey(d => d.department_id)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_clubs_department");
+
+            entity.HasOne(d => d.organization)
+                .WithMany()
+                .HasForeignKey(d => d.organization_id)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_clubs_organization");
+
+            entity.HasOne(d => d.president)
+                .WithMany()
+                .HasForeignKey(d => d.president_id)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_clubs_president");
+        });
+
+        modelBuilder.Entity<ClubInterest>(entity =>
+        {
+            entity.HasKey(e => new { e.club_id, e.category_id }).HasName("PRIMARY");
+
+            entity.Property(e => e.created_at)
+                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
+
+            entity.HasOne(d => d.club)
+                .WithMany(p => p.club_interests)
+                .HasForeignKey(d => d.club_id)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_club_interests_club");
+
+            entity.HasOne(d => d.category)
+                .WithMany()
+                .HasForeignKey(d => d.category_id)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_club_interests_category");
+        });
+
+        modelBuilder.Entity<ClubFollower>(entity =>
+        {
+            entity.HasKey(e => new { e.club_id, e.user_id }).HasName("PRIMARY");
+
+            entity.Property(e => e.followed_at)
+                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
+
+            entity.HasOne(d => d.club)
+                .WithMany(p => p.club_followers)
+                .HasForeignKey(d => d.club_id)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_club_followers_club");
+
+            entity.HasOne(d => d.user)
+                .WithMany()
+                .HasForeignKey(d => d.user_id)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_club_followers_user");
+        });
+
+        modelBuilder.Entity<ClubMember>(entity =>
+        {
+            entity.HasKey(e => e.id).HasName("PRIMARY");
+
+            entity.Property(e => e.applied_at)
+                .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
+
+            entity.Property(e => e.membership_role)
+                .HasDefaultValueSql("'MEMBER'");
+
+            entity.Property(e => e.status)
+                .HasDefaultValueSql("'PENDING'");
+
+            entity.HasOne(d => d.club)
+                .WithMany(p => p.club_members)
+                .HasForeignKey(d => d.club_id)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_club_members_club");
+
+            entity.HasOne(d => d.user)
+                .WithMany()
+                .HasForeignKey(d => d.user_id)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_club_members_user");
+
+            entity.HasOne(d => d.reviewer)
+                .WithMany()
+                .HasForeignKey(d => d.reviewed_by)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_club_members_reviewer");
         });
 
 

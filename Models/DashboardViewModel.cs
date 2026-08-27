@@ -38,9 +38,16 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public int AttendedEventsCount { get; set; }
         public int EarnedCertificatesCount { get; set; }
         public int UpcomingWorkshopsCount { get; set; }
+        public bool HasSelectedInterests { get; set; }
+        public int SelectedInterestsCount { get; set; }
+        public int SubscribedDepartmentsCount { get; set; }
+        public int FollowedClubsCount { get; set; }
 
         public List<DashboardEventItem> MyRegisteredEvents { get; set; } = new();
+        public List<DashboardEventItem> RecommendedEventsForYou { get; set; } = new();
+        public List<DashboardEventItem> SubscribedDepartmentEvents { get; set; } = new();
         public List<DashboardClubItem> RecommendedClubs { get; set; } = new();
+        public List<DashboardClubItem> MyClubs { get; set; } = new();
     }
 
     // =========================================================================
@@ -119,15 +126,31 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public int TotalPlatformEventsCount { get; set; }
         public int TotalSystemRolesCount { get; set; }
         public int SecurityAlertsCount { get; set; }
+        public int PendingUserApprovalsCount { get; set; }
         public int SystemHealthPercent { get; set; } = 99;
         public string ServerUptime { get; set; } = "99.98%";
         public string DatabaseEngine { get; set; } = "MySQL 8.0 Enterprise";
         public string ActiveEnvironment { get; set; } = "Production / Campus Network";
 
         public List<DashboardAuditItem> RealtimeAuditLogs { get; set; } = new();
+        public List<DashboardPendingUserApprovalItem> PendingUsersList { get; set; } = new();
         public List<DashboardRoleSummaryItem> RolesDistribution { get; set; } = new();
         public List<DashboardSystemHealthItem> SystemServicesStatus { get; set; } = new();
         public List<DashboardSecurityAlertItem> SecurityIncidents { get; set; } = new();
+    }
+
+    public class DashboardPendingUserApprovalItem
+    {
+        public ulong Id { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string AccountType { get; set; } = "STUDENT";
+        public string? DepartmentName { get; set; }
+        public string? StudentOrEmployeeId { get; set; }
+        public string? RegisteredByAdminName { get; set; }
+        public DateTime RegisteredAt { get; set; }
     }
 
     // =========================================================================
@@ -174,9 +197,15 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     {
         public ulong Id { get; set; }
         public string Name { get; set; } = string.Empty;
+        public string Slug { get; set; } = string.Empty;
         public string Category { get; set; } = "Technology";
         public int MemberCount { get; set; }
+        public int FollowerCount { get; set; }
         public string Description { get; set; } = string.Empty;
+        public string? LogoUrl { get; set; }
+        public string? RecommendationReason { get; set; }
+        public bool IsFollowing { get; set; }
+        public string MembershipStatus { get; set; } = "NONE";
     }
 
     public class DashboardVenueBookingItem

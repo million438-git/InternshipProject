@@ -1,13 +1,13 @@
 @model HawassaUnifiedCampusEventManagementSystem.Models.AdminRolesPermissionsViewModel
 
 @{
-    Layout = "_AdminLayout";
-    ViewData["Title"] = "Roles & Permissions";
+    Layout = "_SuperAdminLayout";
+    ViewData["Title"] = "Roles & RBAC Permissions";
 }
 
 <div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h3 fw-bold text-dark mb-1">🔐 Roles & Access Permissions</h1>
+        <h1 class="h3 fw-bold text-dark mb-1"><i class="bi bi-shield-lock text-warning me-2"></i>Roles & RBAC Permissions</h1>
         <p class="text-muted small mb-0">Role-based access control matrix (RBAC) governing system privileges across campus.</p>
     </div>
 </div>
@@ -19,7 +19,7 @@
     @foreach (var role in Model.Roles)
     {
         <div class="col-md-6 col-lg-4">
-            <div class="admin-card p-4 h-100">
+            <div class="admin-card p-4 h-100 shadow-sm">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <div class="d-flex align-items-center gap-2">
                         <div class="stat-icon-box bg-primary-subtle text-primary" style="width: 40px; height: 40px; font-size: 18px;">

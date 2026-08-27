@@ -1,0 +1,139 @@
+@model HawassaUnifiedCampusEventManagementSystem.Models.ClubCreateEditViewModel
+
+@{
+    ViewData["Title"] = "Charter New Campus Club | Hawassa University";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/clubs.css" asp-append-version="true" />
+}
+
+<div class="container py-4" style="max-width: 860px;">
+
+    <!-- BREADCRUMB -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Clubs" asp-action="Index">Clubs</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Create New Club</li>
+        </ol>
+    </nav>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+        <div class="p-4 bg-primary text-white">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <i class="bi bi-patch-plus-fill fs-4"></i>
+                <h1 class="h4 fw-bold mb-0 text-white">Charter a New Campus Club or Society</h1>
+            </div>
+            <p class="small text-white text-opacity-80 mb-0">
+                Register an official university student organization, assign interest taxonomies, and designate student leadership.
+            </p>
+        </div>
+
+        <form method="post" asp-action="Create" class="p-4">
+            @Html.AntiForgeryToken()
+
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+            {
+                <div class="alert alert-danger rounded-3 small">
+                    <div asp-validation-summary="All" class="text-danger mb-0"></div>
+                </div>
+            }
+
+            <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">1. Club Identity & Overview</h5>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-8">
+                    <label asp-for="Name" class="form-label small fw-semibold">Club / Community Name *</label>
+                    <input asp-for="Name" class="form-control rounded-3" placeholder="e.g. AI & Machine Learning Club" required />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="ShortName" class="form-label small fw-semibold">Short Code / Acronym</label>
+                    <input asp-for="ShortName" class="form-control rounded-3" placeholder="e.g. AIML-HU" />
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label small fw-semibold">Club Mission & Description *</label>
+                    <textarea asp-for="Description" class="form-control rounded-3" rows="4" placeholder="Describe the mission, activities, weekly meeting schedules, and targets of this club..." required></textarea>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="LogoUrl" class="form-label small fw-semibold">Logo Image URL</label>
+                    <input asp-for="LogoUrl" class="form-control rounded-3" placeholder="https://example.com/logo.png" />
+                    <small class="text-muted" style="font-size: 11px;">Square emblem image URL recommended.</small>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="CoverImageUrl" class="form-label small fw-semibold">Cover Banner URL</label>
+                    <input asp-for="CoverImageUrl" class="form-control rounded-3" placeholder="https://example.com/cover.jpg" />
+                </div>
+            </div>
+
+            <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">2. Affiliations & Leadership</h5>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label asp-for="DepartmentId" class="form-label small fw-semibold">Academic Department</label>
+                    <select asp-for="DepartmentId" asp-items="Model.AvailableDepartments" class="form-select rounded-3">
+                        <option value="">-- None / General Campus --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="FacultyId" class="form-label small fw-semibold">Faculty / College</label>
+                    <select asp-for="FacultyId" asp-items="Model.AvailableFaculties" class="form-select rounded-3">
+                        <option value="">-- None / General --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="OrganizationId" class="form-label small fw-semibold">Parent Directorate / Union</label>
+                    <select asp-for="OrganizationId" asp-items="Model.AvailableOrganizations" class="form-select rounded-3">
+                        <option value="">-- Standalone Club --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-12">
+                    <label asp-for="PresidentId" class="form-label small fw-semibold">Designate Club President / Student Lead</label>
+                    <select asp-for="PresidentId" asp-items="Model.AvailableUsers" class="form-select rounded-3">
+                        <option value="">-- Select Active University User --</option>
+                    </select>
+                    <small class="text-muted" style="font-size: 11px;">The designated president will have administrative clearance to review membership requests.</small>
+                </div>
+            </div>
+
+            <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">3. Assign Interest Categories</h5>
+            <p class="small text-muted mb-3">Select the interest areas associated with this club to power student matching recommendations:</p>
+
+            <div class="row g-2 mb-4">
+                @for (int i = 0; i < Model.AvailableCategories.Count; i++)
+                {
+                    var cat = Model.AvailableCategories[i];
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-check p-2 border rounded-3 bg-light d-flex align-items-center gap-2">
+                            <input class="form-check-input ms-1"
+                                   type="checkbox"
+                                   name="SelectedCategoryIds"
+                                   value="@cat.Id"
+                                   id="cat_create_@cat.Id"
+                                   @(Model.SelectedCategoryIds.Contains(cat.Id) ? "checked" : "") />
+                            <label class="form-check-label small fw-semibold text-dark cursor-pointer flex-grow-1" for="cat_create_@cat.Id">
+                                <i class="bi @(cat.Icon ?? "bi-tag") text-primary me-1"></i> @cat.Name
+                            </label>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                <a asp-action="Index" class="btn btn-light rounded-pill px-4">Cancel</a>
+                <button type="submit" class="btn btn-primary rounded-pill px-5 fw-semibold shadow-sm">
+                    <i class="bi bi-check-circle-fill me-1"></i> Charter Club & Save
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>

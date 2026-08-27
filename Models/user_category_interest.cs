@@ -6,18 +6,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HawassaUnifiedCampusEventManagementSystem.Models;
 
-[PrimaryKey("user_id", "category_id")]
 [Index("category_id", Name = "idx_user_category_category")]
+[Index("user_id", Name = "idx_user_category_user")]
+[Index("user_id", "category_id", Name = "uq_user_category_interest", IsUnique = true)]
 public partial class user_category_interest
 {
     [Key]
+    public ulong interest_id { get; set; }
+
     public ulong user_id { get; set; }
 
-    [Key]
     public ulong category_id { get; set; }
 
     [Column(TypeName = "enum('LOW','MEDIUM','HIGH')")]
-    public string interest_level { get; set; } = null!;
+    public string interest_level { get; set; } = "MEDIUM";
 
     [MaxLength(6)]
     public DateTime created_at { get; set; }
@@ -30,3 +32,4 @@ public partial class user_category_interest
     [InverseProperty("user_category_interests")]
     public virtual User user { get; set; } = null!;
 }
+

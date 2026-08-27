@@ -1025,18 +1025,20 @@ CREATE TABLE user_preferences (
 
 
 -- ============================================================
--- 28. USER_DEPT_SUBSCRIPTIONS
+-- 28. USER_DEPT_SUBSCRIPTIONS (Personalization: Department Follows)
 -- ============================================================
 
 CREATE TABLE user_dept_subscriptions (
+    sub_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id BIGINT UNSIGNED NOT NULL,
     department_id BIGINT UNSIGNED NOT NULL,
-
+    notify_on_new_event TINYINT(1) NOT NULL DEFAULT 1,
     subscribed_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
-    PRIMARY KEY (user_id, department_id),
-
+    PRIMARY KEY (sub_id),
+    UNIQUE KEY uq_user_dept_subscription (user_id, department_id),
     KEY idx_user_dept_sub_department (department_id),
+    KEY idx_user_dept_sub_user (user_id),
 
     CONSTRAINT fk_user_dept_sub_user
         FOREIGN KEY (user_id)
@@ -1053,10 +1055,11 @@ CREATE TABLE user_dept_subscriptions (
 
 
 -- ============================================================
--- 29. USER_CATEGORY_INTERESTS
+-- 29. USER_CATEGORY_INTERESTS (Personalization: Topic Interests)
 -- ============================================================
 
 CREATE TABLE user_category_interests (
+    interest_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id BIGINT UNSIGNED NOT NULL,
     category_id BIGINT UNSIGNED NOT NULL,
 
@@ -1068,9 +1071,10 @@ CREATE TABLE user_category_interests (
 
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
-    PRIMARY KEY (user_id, category_id),
-
+    PRIMARY KEY (interest_id),
+    UNIQUE KEY uq_user_category_interest (user_id, category_id),
     KEY idx_user_category_category (category_id),
+    KEY idx_user_category_user (user_id),
 
     CONSTRAINT fk_user_category_user
         FOREIGN KEY (user_id)
@@ -1498,6 +1502,175 @@ CREATE TABLE user_suspensions (
 
 
 -- ============================================================
+-- 42. CLUBS & STUDENT SOCIETIES
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS clubs (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    short_name VARCHAR(50) NULL,
+    description TEXT NULL,
+    logo_url VARCHAR(500) NULL,
+    cover_image_url VARCHAR(500) NULL,
+
+    faculty_id BIGINT UNSIGNED NULL,
+    department_id BIGINT UNSIGNED NULL,
+    organization_id BIGINT UNSIGNED NULL,
+    president_id BIGINT UNSIGNED NULL,
+
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+        ON UPDATE CURRENT_TIMESTAMP(6),
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_clubs_slug (slug),
+
+    KEY idx_clubs_faculty (faculty_id),
+    KEY idx_clubs_dept (department_id),
+    KEY idx_clubs_org (organization_id),
+    KEY idx_clubs_president (president_id),
+    KEY idx_clubs_status (status),
+
+    CONSTRAINT fk_clubs_faculty
+        FOREIGN KEY (faculty_id)
+        REFERENCES faculties(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_clubs_department
+        FOREIGN KEY (department_id)
+        REFERENCES departments(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_clubs_organization
+        FOREIGN KEY (organization_id)
+        REFERENCES organizations(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_clubs_president
+        FOREIGN KEY (president_id)
+        REFERENCES users(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+
+-- ============================================================
+-- 43. CLUB_INTERESTS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS club_interests (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+    club_id BIGINT UNSIGNED NOT NULL,
+    category_id BIGINT UNSIGNED NOT NULL,
+
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_club_category_interest (club_id, category_id),
+
+    KEY idx_club_interests_club (club_id),
+    KEY idx_club_interests_category (category_id),
+
+    CONSTRAINT fk_club_interests_club
+        FOREIGN KEY (club_id)
+        REFERENCES clubs(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_club_interests_category
+        FOREIGN KEY (category_id)
+        REFERENCES event_categories(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+
+-- ============================================================
+-- 44. CLUB_FOLLOWERS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS club_followers (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+    club_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+
+    followed_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_club_user_follower (club_id, user_id),
+
+    KEY idx_club_followers_club (club_id),
+    KEY idx_club_followers_user (user_id),
+
+    CONSTRAINT fk_club_followers_club
+        FOREIGN KEY (club_id)
+        REFERENCES clubs(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_club_followers_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+
+-- ============================================================
+-- 45. CLUB_MEMBERS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS club_members (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+    club_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+
+    membership_role VARCHAR(20) NOT NULL DEFAULT 'MEMBER',
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+
+    applied_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    reviewed_at DATETIME(6) NULL,
+    reviewed_by BIGINT UNSIGNED NULL,
+    request_notes TEXT NULL,
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_club_user_membership (club_id, user_id),
+
+    KEY idx_club_members_club (club_id),
+    KEY idx_club_members_user (user_id),
+    KEY idx_club_members_status (status),
+
+    CONSTRAINT fk_club_members_club
+        FOREIGN KEY (club_id)
+        REFERENCES clubs(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_club_members_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_club_members_reviewer
+        FOREIGN KEY (reviewed_by)
+        REFERENCES users(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+
+-- ============================================================
 -- SEED INITIAL DATA
 -- ============================================================
 
@@ -1613,6 +1786,32 @@ INSERT INTO system_settings (setting_key, setting_value, description, updated_by
 ('MaxEventCapacityDefault', '1000', 'Maximum default attendee capacity per single event booking', 1),
 ('AllowGuestRegistrations', 'false', 'Require verified student/staff institutional credentials for event tickets', 1),
 ('MaintenanceMode', 'false', 'System maintenance flag', 1);
+
+-- 15. SAMPLE CLUBS & SOCIETIES
+INSERT INTO clubs (id, name, slug, short_name, description, logo_url, faculty_id, department_id, organization_id, president_id, status) VALUES
+(1, 'AI & Machine Learning Club', 'ai-machine-learning-club', 'AIML', 'Student community dedicated to deep learning, neural networks, PyTorch, computer vision, and applied generative AI engineering.', 'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=400&auto=format&fit=crop&q=80', 2, 2, 1, 1, 'ACTIVE'),
+(2, 'Hawassa Cybersecurity Guild', 'hawassa-cybersecurity-guild', 'HCG', 'Hands-on ethical hacking, reverse engineering, CTF team training, network defense, and zero-trust security research.', 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400&auto=format&fit=crop&q=80', 2, 3, 2, 2, 'ACTIVE'),
+(3, 'Campus Coding Society', 'campus-coding-society', 'CCS', 'Algorithmic problem solving, competitive programming, full-stack open source software development, and interview prep.', 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&auto=format&fit=crop&q=80', 1, 1, 1, 1, 'ACTIVE'),
+(4, 'Robotics & IoT Society', 'robotics-iot-society', 'RIoT', 'Hardware prototyping, embedded microcontrollers (ESP32, Arduino, Raspberry Pi), drones, and automated smart agricultural sensors.', 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&auto=format&fit=crop&q=80', 1, 4, 1, 2, 'ACTIVE');
+
+-- 16. CLUB INTERESTS MAPPINGS
+INSERT INTO club_interests (club_id, category_id) VALUES
+(1, 1), -- AI Club -> Academic & Technology
+(1, 5), -- AI Club -> Student Clubs & Workshops
+(2, 1), -- Cyber Guild -> Academic & Technology
+(2, 2), -- Cyber Guild -> Career & Networking
+(3, 1), -- Coding Society -> Academic & Technology
+(3, 2), -- Coding Society -> Career & Networking
+(3, 5), -- Coding Society -> Student Clubs & Workshops
+(4, 1), -- Robotics -> Academic & Technology
+(4, 5); -- Robotics -> Student Clubs & Workshops
+
+-- 17. CLUB LEADERSHIP MEMBERS
+INSERT INTO club_members (club_id, user_id, membership_role, status, reviewed_at, reviewed_by) VALUES
+(1, 1, 'PRESIDENT', 'APPROVED', CURRENT_TIMESTAMP(6), 1),
+(2, 2, 'PRESIDENT', 'APPROVED', CURRENT_TIMESTAMP(6), 1),
+(3, 1, 'PRESIDENT', 'APPROVED', CURRENT_TIMESTAMP(6), 1),
+(4, 2, 'PRESIDENT', 'APPROVED', CURRENT_TIMESTAMP(6), 1);
 
 
 -- ============================================================

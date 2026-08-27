@@ -1,9 +1,11 @@
 @{
-    var currentController =
-        ViewContext.RouteData.Values["controller"]?.ToString();
-
-    var currentAction =
-        ViewContext.RouteData.Values["action"]?.ToString();
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    var isAuthPage = currentController.Equals("Account", StringComparison.OrdinalIgnoreCase) && 
+                     (currentAction.Equals("Login", StringComparison.OrdinalIgnoreCase) || 
+                      currentAction.Equals("Register", StringComparison.OrdinalIgnoreCase) || 
+                      currentAction.Equals("ForgotPassword", StringComparison.OrdinalIgnoreCase) || 
+                      currentAction.Equals("ResetPassword", StringComparison.OrdinalIgnoreCase));
 }
 
 <!DOCTYPE html>
@@ -109,8 +111,37 @@
 
 <body>
 
+@if (isAuthPage)
+{
     <!-- =====================================================
-         HEADER
+         MINIMAL AUTH HEADER (NO UNWANTED TOGGLERS OR NAV CLUTTER)
+         ===================================================== -->
+    <header class="py-3 border-bottom bg-body">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="d-flex align-items-center gap-2 text-decoration-none" asp-controller="Home" asp-action="Index" aria-label="HUCEMS Home">
+                <img src="~/images/hawassa-logo.png" alt="Hawassa University Crest" class="brand-logo-img" style="width: 38px; height: 38px; object-fit: contain; border-radius: 50%;" />
+                <div class="d-flex flex-column leading-none">
+                    <span class="brand-text fw-bold text-dark fs-6">HUCEMS</span>
+                    <span class="brand-subtext text-muted" style="font-size: 9px; letter-spacing: 0.5px; margin-top: -3px;">HAWASSA UNIVERSITY</span>
+                </div>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                    Public Portal
+                </a>
+                <button type="button" class="theme-toggle-btn btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" id="themeToggleBtn" style="width: 34px; height: 34px;" aria-label="Toggle Theme" title="Toggle Theme">
+                    <i class="bi bi-moon-stars-fill theme-icon-dark"></i>
+                    <i class="bi bi-sun-fill theme-icon-light"></i>
+                    <span class="visually-hidden">Toggle Theme</span>
+                </button>
+            </div>
+        </div>
+    </header>
+}
+else
+{
+    <!-- =====================================================
+         MAIN SITE HEADER
          ===================================================== -->
 
     <header>
@@ -152,8 +183,7 @@
                             <a class="nav-link @(currentController == "Home" && currentAction == "Index" ? "active" : "")"
                                asp-controller="Home"
                                asp-action="Index">
-                                <i class="bi bi-house-door"></i>
-                                <span>Home</span>
+                                Home
                             </a>
                         </li>
 
@@ -162,8 +192,16 @@
                             <a class="nav-link @(currentController == "Events" && currentAction == "Index" ? "active" : "")"
                                asp-controller="Events"
                                asp-action="Index">
-                                <i class="bi bi-calendar-event"></i>
-                                <span>Explore Events</span>
+                                Explore Events
+                            </a>
+                        </li>
+
+                        <!-- CLUBS & COMMUNITIES -->
+                        <li class="nav-item">
+                            <a class="nav-link @(currentController == "Clubs" ? "active" : "")"
+                               asp-controller="Clubs"
+                               asp-action="Index">
+                                Clubs
                             </a>
                         </li>
 
@@ -172,8 +210,7 @@
                             <a class="nav-link @(currentController == "Calendar" ? "active" : "")"
                                asp-controller="Calendar"
                                asp-action="Index">
-                                <i class="bi bi-calendar3"></i>
-                                <span>Event Calendar</span>
+                                Event Calendar
                             </a>
                         </li>
 
@@ -182,8 +219,7 @@
                             <a class="nav-link @(currentController == "Announcements" ? "active" : "")"
                                asp-controller="Announcements"
                                asp-action="Index">
-                                <i class="bi bi-megaphone"></i>
-                                <span>Announcements</span>
+                                Announcements
                             </a>
                         </li>
 
@@ -194,8 +230,7 @@
                                 <a class="nav-link @(currentController == "Dashboard" ? "active" : "")"
                                    asp-controller="Dashboard"
                                    asp-action="Index">
-                                    <i class="bi bi-speedometer2"></i>
-                                    <span>Dashboard</span>
+                                    Dashboard
                                 </a>
                             </li>
 
@@ -206,8 +241,7 @@
                                     <a class="nav-link @(currentController == "Admin" ? "active" : "")"
                                        asp-controller="Admin"
                                        asp-action="Index">
-                                        <i class="bi bi-shield-lock"></i>
-                                        <span>Admin Console</span>
+                                        Admin Console
                                     </a>
                                 </li>
                             }
@@ -220,29 +254,28 @@
                                role="button"
                                data-bs-toggle="dropdown"
                                aria-expanded="false">
-                                <i class="bi bi-grid-3x3-gap"></i>
-                                <span>More</span>
+                                More
                             </a>
                             <ul class="dropdown-menu shadow-lg rounded-4 p-2 mt-2">
                                 <li>
                                     <a class="dropdown-item py-2 rounded-3" asp-controller="Events" asp-action="Search">
-                                        <i class="bi bi-search me-2 text-primary fs-6"></i>Search Events & Venues
+                                        Search Events & Venues
                                     </a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item py-2 rounded-3 fw-semibold text-warning-emphasis" asp-controller="Home" asp-action="Contact">
-                                        <i class="bi bi-headset me-2 text-warning fs-6"></i>Contact & Support Desk
+                                        Contact & Support Desk
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider my-1" /></li>
                                 <li>
                                     <a class="dropdown-item py-2 rounded-3" asp-controller="Home" asp-action="About">
-                                        <i class="bi bi-info-circle me-2 text-secondary fs-6"></i>About HUCEMS
+                                        About HUCEMS
                                     </a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item py-2 rounded-3" asp-controller="Home" asp-action="Privacy">
-                                        <i class="bi bi-shield-check me-2 text-success fs-6"></i>Privacy & Data Governance
+                                        Privacy & Data Governance
                                     </a>
                                 </li>
                             </ul>
@@ -259,14 +292,56 @@
                             {
                                 <!-- CREATE EVENT BUTTON -->
                                 <li class="nav-item">
-                                    <a class="btn btn-primary btn-sm px-3 rounded-pill fw-semibold shadow-sm d-inline-flex align-items-center gap-1"
+                                    <a class="btn btn-primary btn-sm px-3 rounded-pill fw-semibold shadow-sm"
                                        asp-controller="Events"
                                        asp-action="Create">
-                                        <i class="bi bi-plus-circle"></i>
-                                        <span>Create Event</span>
+                                        Create Event
                                     </a>
                                 </li>
                             }
+
+                            <!-- NOTIFICATIONS BELL & DROPDOWN -->
+                            <li class="nav-item dropdown notification-nav-item">
+                                <a class="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center position-relative notification-bell-btn"
+                                   href="#"
+                                   id="navNotificationDropdown"
+                                   role="button"
+                                   data-bs-toggle="dropdown"
+                                   data-bs-auto-close="outside"
+                                   aria-expanded="false"
+                                   style="width: 36px; height: 36px;"
+                                   title="Campus Alerts & Notifications">
+                                    <i class="bi bi-bell-fill"></i>
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="navNotifBadge" style="font-size: 9px; padding: 0.25em 0.45em;">
+                                        0
+                                    </span>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end shadow-lg rounded-4 p-0 mt-2 notification-dropdown"
+                                     aria-labelledby="navNotificationDropdown"
+                                     style="width: min(340px, calc(100vw - 24px)); z-index: 1060; border: 1px solid #e2e8f0;">
+                                    <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light rounded-top-4">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="bi bi-bell-fill text-warning fw-bold"></i>
+                                            <strong class="text-dark small">Notifications</strong>
+                                            <span class="badge bg-primary rounded-pill small" id="navNotifCountBadge" style="font-size: 10px;">0 new</span>
+                                        </div>
+                                        <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 small fw-semibold text-primary" onclick="markAllNotificationsReadFromNav(event)">
+                                            Mark all read
+                                        </button>
+                                    </div>
+                                    <div class="notification-preview-list py-1" id="navNotifList" style="max-height: 280px; overflow-y: auto;">
+                                        <div class="text-center py-4 text-muted small" id="navNotifLoading">
+                                            <div class="spinner-border spinner-border-sm text-primary mb-1"></div>
+                                            <div>Loading alerts...</div>
+                                        </div>
+                                    </div>
+                                    <div class="p-2 border-top text-center bg-light rounded-bottom-4">
+                                        <a asp-controller="Notifications" asp-action="Index" class="btn btn-sm btn-primary rounded-pill w-100 fw-semibold" style="font-size: 12px;">
+                                            <i class="bi bi-inbox me-1"></i> Open Notification Center &rarr;
+                                        </a>
+                                    </div>
+                                </div>
+                            </li>
 
                             <!-- THEME TOGGLE (DARK / LIGHT MODE) -->
                             <li class="nav-item">
@@ -315,8 +390,8 @@
                                 </a>
 
                                 <ul class="dropdown-menu dropdown-menu-end shadow-lg rounded-4 p-2 mt-2 user-profile-dropdown" 
-                                    aria-labelledby="userNavProfileDropdown"
-                                    style="right: 0 !important; left: auto !important; min-width: 260px; max-width: min(320px, calc(100vw - 20px)); z-index: 1060;">
+                                     aria-labelledby="userNavProfileDropdown"
+                                     style="right: 0 !important; left: auto !important; min-width: 260px; max-width: min(320px, calc(100vw - 20px)); z-index: 1060;">
                                     <li class="dropdown-header small text-muted px-3 py-2">
                                         <div class="d-flex justify-content-between align-items-center mb-1">
                                             <span><i class="bi bi-person-check me-1"></i>Logged in as</span>
@@ -331,6 +406,14 @@
                                            asp-action="Index">
                                             <i class="bi bi-speedometer2 me-2 text-primary"></i>
                                             @roleVal Dashboard
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2 rounded-3"
+                                           asp-controller="Notifications"
+                                           asp-action="Index">
+                                            <i class="bi bi-bell-fill me-2 text-warning"></i>
+                                            Notifications & Alerts
                                         </a>
                                     </li>
                                     @if (User.IsInRole("SuperAdmin") || User.IsInRole("SUPERADMIN"))
@@ -371,6 +454,22 @@
                                             My Profile & Settings
                                         </a>
                                     </li>
+                                    <li>
+                                        <a class="dropdown-item py-2 rounded-3"
+                                           asp-controller="Clubs"
+                                           asp-action="MyClubs">
+                                            <i class="bi bi-people-fill me-2 text-primary"></i>
+                                            My Clubs & Memberships
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2 rounded-3"
+                                           asp-controller="Clubs"
+                                           asp-action="Interests">
+                                            <i class="bi bi-heart-pulse-fill me-2 text-danger"></i>
+                                            My Campus Interests
+                                        </a>
+                                    </li>
                                     @if (User.IsInRole("Faculty") || User.IsInRole("Staff") || User.IsInRole("Organization") || User.IsInRole("Club") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("FACULTY") || User.IsInRole("STAFF") || User.IsInRole("ORGANIZATION") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN"))
                                     {
                                         <li>
@@ -379,6 +478,14 @@
                                                asp-action="Create">
                                                 <i class="bi bi-plus-circle me-2 text-success"></i>
                                                 Create Event
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item py-2 rounded-3"
+                                               asp-controller="Clubs"
+                                               asp-action="Create">
+                                                <i class="bi bi-plus-square-dotted me-2 text-warning"></i>
+                                                Charter New Club
                                             </a>
                                         </li>
                                         <li>
@@ -405,21 +512,12 @@
                         }
                         else
                         {
-                            <!-- GUEST STATE -->
-                            <li class="nav-item">
-                                <a class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-semibold"
-                                   asp-controller="Account"
-                                   asp-action="Login">
-                                    <i class="bi bi-box-arrow-in-right me-1"></i>
-                                    Login
-                                </a>
-                            </li>
+                            <!-- GUEST STATE (LOGIN ONLY) -->
                             <li class="nav-item">
                                 <a class="btn btn-primary btn-sm px-3 rounded-pill fw-semibold shadow-sm"
                                    asp-controller="Account"
-                                   asp-action="Register">
-                                    <i class="bi bi-person-plus me-1"></i>
-                                    Register
+                                   asp-action="Login">
+                                    Sign In
                                 </a>
                             </li>
 
@@ -446,6 +544,7 @@
         </nav>
 
     </header>
+}
 
 
     <!-- =====================================================
@@ -459,6 +558,8 @@
     </main>
 
 
+@if (!isAuthPage)
+{
     <!-- =====================================================
          CLEAN MODERN CAMPUS FOOTER
          ===================================================== -->
@@ -498,6 +599,8 @@
                 <a asp-controller="Home" asp-action="Contact" class="footer-nav-link">Contact & Support</a>
                 <span class="text-secondary opacity-25 d-none d-md-inline">•</span>
                 <a asp-controller="Home" asp-action="Privacy" class="footer-nav-link">Privacy Policy</a>
+                <span class="text-secondary opacity-25 d-none d-md-inline">•</span>
+                <a asp-controller="Home" asp-action="Sitemap" class="footer-nav-link text-primary fw-bold"><i class="bi bi-compass me-1"></i>All Pages Directory</a>
             </div>
 
             <!-- 3. INSTITUTIONAL CONTACT & VERIFIED BADGES -->
@@ -560,6 +663,16 @@
         </div>
 
     </footer>
+}
+else
+{
+    <!-- MINIMAL CLEAN AUTH FOOTER -->
+    <footer class="py-3 text-center text-muted small border-top bg-body">
+        <div class="container">
+            &copy; @DateTime.UtcNow.Year Hawassa University Unified Campus Event Management System. All rights reserved.
+        </div>
+    </footer>
+}
 
 
     <!-- =====================================================
@@ -576,6 +689,80 @@
     <script src="~/js/account.js"
             asp-append-version="true"></script>
 
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <script>
+            async function loadNavNotifications() {
+                try {
+                    const res = await fetch('/Notifications/GetUnreadCount');
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.success) {
+                            const badge = document.getElementById('navNotifBadge');
+                            const countBadge = document.getElementById('navNotifCountBadge');
+                            const list = document.getElementById('navNotifList');
+                            if (badge) {
+                                if (data.unreadCount > 0) {
+                                    badge.innerText = data.unreadCount > 99 ? '99+' : data.unreadCount;
+                                    badge.classList.remove('d-none');
+                                } else {
+                                    badge.classList.add('d-none');
+                                }
+                            }
+                            if (countBadge) {
+                                countBadge.innerText = data.unreadCount + ' new';
+                            }
+                            if (list) {
+                                if (data.recent && data.recent.length > 0) {
+                                    list.innerHTML = data.recent.map(item => `
+                                        <a href="${item.actionUrl || '/Notifications'}" class="dropdown-item px-3 py-2 border-bottom d-flex align-items-start gap-2 ${item.isRead ? 'text-muted' : 'bg-primary-subtle text-dark fw-semibold'}">
+                                            <i class="bi ${item.type === 'ANNOUNCEMENT' ? 'bi-megaphone-fill text-warning' : item.type === 'EVENT' ? 'bi-calendar-event-fill text-primary' : item.type === 'REGISTRATION' ? 'bi-ticket-perforated-fill text-success' : 'bi-bell-fill text-secondary'} mt-1 flex-shrink-0"></i>
+                                            <div class="flex-grow-1 overflow-hidden" style="min-width: 0;">
+                                                <div class="small text-truncate ${item.isRead ? 'text-dark' : 'text-primary fw-bold'}">${item.title}</div>
+                                                <div class="text-muted text-truncate" style="font-size: 11px; line-height: 1.3;">${item.message}</div>
+                                                <div class="text-muted mt-1" style="font-size: 10px;">${item.timeAgo}</div>
+                                            </div>
+                                        </a>
+                                    `).join('');
+                                } else {
+                                    list.innerHTML = '<div class="text-center py-4 text-muted small"><i class="bi bi-check-circle text-success d-block fs-4 mb-1"></i>No unread notifications</div>';
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to load nav notifications", e);
+                }
+            }
+
+            async function markAllNotificationsReadFromNav(e) {
+                if (e) e.stopPropagation();
+                try {
+                    const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                    const token = tokenInput ? tokenInput.value : '';
+                    const formData = new FormData();
+                    if (token) formData.append('__RequestVerificationToken', token);
+
+                    const res = await fetch('/Notifications/MarkAllAsRead', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    });
+                    if (res.ok) {
+                        loadNavNotifications();
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                loadNavNotifications();
+            });
+        </script>
+    }
 
     @await RenderSectionAsync(
         "Scripts",

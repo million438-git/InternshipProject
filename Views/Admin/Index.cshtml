@@ -2,22 +2,48 @@
 
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Dashboard Overview";
+    ViewData["Title"] = "Campus Operations Dashboard";
+    var isSuperAdmin = User.IsInRole("SuperAdmin") || User.IsInRole("SUPERADMIN");
+}
+
+@if (isSuperAdmin)
+{
+    <!-- SUPERADMIN BANNER WITH ONE-CLICK SWITCH TO MASTER COMMAND -->
+    <div class="alert alert-primary border border-primary-subtle d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 rounded-3 mb-4 shadow-sm" style="background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 100%);">
+        <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon-box bg-primary text-white rounded-circle" style="width: 38px; height: 38px; font-size: 18px;">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <div>
+                <strong class="text-primary-emphasis d-block">SuperAdmin Master Governance Clearance Active</strong>
+                <small class="text-muted">You are viewing the Campus Operations Dashboard. To oversee all admin activities, user activations, and system vaults, switch to the Master Console.</small>
+            </div>
+        </div>
+        <a asp-controller="Admin" asp-action="SuperAdmin" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1 fw-semibold">
+            <i class="bi bi-speedometer2"></i>
+            <span>Open SuperAdmin Master Command Center &rarr;</span>
+        </a>
+    </div>
 }
 
 <div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h3 fw-bold text-dark mb-1">🛡️ Admin Control Center</h1>
-        <p class="text-muted small mb-0">Central command and unified oversight for Hawassa University Campus Hub.</p>
+        <div class="d-flex align-items-center gap-2">
+            <h1 class="h3 fw-bold text-dark mb-0">Campus Operations Dashboard</h1>
+            <span class="badge bg-secondary-subtle text-secondary border px-2 py-1" style="font-size: 11px;">
+                <i class="bi bi-person-gear me-1"></i>Operational Console
+            </span>
+        </div>
+        <p class="text-muted small mb-0 mt-1">Operational management for Hawassa University campus events, venues, student clubs, and registrations.</p>
     </div>
     <div class="d-flex gap-2">
-        <a asp-controller="Admin" asp-action="Reports" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
+        <a asp-controller="Admin" asp-action="Reports" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 rounded-pill px-3">
             <i class="bi bi-graph-up"></i>
-            <span>View Analytics</span>
+            <span>Analytics</span>
         </a>
-        <a asp-controller="Admin" asp-action="Events" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm">
+        <a asp-controller="Admin" asp-action="Events" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm rounded-pill px-3">
             <i class="bi bi-calendar-check"></i>
-            <span>Review Pending (@Model.PendingApprovals)</span>
+            <span>Review Pending Events (@Model.PendingApprovals)</span>
         </a>
     </div>
 </div>
@@ -28,25 +54,34 @@
 <div class="admin-card p-3 mb-4 bg-body-tertiary">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-primary px-2 py-1"><i class="bi bi-lightning-charge-fill me-1"></i>Quick Actions</span>
-            <span class="small text-muted d-none d-md-inline">Rapid operational shortcuts for campus administrators</span>
+            <span class="badge bg-primary px-2 py-1 rounded-pill"><i class="bi bi-lightning-charge-fill me-1"></i>Quick Actions</span>
+            <span class="small text-muted d-none d-md-inline">Operational shortcuts for campus management</span>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <a asp-controller="Events" asp-action="Create" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
+            <a asp-controller="Admin" asp-action="RegisterUser" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 rounded-pill px-3">
+                <i class="bi bi-person-plus-fill"></i> Register User
+            </a>
+            <a asp-controller="Events" asp-action="Create" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 rounded-pill px-3">
                 <i class="bi bi-plus-circle"></i> Create Event
             </a>
-            <a asp-controller="Admin" asp-action="Announcements" class="btn btn-sm btn-outline-info d-inline-flex align-items-center gap-1">
+            <a asp-controller="Admin" asp-action="Announcements" class="btn btn-sm btn-outline-info d-inline-flex align-items-center gap-1 rounded-pill px-3">
                 <i class="bi bi-megaphone"></i> Broadcast Notice
             </a>
-            <a asp-controller="Admin" asp-action="Venues" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1">
+            <a asp-controller="Admin" asp-action="Venues" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1 rounded-pill px-3">
                 <i class="bi bi-geo-alt"></i> Add Venue
             </a>
-            <a asp-controller="Admin" asp-action="DatabaseManagement" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
-                <i class="bi bi-database"></i> DB Snapshot
+            <a asp-controller="Clubs" asp-action="Index" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 rounded-pill px-3">
+                <i class="bi bi-mortarboard"></i> Student Clubs
             </a>
-            <a asp-controller="Admin" asp-action="AuditLogs" class="btn btn-sm btn-outline-dark d-inline-flex align-items-center gap-1">
-                <i class="bi bi-shield-lock"></i> Audit Logs
+            <a asp-controller="Admin" asp-action="Registrations" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 rounded-pill px-3">
+                <i class="bi bi-ticket-perforated"></i> Ticket Passes
             </a>
+            @if (isSuperAdmin)
+            {
+                <a asp-controller="Admin" asp-action="DatabaseManagement" class="btn btn-sm btn-outline-warning text-dark d-inline-flex align-items-center gap-1 rounded-pill px-3" title="SuperAdmin Database Vault">
+                    <i class="bi bi-database"></i> DB Vault
+                </a>
+            }
         </div>
     </div>
 </div>
@@ -58,19 +93,19 @@
     <div class="col-xl-3 col-sm-6">
         <div class="admin-stat-card">
             <div class="stat-icon-box bg-primary-subtle text-primary">
-                <i class="bi bi-people-fill"></i>
+                <i class="bi bi-people"></i>
             </div>
             <div>
                 <div class="stat-num">@Model.TotalUsers.ToString("N0")</div>
-                <div class="stat-desc">Total Campus Users (@Model.ActiveUsers active)</div>
+                <div class="stat-desc">Campus Members (@Model.ActiveUsers active)</div>
             </div>
         </div>
     </div>
 
     <div class="col-xl-3 col-sm-6">
         <div class="admin-stat-card">
-            <div class="stat-icon-box bg-success-subtle text-success">
-                <i class="bi bi-calendar-event-fill"></i>
+            <div class="stat-icon-box bg-info-subtle text-info">
+                <i class="bi bi-calendar-event"></i>
             </div>
             <div>
                 <div class="stat-num">@Model.TotalEvents.ToString("N0")</div>
@@ -80,13 +115,54 @@
     </div>
 
     <div class="col-xl-3 col-sm-6">
-        <div class="admin-stat-card">
+        <div class="admin-stat-card border @(Model.PendingApprovals > 0 ? "border-warning bg-warning-subtle bg-opacity-10" : "")">
             <div class="stat-icon-box bg-warning-subtle text-warning">
-                <i class="bi bi-building-fill"></i>
+                <i class="bi bi-hourglass-split"></i>
             </div>
             <div>
-                <div class="stat-num">@Model.TotalOrganizations.ToString("N0")</div>
-                <div class="stat-desc">Clubs & Organizations</div>
+                <div class="stat-num text-dark">@Model.PendingApprovals</div>
+                <div class="stat-desc fw-semibold text-warning-emphasis">Pending Event Approvals</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-sm-6">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-success-subtle text-success">
+                <i class="bi bi-ticket-perforated"></i>
+            </div>
+            <div>
+                <div class="stat-num">@Model.TotalRegistrations.ToString("N0")</div>
+                <div class="stat-desc">Total Registrations Issued</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =======================================================
+     ROW 2: SECONDARY STATS (4 CARDS)
+     ======================================================= -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-sm-6">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-danger-subtle text-danger">
+                <i class="bi bi-calendar-day"></i>
+            </div>
+            <div>
+                <div class="stat-num">@Model.TodayEvents</div>
+                <div class="stat-desc">Events Scheduled Today</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-sm-6">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-primary-subtle text-primary">
+                <i class="bi bi-building"></i>
+            </div>
+            <div>
+                <div class="stat-num">@Model.TotalOrganizations</div>
+                <div class="stat-desc">Campus Organizations</div>
             </div>
         </div>
     </div>
@@ -94,225 +170,145 @@
     <div class="col-xl-3 col-sm-6">
         <div class="admin-stat-card">
             <div class="stat-icon-box bg-info-subtle text-info">
-                <i class="bi bi-ticket-perforated-fill"></i>
+                <i class="bi bi-megaphone"></i>
             </div>
             <div>
-                <div class="stat-num">@Model.TotalRegistrations.ToString("N0")</div>
-                <div class="stat-desc">Event Registrations</div>
+                <div class="stat-num">@Model.TotalAnnouncements</div>
+                <div class="stat-desc">Broadcast Bulletins</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-sm-6">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-secondary-subtle text-secondary">
+                <i class="bi bi-geo-alt"></i>
+            </div>
+            <div>
+                <div class="stat-num">@Model.TotalVenues</div>
+                <div class="stat-desc">Halls & Venues</div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- =======================================================
-     ROW 2: CHARTS & EVENT CATEGORIES
+     ROW 3: PENDING EVENTS QUEUE & RECENT USERS DIRECTORY
      ======================================================= -->
 <div class="row g-4 mb-4">
-    <div class="col-lg-8">
-        <div class="admin-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                    <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-graph-up text-primary me-2"></i>Campus Engagement & Registration Trends</h2>
-                    <small class="text-muted">Monthly attendee volume overview</small>
-                </div>
-                <span class="badge bg-primary-subtle text-primary border px-2 py-1">2026 Academic Year</span>
+    <!-- PENDING APPROVALS LIST -->
+    <div class="col-lg-7">
+        <div class="admin-card overflow-hidden shadow-sm h-100">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
+                <h2 class="h6 fw-bold mb-0 text-dark"><i class="bi bi-clock-history me-2 text-warning"></i>Pending Event Approvals</h2>
+                <a asp-controller="Admin" asp-action="Events" asp-route-status="PENDING" class="btn btn-sm btn-outline-primary" style="font-size: 11.5px;">View All (@Model.PendingApprovals)</a>
             </div>
-            <div style="height: 280px;">
-                <canvas id="registrationTrendsChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-4">
-        <div class="admin-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                    <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-pie-chart text-success me-2"></i>Event Categories</h2>
-                    <small class="text-muted">Distribution by activity type</small>
-                </div>
-            </div>
-            <div style="height: 280px;">
-                <canvas id="categoryDistributionChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- =======================================================
-     ROW 3: PENDING APPROVALS & RECENT ACTIVITIES
-     ======================================================= -->
-<div class="row g-4 mb-4">
-    <!-- PENDING APPROVALS -->
-    <div class="col-lg-6">
-        <div class="admin-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                    <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-hourglass-split text-warning me-2"></i>Pending Event Approvals</h2>
-                    <small class="text-muted">Awaiting administrator verification</small>
-                </div>
-                <a asp-controller="Admin" asp-action="Events" class="btn btn-sm btn-outline-primary">View All</a>
-            </div>
-
-            @if (Model.PendingEventsList.Any())
-            {
-                <div class="d-flex flex-column gap-2">
-                    @foreach (var item in Model.PendingEventsList)
-                    {
-                        <div class="p-3 border rounded-3 bg-light d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="fw-bold text-dark mb-1">@item.Title</h6>
-                                <div class="small text-muted">
-                                    <span class="badge bg-secondary-subtle text-secondary me-1">@item.Category</span>
-                                    <span><i class="bi bi-person me-1"></i>@item.Organizer</span> •
-                                    <span><i class="bi bi-calendar me-1"></i>@item.StartAt.ToString("MMM dd, yyyy")</span>
-                                </div>
-                            </div>
-                            <div class="d-flex gap-1">
-                                <form asp-controller="Admin" asp-action="EventApprove" asp-route-id="@item.Id" method="post" class="d-inline">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-success" title="Approve"><i class="bi bi-check-lg"></i></button>
-                                </form>
-                                <form asp-controller="Admin" asp-action="EventReject" asp-route-id="@item.Id" method="post" class="d-inline">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Reject"><i class="bi bi-x-lg"></i></button>
-                                </form>
-                            </div>
-                        </div>
-                    }
-                </div>
-            }
-            else
-            {
-                <div class="text-center py-4 text-muted">
-                    <i class="bi bi-check-circle fs-2 text-success d-block mb-2"></i>
-                    <p class="mb-0 small">All event submissions have been reviewed and approved!</p>
-                </div>
-            }
-        </div>
-    </div>
-
-    <!-- RECENT AUDIT ACTIVITIES -->
-    <div class="col-lg-6">
-        <div class="admin-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                    <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-activity text-info me-2"></i>Recent System Activity</h2>
-                    <small class="text-muted">Live audit trail snapshot</small>
-                </div>
-                <a asp-controller="Admin" asp-action="AuditLogs" class="btn btn-sm btn-outline-secondary">Full Audit</a>
-            </div>
-
-            <div class="d-flex flex-column gap-2">
-                @foreach (var log in Model.RecentActivities)
-                {
-                    <div class="p-2 px-3 border rounded-2 d-flex align-items-center justify-content-between bg-white">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-primary-subtle text-primary font-monospace" style="font-size: 10px;">@log.Action</span>
-                            <span class="small text-dark text-truncate" style="max-width: 250px;">@log.Description</span>
-                        </div>
-                        <small class="text-muted" style="font-size: 11px;">@log.Timestamp.ToString("hh:mm tt")</small>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- =======================================================
-     ROW 4: RECENT REGISTERED USERS
-     ======================================================= -->
-<div class="admin-card p-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-person-plus text-primary me-2"></i>Recent Registered Campus Members</h2>
-            <small class="text-muted">Newly joined students, faculty, and organizers</small>
-        </div>
-        <a asp-controller="Admin" asp-action="Users" class="btn btn-sm btn-outline-primary">Manage Users</a>
-    </div>
-
-    <div class="table-responsive">
-        <table class="table admin-table">
-            <thead>
-                <tr>
-                    <th>User</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Joined</th>
-                    <th class="text-end">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var user in Model.RecentUsers)
-                {
-                    <tr>
-                        <td class="fw-semibold text-dark">@user.FullName</td>
-                        <td class="text-muted">@user.Email</td>
-                        <td><span class="badge bg-secondary-subtle text-secondary">@user.AccountType</span></td>
-                        <td><span class="badge-status badge-active">@user.Status</span></td>
-                        <td class="small text-muted">@user.CreatedAt.ToString("MMM dd, yyyy")</td>
-                        <td class="text-end">
-                            <a asp-controller="Admin" asp-action="Users" asp-route-search="@user.Email" class="btn btn-sm btn-light border py-0 px-2">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-</div>
-
-@section Scripts {
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Registration Trends Chart
-            const ctxTrends = document.getElementById('registrationTrendsChart');
-            if (ctxTrends) {
-                new Chart(ctxTrends, {
-                    type: 'line',
-                    data: {
-                        labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartMonths)),
-                        datasets: [{
-                            label: 'Monthly Registrations',
-                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartMonthlyRegistrations)),
-                            borderColor: '#2563eb',
-                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.3
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { y: { beginAtZero: true } }
-                    }
-                });
-            }
-
-            // Categories Distribution Chart
-            const ctxCat = document.getElementById('categoryDistributionChart');
-            if (ctxCat) {
-                new Chart(ctxCat, {
-                    type: 'doughnut',
-                    data: {
-                        labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartCategories)),
-                        datasets: [{
-                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartCategoryCounts)),
-                            backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b']
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+            <div class="table-responsive">
+                <table class="table admin-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Event Title</th>
+                            <th>Organizer</th>
+                            <th>Category</th>
+                            <th>Date</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.PendingEventsList.Any())
+                        {
+                            @foreach (var ev in Model.PendingEventsList)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark text-truncate" style="max-width: 200px;">@ev.Title</div>
+                                        <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>@ev.Venue</small>
+                                    </td>
+                                    <td><small>@ev.Organizer</small></td>
+                                    <td><span class="badge bg-light text-secondary border">@ev.Category</span></td>
+                                    <td><small class="text-muted">@ev.StartAt.ToString("MMM dd, yyyy")</small></td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <form asp-controller="Admin" asp-action="EventApprove" asp-route-id="@ev.Id" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-success px-2 py-1" title="Approve event">
+                                                    <i class="bi bi-check-lg me-1"></i>Approve
+                                                </button>
+                                            </form>
+                                            <a asp-controller="Events" asp-action="Details" asp-route-id="@ev.Id" class="btn btn-sm btn-outline-secondary ms-1">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
                         }
-                    }
-                });
-            }
-        });
-    </script>
-}
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    <i class="bi bi-check-circle fs-4 text-success d-block mb-1"></i>
+                                    No pending event approvals. All campus submissions are up to date!
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- RECENT USERS -->
+    <div class="col-lg-5">
+        <div class="admin-card overflow-hidden shadow-sm h-100">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
+                <h2 class="h6 fw-bold mb-0 text-dark"><i class="bi bi-people me-2 text-primary"></i>Recent Campus Registrations</h2>
+                <a asp-controller="Admin" asp-action="Users" class="btn btn-sm btn-outline-primary" style="font-size: 11.5px;">User Directory</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table admin-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.RecentUsers.Any())
+                        {
+                            @foreach (var u in Model.RecentUsers)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">@u.FullName</div>
+                                        <small class="text-muted">@u.Email</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border font-monospace" style="font-size: 10.5px;">@u.AccountType</span>
+                                    </td>
+                                    <td>
+                                        @if (u.Status == "ACTIVE")
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2">@u.Status</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted">No users found.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

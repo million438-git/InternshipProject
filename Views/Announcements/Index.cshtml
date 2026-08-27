@@ -25,10 +25,10 @@
 
             <select name="priority" class="form-select form-select-sm" style="width: 140px;" onchange="this.form.submit()">
                 <option value="ALL" selected="@(string.IsNullOrEmpty(Model.SelectedPriority) || Model.SelectedPriority == "ALL")">All Priorities</option>
-                <option value="URGENT" selected="@(Model.SelectedPriority == "URGENT")">🚨 Urgent</option>
-                <option value="HIGH" selected="@(Model.SelectedPriority == "HIGH")">⚠️ High</option>
-                <option value="NORMAL" selected="@(Model.SelectedPriority == "NORMAL")">📢 Normal</option>
-                <option value="LOW" selected="@(Model.SelectedPriority == "LOW")">ℹ️ Low</option>
+                <option value="URGENT" selected="@(Model.SelectedPriority == "URGENT")">Urgent</option>
+                <option value="HIGH" selected="@(Model.SelectedPriority == "HIGH")">High</option>
+                <option value="NORMAL" selected="@(Model.SelectedPriority == "NORMAL")">Normal</option>
+                <option value="LOW" selected="@(Model.SelectedPriority == "LOW")">Low</option>
             </select>
 
             <select name="type" class="form-select form-select-sm" style="width: 140px;" onchange="this.form.submit()">

@@ -114,44 +114,173 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             await PopulateSharedStatsAsync(vm);
             await PopulateUpcomingEventsAsync(vm);
             await PopulateAnnouncementsAsync(vm);
-            PopulateNotifications(vm, "Student");
+            await PopulateNotificationsAsync(vm, userId, "Student");
 
             // Student-specific data
             vm.MyRegisteredEvents = studentRegisteredEvents;
 
-            // Load real campus organizations/clubs
+            // Interest-Based Club Recommendations, Department Subscriptions & Personalized Events
             try
             {
-                var dbClubs = await _db.organizations
-                    .Where(o => o.status == "ACTIVE")
-                    .Take(4)
+                List<ulong> userInterestIds = new();
+                List<ulong> userSubscribedDeptIds = new();
+
+                if (userId.HasValue)
+                {
+                    userInterestIds = await _db.user_category_interests
+                        .Where(ui => ui.user_id == userId.Value)
+                        .Select(ui => ui.category_id)
+                        .ToListAsync();
+
+                    userSubscribedDeptIds = await _db.user_dept_subscriptions
+                        .Where(s => s.user_id == userId.Value)
+                        .Select(s => s.department_id)
+                        .ToListAsync();
+                }
+
+                vm.HasSelectedInterests = userInterestIds.Any();
+                vm.SelectedInterestsCount = userInterestIds.Count;
+                vm.SubscribedDepartmentsCount = userSubscribedDeptIds.Count;
+
+                var dbClubs = await _db.clubs
+                    .Include(c => c.club_interests).ThenInclude(ci => ci.category)
+                    .Include(c => c.club_followers)
+                    .Include(c => c.club_members)
+                    .Where(c => c.status == "ACTIVE")
                     .ToListAsync();
 
                 if (dbClubs.Any())
                 {
-                    vm.RecommendedClubs = dbClubs.Select(c => new DashboardClubItem
+                    var clubItems = dbClubs.Select(c =>
                     {
-                        Id = c.id,
-                        Name = c.name,
-                        Category = c.organization_type ?? "Student Club",
-                        MemberCount = 150,
-                        Description = c.description ?? "Official Hawassa University student organization."
+                        var isFollowing = userId.HasValue && c.club_followers.Any(f => f.user_id == userId.Value);
+                        var memberRecord = userId.HasValue ? c.club_members.FirstOrDefault(m => m.user_id == userId.Value) : null;
+
+                        int matchScore = 0;
+                        string? reason = null;
+
+                        if (userInterestIds.Any())
+                        {
+                            var matchingCats = c.club_interests
+                                .Where(ci => userInterestIds.Contains(ci.category_id))
+                                .Select(ci => ci.category?.name)
+                                .Where(n => !string.IsNullOrEmpty(n))
+                                .ToList();
+
+                            matchScore = matchingCats.Count;
+                            if (matchScore > 0)
+                            {
+                                reason = $"Because you are interested in {matchingCats.First()}";
+                            }
+                        }
+
+                        return new
+                        {
+                            Item = new DashboardClubItem
+                            {
+                                Id = c.id,
+                                Name = c.name,
+                                Slug = c.slug,
+                                Category = c.club_interests.FirstOrDefault()?.category?.name ?? "General Club",
+                                MemberCount = c.club_members.Count(m => m.status == "APPROVED"),
+                                FollowerCount = c.club_followers.Count,
+                                Description = c.description ?? "Official Hawassa University student club.",
+                                LogoUrl = c.logo_url,
+                                RecommendationReason = reason,
+                                IsFollowing = isFollowing,
+                                MembershipStatus = memberRecord != null ? memberRecord.status : "NONE"
+                            },
+                            Score = matchScore,
+                            Followers = c.club_followers.Count,
+                            IsFollowed = isFollowing,
+                            HasMembership = memberRecord != null
+                        };
                     }).ToList();
+
+                    if (vm.HasSelectedInterests)
+                    {
+                        vm.RecommendedClubs = clubItems
+                            .Where(x => x.Score > 0)
+                            .OrderByDescending(x => x.Score)
+                            .ThenByDescending(x => x.Followers)
+                            .Take(4)
+                            .Select(x => x.Item)
+                            .ToList();
+                    }
+
+                    if (!vm.RecommendedClubs.Any())
+                    {
+                        vm.RecommendedClubs = clubItems
+                            .OrderByDescending(x => x.Followers)
+                            .Take(4)
+                            .Select(x => x.Item)
+                            .ToList();
+                    }
+
+                    vm.MyClubs = clubItems
+                        .Where(x => x.IsFollowed || x.HasMembership)
+                        .Select(x => x.Item)
+                        .ToList();
+
+                    vm.FollowedClubsCount = clubItems.Count(x => x.IsFollowed);
+                }
+
+                // Personalized Events Feed (Matching Category Interests & Subscribed Departments)
+                var activeEvents = await _db.events
+                    .Include(e => e.category)
+                    .Include(e => e.venue)
+                    .Include(e => e.organizer)
+                        .ThenInclude(o => o.department)
+                    .Include(e => e.registrations)
+                    .Where(e => (e.status == "PUBLISHED" || e.approval_status == "APPROVED") && e.start_at >= DateTime.UtcNow)
+                    .OrderBy(e => e.start_at)
+                    .Take(20)
+                    .ToListAsync();
+
+                if (userInterestIds.Any() || userSubscribedDeptIds.Any())
+                {
+                    vm.RecommendedEventsForYou = activeEvents
+                        .Where(e => userInterestIds.Contains(e.category_id) ||
+                                    (e.organizer.department_id.HasValue && userSubscribedDeptIds.Contains(e.organizer.department_id.Value)))
+                        .Take(6)
+                        .Select(e => new DashboardEventItem
+                        {
+                            Id = e.id,
+                            Title = e.title,
+                            CategoryName = e.category?.name ?? "General",
+                            VenueName = e.venue?.name ?? (e.organizer.department != null ? $"{e.organizer.department.name} Wing" : "Main Campus"),
+                            StartDate = e.start_at,
+                            AttendeeCount = e.registrations.Count,
+                            Capacity = (int)(e.capacity ?? 100),
+                            Status = (e.organizer.department_id.HasValue && userSubscribedDeptIds.Contains(e.organizer.department_id.Value))
+                                ? $"From Subscribed: {e.organizer.department?.name ?? "Dept"}"
+                                : $"Matches Interest: {e.category?.name ?? "Topic"}"
+                        })
+                        .ToList();
+                }
+
+                if (userSubscribedDeptIds.Any())
+                {
+                    vm.SubscribedDepartmentEvents = activeEvents
+                        .Where(e => e.organizer.department_id.HasValue && userSubscribedDeptIds.Contains(e.organizer.department_id.Value))
+                        .Take(6)
+                        .Select(e => new DashboardEventItem
+                        {
+                            Id = e.id,
+                            Title = e.title,
+                            CategoryName = e.category?.name ?? "Department Event",
+                            VenueName = e.venue?.name ?? (e.organizer.department?.name ?? "Department Wing"),
+                            StartDate = e.start_at,
+                            AttendeeCount = e.registrations.Count,
+                            Capacity = (int)(e.capacity ?? 100),
+                            Status = $"🏛️ {e.organizer.department?.name ?? "Department"}"
+                        })
+                        .ToList();
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to load active clubs.");
-            }
-
-            if (!vm.RecommendedClubs.Any())
-            {
-                vm.RecommendedClubs = new List<DashboardClubItem>
-                {
-                    new() { Id = 1, Name = "Google Developer Student Club (GDSC HU)", Category = "Technology & Coding", MemberCount = 210, Description = "Peer-to-peer learning environment for students interested in software and AI technologies." },
-                    new() { Id = 2, Name = "Hawassa Cyber Knights Security Guild", Category = "Cybersecurity", MemberCount = 145, Description = "CTF competitions, ethical hacking workshops, and security defense challenges." },
-                    new() { Id = 3, Name = "Hawassa University Student Union (HUSU)", Category = "Student Governance", MemberCount = 500, Description = "Official student leadership and campus representation guild." }
-                };
+                _logger.LogWarning(ex, "Failed to load personalization data for Student dashboard.");
             }
 
             return View("Student", vm);
@@ -183,7 +312,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             await PopulateSharedStatsAsync(vm);
             await PopulateUpcomingEventsAsync(vm);
             await PopulateAnnouncementsAsync(vm);
-            PopulateNotifications(vm, "Staff");
+            await PopulateNotificationsAsync(vm, userId, "Staff");
 
             vm.DepartmentEvents = vm.UpcomingEvents.Where(e => e.CategoryName == "Academic" || e.CategoryName == "Career").Take(4).ToList();
 
@@ -236,7 +365,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             await PopulateSharedStatsAsync(vm);
             await PopulateUpcomingEventsAsync(vm);
             await PopulateAnnouncementsAsync(vm);
-            PopulateNotifications(vm, "Faculty");
+            await PopulateNotificationsAsync(vm, userId, "Faculty");
 
             vm.AcademicSeminars = vm.UpcomingEvents.Where(e => e.CategoryName == "Academic" || e.CategoryName == "Technology").Take(4).ToList();
 
@@ -288,7 +417,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             await PopulateSharedStatsAsync(vm);
             await PopulateUpcomingEventsAsync(vm);
             await PopulateAnnouncementsAsync(vm);
-            PopulateNotifications(vm, "Organization");
+            await PopulateNotificationsAsync(vm, userId, "Organization");
 
             vm.HostedEvents = vm.UpcomingEvents.Take(3).ToList();
 
@@ -318,13 +447,20 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> Admin()
         {
-            var (userId, userName, userEmail, userRole, userDept, formattedId, studentId, empId, bio) = await GetUserInfoAsync();
+            var userRole = await GetCurrentNormalizedRoleAsync();
+            if (userRole != "Admin" && userRole != "SuperAdmin")
+            {
+                TempData["ErrorMessage"] = "Access Restricted: Campus Administrator or SuperAdmin role required.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var (userId, userName, userEmail, _, userDept, formattedId, studentId, empId, bio) = await GetUserInfoAsync();
 
             var vm = new AdminDashboardViewModel
             {
                 UserName = userName,
                 UserEmail = userEmail,
-                UserRole = "Admin",
+                UserRole = userRole,
                 UserDepartment = userDept,
                 UserId = formattedId,
                 TotalUsersCount = 1240,
@@ -353,7 +489,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             await PopulateSharedStatsAsync(vm);
             await PopulateUpcomingEventsAsync(vm);
             await PopulateAnnouncementsAsync(vm);
-            PopulateNotifications(vm, "Admin");
+            await PopulateNotificationsAsync(vm, userId, "Admin");
 
             vm.PendingEventApprovals = new List<DashboardApprovalItem>
             {
@@ -400,7 +536,14 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> SuperAdmin()
         {
-            var (userId, userName, userEmail, userRole, userDept, formattedId, studentId, empId, bio) = await GetUserInfoAsync();
+            var userRole = await GetCurrentNormalizedRoleAsync();
+            if (userRole != "SuperAdmin")
+            {
+                TempData["ErrorMessage"] = "Access Restricted: The SuperAdmin Master Dashboard is strictly exclusive to Central Super Administrator accounts.";
+                return RedirectToAction(nameof(Admin));
+            }
+
+            var (userId, userName, userEmail, _, userDept, formattedId, studentId, empId, bio) = await GetUserInfoAsync();
 
             var vm = new SuperAdminDashboardViewModel
             {
@@ -424,20 +567,44 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 vm.TotalSystemUsersCount = await _db.users.CountAsync();
                 vm.TotalPlatformEventsCount = await _db.events.CountAsync();
                 vm.TotalSystemRolesCount = await _db.roles.CountAsync();
+
+                var pendingUsers = await _db.users
+                    .Include(u => u.department)
+                    .Include(u => u.user_roleusers)
+                        .ThenInclude(ur => ur.assigned_byNavigation)
+                    .Where(u => u.account_status == "PENDING" || u.account_status == "PENDING_APPROVAL")
+                    .OrderByDescending(u => u.created_at)
+                    .ToListAsync();
+
+                vm.PendingUserApprovalsCount = pendingUsers.Count;
+                vm.PendingUsersList = pendingUsers.Select(u =>
+                {
+                    var assignedBy = u.user_roleusers.FirstOrDefault(ur => ur.assigned_byNavigation != null)?.assigned_byNavigation;
+                    var regName = assignedBy != null ? $"{assignedBy.first_name} {assignedBy.last_name}".Trim() : "Campus Administrator";
+                    return new DashboardPendingUserApprovalItem
+                    {
+                        Id = u.id,
+                        FullName = $"{u.first_name} {u.last_name}".Trim(),
+                        Username = u.username,
+                        Email = u.email,
+                        Phone = u.phone,
+                        AccountType = u.account_type,
+                        DepartmentName = u.department?.name ?? "General Campus",
+                        StudentOrEmployeeId = u.student_id ?? u.employee_id,
+                        RegisteredByAdminName = regName,
+                        RegisteredAt = u.created_at
+                    };
+                }).ToList();
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "SuperAdmin stats query fallback.");
             }
 
-            if (vm.TotalSystemUsersCount == 0) vm.TotalSystemUsersCount = 14850;
-            if (vm.TotalPlatformEventsCount == 0) vm.TotalPlatformEventsCount = 384;
-            if (vm.TotalSystemRolesCount == 0) vm.TotalSystemRolesCount = 6;
-
             await PopulateSharedStatsAsync(vm);
             await PopulateUpcomingEventsAsync(vm);
             await PopulateAnnouncementsAsync(vm);
-            PopulateNotifications(vm, "SuperAdmin");
+            await PopulateNotificationsAsync(vm, userId, "SuperAdmin");
 
             vm.RealtimeAuditLogs = new List<DashboardAuditItem>
             {
@@ -741,45 +908,72 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             }
         }
 
-        private static void PopulateNotifications(DashboardViewModel vm, string role)
+        private async Task PopulateNotificationsAsync(DashboardViewModel vm, ulong? userId, string role)
         {
+            if (userId.HasValue)
+            {
+                try
+                {
+                    var dbNotifs = await _db.notifications
+                        .AsNoTracking()
+                        .Where(n => n.user_id == userId.Value)
+                        .OrderByDescending(n => n.created_at)
+                        .Take(6)
+                        .ToListAsync();
+
+                    if (dbNotifs.Any())
+                    {
+                        vm.Notifications = dbNotifs.Select(n => new DashboardNotificationItem
+                        {
+                            Id = n.id,
+                            Message = $"[{n.title}] {n.message}",
+                            Type = n.notification_type == "ANNOUNCEMENT" ? "Warning" : n.notification_type == "EVENT" ? "Info" : n.notification_type == "REGISTRATION" ? "Success" : "Primary",
+                            CreatedAt = n.created_at,
+                            IsRead = n.is_read
+                        }).ToList();
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to query notifications for user {UserId}", userId.Value);
+                }
+            }
+
+            // Fallback onboarding alerts if user has 0 notifications yet
             vm.Notifications = role switch
             {
                 "SuperAdmin" => new List<DashboardNotificationItem>
                 {
-                    new() { Id = 1, Message = "Platform Security Audit passed with 0 vulnerabilities detected.", CreatedAt = DateTime.Now.AddMinutes(-20), IsRead = false, Type = "Success" },
-                    new() { Id = 2, Message = "Nightly database snapshot verified and archived to cloud vault.", CreatedAt = DateTime.Now.AddHours(-4), IsRead = true, Type = "Info" },
-                    new() { Id = 3, Message = "New administrator account provisioned for Faculty of Engineering.", CreatedAt = DateTime.Now.AddDays(-1), IsRead = true, Type = "Warning" }
+                    new() { Id = 1, Message = "[SECURITY] Platform Security Audit passed with 0 vulnerabilities detected.", CreatedAt = DateTime.Now.AddMinutes(-20), IsRead = false, Type = "Success" },
+                    new() { Id = 2, Message = "[SYSTEM] Nightly database snapshot verified and archived to cloud vault.", CreatedAt = DateTime.Now.AddHours(-4), IsRead = true, Type = "Info" },
+                    new() { Id = 3, Message = "[ROLES] Admin provisioning and governance active across all faculties.", CreatedAt = DateTime.Now.AddDays(-1), IsRead = true, Type = "Warning" }
                 },
                 "Admin" => new List<DashboardNotificationItem>
                 {
-                    new() { Id = 1, Message = "3 new campus event approval requests awaiting your review.", CreatedAt = DateTime.Now.AddMinutes(-15), IsRead = false, Type = "Warning" },
-                    new() { Id = 2, Message = "Main Auditorium booked for Tech Expo on Friday 09:00 AM.", CreatedAt = DateTime.Now.AddHours(-3), IsRead = false, Type = "Info" },
-                    new() { Id = 3, Message = "Weekly attendee report exported to PDF successfully.", CreatedAt = DateTime.Now.AddDays(-1), IsRead = true, Type = "Success" }
+                    new() { Id = 1, Message = "[APPROVALS] Campus event approval queue is operational.", CreatedAt = DateTime.Now.AddMinutes(-15), IsRead = false, Type = "Warning" },
+                    new() { Id = 2, Message = "[NOTIFICATIONS] Push alert broadcasting and targeted messaging enabled.", CreatedAt = DateTime.Now.AddHours(-3), IsRead = false, Type = "Info" },
+                    new() { Id = 3, Message = "[METRICS] Weekly attendee reports and system analytics synced.", CreatedAt = DateTime.Now.AddDays(-1), IsRead = true, Type = "Success" }
                 },
                 "Faculty" => new List<DashboardNotificationItem>
                 {
-                    new() { Id = 1, Message = "2 student symposium project submissions pending faculty endorsement.", CreatedAt = DateTime.Now.AddMinutes(-40), IsRead = false, Type = "Warning" },
-                    new() { Id = 2, Message = "Academic Colloquium reminder: Friday 03:00 PM in Senate Hall.", CreatedAt = DateTime.Now.AddHours(-5), IsRead = false, Type = "Info" },
-                    new() { Id = 3, Message = "Department syllabus & exam schedules published to student portal.", CreatedAt = DateTime.Now.AddDays(-1), IsRead = true, Type = "Success" }
+                    new() { Id = 1, Message = "[ACADEMIC] Academic Colloquium reminder: Friday in Senate Hall.", CreatedAt = DateTime.Now.AddMinutes(-40), IsRead = false, Type = "Warning" },
+                    new() { Id = 2, Message = "[EVENTS] Department events and symposium schedules published.", CreatedAt = DateTime.Now.AddHours(-5), IsRead = false, Type = "Info" }
                 },
                 "Staff" => new List<DashboardNotificationItem>
                 {
-                    new() { Id = 1, Message = "Auditorium Hall A audio/visual equipment check confirmed.", CreatedAt = DateTime.Now.AddMinutes(-30), IsRead = false, Type = "Success" },
-                    new() { Id = 2, Message = "Logistics memo: Campus security drill scheduled for Thursday morning.", CreatedAt = DateTime.Now.AddHours(-4), IsRead = false, Type = "Warning" },
-                    new() { Id = 3, Message = "Quarterly departmental event calendar finalized.", CreatedAt = DateTime.Now.AddDays(-2), IsRead = true, Type = "Info" }
+                    new() { Id = 1, Message = "[LOGISTICS] Auditorium audio/visual equipment check confirmed.", CreatedAt = DateTime.Now.AddMinutes(-30), IsRead = false, Type = "Success" },
+                    new() { Id = 2, Message = "[SAFETY] Campus logistics memo finalized.", CreatedAt = DateTime.Now.AddHours(-4), IsRead = false, Type = "Warning" }
                 },
                 "Organization" => new List<DashboardNotificationItem>
                 {
-                    new() { Id = 1, Message = "Your event 'Campus Cyber Defense Workshop' was APPROVED by Admin!", CreatedAt = DateTime.Now.AddMinutes(-10), IsRead = false, Type = "Success" },
-                    new() { Id = 2, Message = "45 new students registered for Tech Expo in the last 24 hours.", CreatedAt = DateTime.Now.AddHours(-2), IsRead = false, Type = "Info" },
-                    new() { Id = 3, Message = "Booth reservation #104 confirmed in Engineering Quad.", CreatedAt = DateTime.Now.AddDays(-1), IsRead = true, Type = "Success" }
+                    new() { Id = 1, Message = "[CLUB] Your club event management portal is fully active.", CreatedAt = DateTime.Now.AddMinutes(-10), IsRead = false, Type = "Success" },
+                    new() { Id = 2, Message = "[ATTENDEES] Live registration tracking active for your sessions.", CreatedAt = DateTime.Now.AddHours(-2), IsRead = false, Type = "Info" }
                 },
                 _ => new List<DashboardNotificationItem>
                 {
-                    new() { Id = 1, Message = "You are successfully registered for 'Campus Cyber Defense & Hackathon Workshop'!", CreatedAt = DateTime.Now.AddMinutes(-15), IsRead = false, Type = "Success" },
-                    new() { Id = 2, Message = "Reminder: Annual Tech & Innovation Expo starts in 2 days at Main Auditorium.", CreatedAt = DateTime.Now.AddHours(-2), IsRead = false, Type = "Info" },
-                    new() { Id = 3, Message = "New study group 'Ethical Hacking' posted a meeting schedule.", CreatedAt = DateTime.Now.AddDays(-1), IsRead = true, Type = "Info" }
+                    new() { Id = 1, Message = "[WELCOME] Welcome to Hawassa University Unified Campus Event Management System!", CreatedAt = DateTime.Now.AddMinutes(-15), IsRead = false, Type = "Success" },
+                    new() { Id = 2, Message = "[PREFERENCES] Follow your academic department to receive instant event push alerts.", CreatedAt = DateTime.Now.AddHours(-2), IsRead = false, Type = "Info" }
                 }
             };
         }

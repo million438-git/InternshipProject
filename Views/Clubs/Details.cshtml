@@ -1,0 +1,583 @@
+@model HawassaUnifiedCampusEventManagementSystem.Models.ClubDetailsViewModel
+
+@{
+    ViewData["Title"] = $"{Model.Name} | Hawassa University";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/clubs.css" asp-append-version="true" />
+}
+
+<div class="container py-4">
+
+    <!-- BREADCRUMB -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Clubs" asp-action="Index">Clubs & Communities</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+        </ol>
+    </nav>
+
+    <!-- STATUS ALERT BANNER (If not ACTIVE) -->
+    @if (Model.Status == "PENDING")
+    {
+        <div class="alert alert-warning bg-warning-subtle border-warning-subtle rounded-3 p-3 mb-4 d-flex align-items-center justify-content-between gap-3 shadow-sm">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-hourglass-split text-warning-emphasis fs-4"></i>
+                <div>
+                    <strong class="text-dark">Club Charter Pending Approval:</strong>
+                    <span class="text-muted small ms-1">This student society has been submitted and is awaiting formal verification by campus administrators.</span>
+                </div>
+            </div>
+            @if (Model.IsUserAdmin)
+            {
+                <form method="post" asp-action="ToggleStatus" asp-route-id="@Model.Id" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="status" value="ACTIVE" />
+                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm">
+                        <i class="bi bi-check-circle me-1"></i> Approve & Activate Club
+                    </button>
+                </form>
+            }
+        </div>
+    }
+    else if (Model.Status == "SUSPENDED" || Model.Status == "INACTIVE")
+    {
+        <div class="alert alert-danger bg-danger-subtle border-danger-subtle rounded-3 p-3 mb-4 d-flex align-items-center justify-content-between gap-3 shadow-sm">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-slash-circle-fill text-danger fs-4"></i>
+                <div>
+                    <strong class="text-danger">Club Currently Suspended:</strong>
+                    <span class="text-muted small ms-1">This organization is temporarily inactive or suspended. New membership applications and follows are paused.</span>
+                </div>
+            </div>
+            @if (Model.IsUserAdmin)
+            {
+                <form method="post" asp-action="ToggleStatus" asp-route-id="@Model.Id" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="status" value="ACTIVE" />
+                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Re-Activate Club
+                    </button>
+                </form>
+            }
+        </div>
+    }
+
+    <!-- =========================================================
+         1. CLUB PROFILE BANNER
+         ========================================================= -->
+    <div class="club-profile-banner">
+        <div class="row align-items-center g-4">
+            <div class="col-md-auto text-center text-md-start">
+                <img src="@(!string.IsNullOrEmpty(Model.LogoUrl) ? Model.LogoUrl : "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&auto=format&fit=crop&q=80")"
+                     alt="@Model.Name Logo"
+                     class="club-profile-logo"
+                     onerror="this.src='https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&auto=format&fit=crop&q=80'" />
+            </div>
+
+            <div class="col-md">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    @if (Model.Status == "ACTIVE")
+                    {
+                        <span class="badge bg-success bg-opacity-75 text-white fw-semibold px-3 py-1">
+                            <i class="bi bi-patch-check-fill me-1"></i> VERIFIED CAMPUS CLUB
+                        </span>
+                    }
+                    else if (Model.Status == "PENDING")
+                    {
+                        <span class="badge bg-warning text-dark fw-bold px-3 py-1">
+                            <i class="bi bi-hourglass-split me-1"></i> PENDING VERIFICATION
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger text-white fw-bold px-3 py-1">
+                            <i class="bi bi-slash-circle me-1"></i> SUSPENDED
+                        </span>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.ShortName))
+                    {
+                        <span class="badge bg-primary text-white fw-bold px-2 py-1">@Model.ShortName</span>
+                    }
+                </div>
+
+                <h1 class="h2 fw-bold text-white mb-2">@Model.Name</h1>
+
+                <p class="text-white text-opacity-80 mb-3 small">
+                    <i class="bi bi-building me-1"></i>@(Model.DepartmentName ?? Model.FacultyName ?? "Hawassa University Central Campus")
+                    @if (!string.IsNullOrEmpty(Model.PresidentName))
+                    {
+                        <span class="ms-3"><i class="bi bi-person-circle me-1"></i>President: <strong>@Model.PresidentName</strong></span>
+                    }
+                </p>
+
+                <!-- INTEREST TAGS -->
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    @foreach (var tag in Model.Interests)
+                    {
+                        <span class="badge bg-white text-dark fw-semibold px-3 py-2 rounded-pill shadow-sm">
+                            <i class="bi @(tag.Icon ?? "bi-tag") text-primary me-1"></i> @tag.Name
+                        </span>
+                    }
+                </div>
+
+                <!-- STATS STRIP -->
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                    <div class="club-stat-pill">
+                        <i class="bi bi-bell-fill text-warning"></i>
+                        <span><strong class="text-white follower-count-main">@Model.FollowerCount</strong> Followers</span>
+                    </div>
+                    <div class="club-stat-pill">
+                        <i class="bi bi-people-fill text-info"></i>
+                        <span><strong class="text-white">@Model.MemberCount</strong> Official Members</span>
+                    </div>
+                    <div class="club-stat-pill">
+                        <i class="bi bi-calendar2-event-fill text-success"></i>
+                        <span><strong class="text-white">@Model.UpcomingEvents.Count</strong> Active Events</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS (FOLLOW & BECOME A MEMBER) -->
+            <div class="col-md-auto text-md-end d-flex flex-column gap-2">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    @if (Model.Status == "ACTIVE")
+                    {
+                        <button type="button"
+                                class="btn @(Model.IsFollowing ? "btn-outline-light" : "btn-light text-primary") fw-bold px-4 py-2 rounded-pill shadow-sm"
+                                id="btnFollowMain"
+                                onclick="toggleFollowDetails(@Model.Id)">
+                            <i class="bi @(Model.IsFollowing ? "bi-check2" : "bi-plus-lg") me-1"></i>
+                            <span id="followText">@(Model.IsFollowing ? "Following" : "Follow Club")</span>
+                        </button>
+                    }
+
+                    @if (Model.MembershipStatus == "APPROVED")
+                    {
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-success fw-bold px-4 py-2 rounded-pill shadow-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-patch-check-fill me-1"></i> Member (@(Model.MembershipRole ?? "Active"))
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                                <li><span class="dropdown-item-text small text-muted">Official club membership active</span></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <form method="post" asp-action="CancelMembership" asp-route-id="@Model.Id" onsubmit="return confirm('Leave @Model.Name? You will relinquish your membership position.');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="dropdown-item text-danger small">
+                                            <i class="bi bi-box-arrow-right me-2"></i>Leave Club
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                    else if (Model.MembershipStatus == "PENDING")
+                    {
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-warning text-dark fw-bold px-4 py-2 rounded-pill shadow-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-hourglass-split me-1"></i> Request Pending
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                                <li><span class="dropdown-item-text small text-muted">Application is awaiting leader review.</span></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <form method="post" asp-action="CancelMembership" asp-route-id="@Model.Id" onsubmit="return confirm('Cancel your membership application?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="dropdown-item text-danger small">
+                                            <i class="bi bi-x-circle me-2"></i>Cancel Application
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        @if (Model.Status == "ACTIVE")
+                        {
+                            <button type="button" class="btn btn-primary fw-bold px-4 py-2 rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#joinClubModal">
+                                <i class="bi bi-person-plus-fill me-1"></i> Become a Member
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-secondary fw-bold px-4 py-2 rounded-pill shadow-sm" disabled>
+                                <i class="bi bi-lock-fill me-1"></i> Applications Paused
+                            </button>
+                        }
+                    }
+
+                    @if (Model.CanManage)
+                    {
+                        <div class="mt-2 pt-2 border-top border-white border-opacity-20 d-flex flex-column gap-1">
+                            <a asp-action="ManageMembers" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-light rounded-pill">
+                                <i class="bi bi-people-fill me-1"></i> Manage Members (@Model.PendingRequestsCount pending)
+                            </a>
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-light rounded-pill">
+                                <i class="bi bi-pencil-square me-1"></i> Edit Club Info
+                            </a>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-light text-primary fw-bold px-4 py-2 rounded-pill shadow-sm">
+                        Sign In to Follow & Join
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================
+         ADMIN CONTROL STRIP (If Admin / SuperAdmin)
+         ========================================================= -->
+    @if (Model.IsUserAdmin)
+    {
+        <div class="card border-0 shadow-sm rounded-4 mb-4 bg-light border-primary p-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary px-3 py-2 fw-semibold">
+                        <i class="bi bi-shield-lock-fill me-1"></i> Administrator Controls
+                    </span>
+                    <span class="small text-muted">Current status: <strong class="text-dark">@Model.Status</strong></span>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    @if (Model.Status != "ACTIVE")
+                    {
+                        <form method="post" asp-action="ToggleStatus" asp-route-id="@Model.Id" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="status" value="ACTIVE" />
+                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold">
+                                <i class="bi bi-check-circle me-1"></i> Activate Club
+                            </button>
+                        </form>
+                    }
+                    @if (Model.Status == "ACTIVE")
+                    {
+                        <form method="post" asp-action="ToggleStatus" asp-route-id="@Model.Id" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="status" value="SUSPENDED" />
+                            <button type="submit" class="btn btn-sm btn-warning text-dark rounded-pill px-3 fw-semibold" onclick="return confirm('Suspend this club? Applications and activity will be paused.');">
+                                <i class="bi bi-pause-circle me-1"></i> Suspend Club
+                            </button>
+                        </form>
+                    }
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                        <i class="bi bi-gear-fill me-1"></i> Edit Settings
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#deleteClubModal">
+                        <i class="bi bi-trash-fill me-1"></i> Delete Club
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- =========================================================
+         2. MAIN CONTENT TABS & CARDS
+         ========================================================= -->
+    <div class="row g-4">
+        <!-- LEFT COLUMN: ABOUT, EVENTS & ANNOUNCEMENTS -->
+        <div class="col-lg-8">
+
+            <!-- ABOUT THE CLUB -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h2 class="h5 fw-bold text-dark mb-0">
+                        <i class="bi bi-info-circle-fill me-2 text-primary"></i>About @Model.Name
+                    </h2>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-secondary" style="line-height: 1.7; font-size: 0.95rem;">
+                        @(Model.Description ?? "This official student club promotes academic excellence, hands-on extracurricular collaboration, and professional development for Hawassa University students.")
+                    </p>
+
+                    <div class="p-3 bg-light rounded-3 d-flex flex-wrap align-items-center justify-content-between gap-3 mt-3">
+                        <div>
+                            <span class="text-muted small d-block">Affiliated Academic Unit</span>
+                            <strong class="text-dark">@(Model.DepartmentName ?? Model.FacultyName ?? "University-Wide Extracurricular")</strong>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Founded Date</span>
+                            <strong class="text-dark">@Model.CreatedAt.ToString("MMMM yyyy")</strong>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Leadership Contact</span>
+                            <strong class="text-primary">@(Model.PresidentEmail ?? "clubs@hawassa.edu.et")</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UPCOMING CLUB EVENTS -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h2 class="h5 fw-bold text-dark mb-0">
+                        <i class="bi bi-calendar-event-fill me-2 text-success"></i>Upcoming Events & Workshops
+                    </h2>
+                    @if (Model.CanManage)
+                    {
+                        <a asp-controller="Events" asp-action="Create" class="btn btn-sm btn-primary rounded-pill px-3">
+                            <i class="bi bi-plus-circle me-1"></i> Host Event
+                        </a>
+                    }
+                </div>
+                <div class="card-body p-4">
+                    @if (Model.UpcomingEvents.Any())
+                    {
+                        <div class="row g-3">
+                            @foreach (var ev in Model.UpcomingEvents)
+                            {
+                                <div class="col-md-6">
+                                    <div class="card h-100 border rounded-3 p-3 shadow-none hover-shadow transition">
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <span class="badge bg-primary-subtle text-primary small">@ev.CategoryName</span>
+                                            <small class="text-muted"><i class="bi bi-clock me-1"></i>@ev.StartAt.ToString("MMM dd, hh:mm tt")</small>
+                                        </div>
+                                        <h3 class="h6 fw-bold mb-1">
+                                            <a asp-controller="Events" asp-action="Details" asp-route-id="@ev.Id" class="text-dark text-decoration-none hover-primary">
+                                                @ev.Title
+                                            </a>
+                                        </h3>
+                                        <p class="small text-muted mb-3 flex-grow-1 text-truncate-2">@ev.ShortDescription</p>
+                                        <div class="d-flex align-items-center justify-content-between mt-auto">
+                                            <small class="text-muted"><i class="bi bi-geo-alt me-1 text-danger"></i>@ev.VenueName</small>
+                                            <a asp-controller="Events" asp-action="Details" asp-route-id="@ev.Id" class="btn btn-sm btn-outline-primary px-3">
+                                                Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 bg-light rounded-3">
+                            <i class="bi bi-calendar-x fs-2 text-muted d-block mb-2"></i>
+                            <h6 class="fw-bold text-dark mb-1">No Upcoming Events Scheduled</h6>
+                            <p class="text-muted small mb-0">Follow this club to receive notifications when new workshops and hackathons are published!</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- CLUB ANNOUNCEMENTS -->
+            @if (Model.Announcements.Any())
+            {
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <h2 class="h5 fw-bold text-dark mb-0">
+                            <i class="bi bi-megaphone-fill me-2 text-danger"></i>Club Announcements
+                        </h2>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var an in Model.Announcements)
+                            {
+                                <div class="p-3 bg-light rounded-3 border-start border-4 @(an.Priority == "URGENT" ? "border-danger" : "border-primary")">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <h3 class="h6 fw-bold mb-0 text-dark">@an.Title</h3>
+                                        <small class="text-muted">@an.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                    </div>
+                                    <p class="small text-secondary mb-0">@an.Summary</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+        </div>
+
+        <!-- RIGHT COLUMN: LEADERSHIP & MEMBERS -->
+        <div class="col-lg-4">
+
+            <!-- CLUB LEADERSHIP -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h2 class="h6 fw-bold text-dark mb-0">
+                        <i class="bi bi-award-fill me-2 text-warning"></i>Club Executive Committee
+                    </h2>
+                </div>
+                <div class="card-body p-3">
+                    @if (Model.Officers.Any())
+                    {
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var officer in Model.Officers)
+                            {
+                                <div class="d-flex align-items-center gap-3 p-2 rounded-3 bg-light">
+                                    <div class="avatar-initial rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                                        @(officer.FullName.Length > 0 ? officer.FullName.Substring(0, 1) : "U")
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <strong class="d-block text-dark small">@officer.FullName</strong>
+                                        <span class="badge bg-warning-subtle text-warning-emphasis" style="font-size: 11px;">@officer.Role</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="small text-muted mb-0">Leadership positions are actively being chartered for this semester.</p>
+                    }
+                </div>
+            </div>
+
+            <!-- OFFICIAL MEMBERS HIGHLIGHT -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h2 class="h6 fw-bold text-dark mb-0">
+                        <i class="bi bi-people-fill me-2 text-primary"></i>Active Members (@Model.MemberCount)
+                    </h2>
+                </div>
+                <div class="card-body p-3">
+                    @if (Model.Members.Any())
+                    {
+                        <div class="d-flex flex-column gap-2">
+                            @foreach (var m in Model.Members.Take(6))
+                            {
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded-3 bg-light small">
+                                    <span class="text-dark fw-semibold">@m.FullName</span>
+                                    <span class="text-muted" style="font-size: 11px;">@(m.DepartmentName ?? "Member")</span>
+                                </div>
+                            }
+                            @if (Model.MemberCount > 6)
+                            {
+                                <p class="text-muted small text-center mb-0 mt-2">+ @(Model.MemberCount - 6) more active members</p>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="small text-muted mb-0">No regular members registered yet. Be the first to join!</p>
+                    }
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- =========================================================
+     3. BECOME A MEMBER APPLICATION MODAL
+     ========================================================= -->
+<div class="modal fade" id="joinClubModal" tabindex="-1" aria-labelledby="joinClubModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <form method="post" asp-action="Join" asp-route-id="@Model.Id">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="joinClubModalLabel">
+                        <i class="bi bi-person-plus-fill text-primary me-2"></i>Apply to Join @Model.Name
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-3">
+                    <p class="small text-muted mb-3">
+                        Submit an application to become an official recognized member of <strong>@Model.Name</strong>. Club leaders will review your request.
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Why do you want to join this club? (Optional Note)</label>
+                        <textarea name="requestNotes" class="form-control rounded-3" rows="3" placeholder="Tell the club leaders about your interests, skills, or what you hope to achieve..."></textarea>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 small text-muted">
+                        <i class="bi bi-info-circle me-1 text-primary"></i> Note: Applying automatically follows the club so you receive news and event invites.
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm">Submit Membership Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================
+     4. DELETE CLUB CONFIRMATION MODAL (Admin Only)
+     ========================================================= -->
+@if (Model.IsUserAdmin)
+{
+    <div class="modal fade" id="deleteClubModal" tabindex="-1" aria-labelledby="deleteClubModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <form method="post" asp-action="Delete" asp-route-id="@Model.Id">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold text-danger" id="deleteClubModalLabel">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Delete Club
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body py-3">
+                        <p class="text-dark mb-2">
+                            Are you sure you want to permanently delete <strong>@Model.Name</strong>?
+                        </p>
+                        <p class="small text-danger mb-0">
+                            This action cannot be undone. All club interest mappings, follower connections, and member records will be removed.
+                        </p>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger rounded-pill px-4 fw-semibold shadow-sm">Permanently Delete</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        async function toggleFollowDetails(clubId) {
+            const btn = document.getElementById('btnFollowMain');
+            const label = document.getElementById('followText');
+            if (!btn || !label) return;
+
+            const isCurrentlyFollowing = label.innerText.trim() === 'Following';
+            const endpoint = isCurrentlyFollowing ? `/Clubs/Unfollow/${clubId}` : `/Clubs/Follow/${clubId}`;
+
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.isFollowing) {
+                        label.innerText = 'Following';
+                        btn.classList.remove('btn-light', 'text-primary');
+                        btn.classList.add('btn-outline-light');
+                    } else {
+                        label.innerText = 'Follow Club';
+                        btn.classList.remove('btn-outline-light');
+                        btn.classList.add('btn-light', 'text-primary');
+                    }
+
+                    document.querySelectorAll('.follower-count-main').forEach(el => {
+                        el.innerText = data.followerCount;
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+}

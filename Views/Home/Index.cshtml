@@ -1,661 +1,334 @@
 @{
-    ViewData["Title"] = "Home";
+    ViewData["Title"] = "Hawassa University - Campus Event Management System";
 }
 
 @section Styles {
-    <link rel="stylesheet"
-          href="~/css/home.css"
-          asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
 }
 
-<!-- =========================================
-     HERO
-     ========================================= -->
-
+<!-- =======================================================
+     1. HERO BANNER
+     ======================================================= -->
 <section class="hero-section">
-
-    <div class="hero-overlay"></div>
-
-    <div class="hero-content reveal">
-
-        <div class="hero-badge d-inline-flex align-items-center gap-2">
-            <img src="~/images/hawassa-logo.png" alt="Hawassa University" style="width: 24px; height: 24px; object-fit: contain; border-radius: 50%;" />
-            <span>HAWASSA UNIVERSITY</span>
-        </div>
-
-        <h1>
-            Connect.
-            <span>Discover.</span>
-            Participate.
-        </h1>
-
-        <p>
-            Welcome to HUCEMS — the unified campus event
-            management platform for discovering events,
-            connecting with your university community,
-            and participating in campus activities.
-        </p>
-
-        <div class="hero-actions">
-
-            <a asp-controller="Events"
-               asp-action="Index"
-               class="hero-btn primary">
-                Explore Events
-                <span>→</span>
-            </a>
-
-            <a asp-controller="Account"
-               asp-action="Register"
-               class="hero-btn secondary">
-                Join HUCEMS
-            </a>
-
-            <a asp-controller="Home"
-               asp-action="Contact"
-               class="hero-btn outline">
-                <i class="bi bi-headset"></i>
-                Contact & Support
-            </a>
-
-        </div>
-
-        <div class="hero-info">
-
-            <div>
-                <strong>100+</strong>
-                <span>Events</span>
-            </div>
-
-            <div>
-                <strong>500+</strong>
-                <span>Students</span>
-            </div>
-
-            <div>
-                <strong>30+</strong>
-                <span>Organizations</span>
-            </div>
-
-        </div>
-
-    </div>
-
-    <div class="scroll-indicator">
-
-        <span>Scroll to explore</span>
-
-        <div class="scroll-arrow">
-            ↓
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- =========================================
-     INTRODUCTION
-     ========================================= -->
-
-<section class="intro-section reveal">
-
-    <div class="section-container">
-
-        <div class="intro-text">
-
-            <span class="section-label">
-                CAMPUS LIFE
-            </span>
-
-            <h2>
-                One Platform.
-                <span>One Campus Community.</span>
-            </h2>
-
-            <p>
-                HUCEMS brings campus events, organizations,
-                announcements and community activities together
-                in one modern platform.
-            </p>
-
-            <a asp-controller="Events"
-               asp-action="Index"
-               class="text-link">
-                Discover what's happening →
-            </a>
-
-        </div>
-
-        <div class="intro-cards">
-
-            <div class="mini-card">
-
-                <div class="mini-icon">
-                    📅
+    <div class="container">
+        <div class="row align-items-center g-4 py-4">
+            <div class="col-lg-8">
+                <div class="hero-badge">
+                    <img src="~/images/hawassa-logo.png" alt="Hawassa University Emblem" style="width: 22px; height: 22px; object-fit: contain;" />
+                    <span>HAWASSA UNIVERSITY • HUCEMS</span>
                 </div>
-
-                <h3>
-                    Events
-                </h3>
-
-                <p>
-                    Discover upcoming campus activities.
+                
+                <h1 class="hero-title">
+                    Connecting Campus Life, Academic Conferences & Student Events
+                </h1>
+                
+                <p class="hero-lead">
+                    The official university platform for discovering upcoming academic symposiums, workshops, student club activities, and campus hall bookings.
                 </p>
-
-            </div>
-
-            <div class="mini-card">
-
-                <div class="mini-icon">
-                    👥
-                </div>
-
-                <h3>
-                    Community
-                </h3>
-
-                <p>
-                    Connect with your campus community.
-                </p>
-
-            </div>
-
-            <div class="mini-card">
-
-                <div class="mini-icon">
-                    📢
-                </div>
-
-                <h3>
-                    Updates
-                </h3>
-
-                <p>
-                    Stay informed about campus news.
-                </p>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- =========================================
-     EVENT CELEBRATION BACKGROUND
-     ========================================= -->
-
-<section class="event-celebration">
-
-    <div class="celebration-overlay"></div>
-
-    <div class="celebration-content reveal">
-
-        <span class="section-label light">
-            EXPERIENCE CAMPUS LIFE
-        </span>
-
-        <h2>
-            Every Event Creates
-            <span>A Memory.</span>
-        </h2>
-
-        <p>
-            From academic conferences and workshops
-            to cultural celebrations, sports and student
-            activities — discover what makes campus life special.
-        </p>
-
-        <a asp-controller="Events"
-           asp-action="Index"
-           class="celebration-button">
-            Explore Campus Events
-            <span>→</span>
-        </a>
-
-    </div>
-
-</section>
-
-
-<!-- =========================================
-     FEATURE SECTION
-     ========================================= -->
-
-<section class="features-section">
-
-    <div class="section-container">
-
-        <div class="section-title reveal">
-
-            <span class="section-label">
-                HUCEMS FEATURES
-            </span>
-
-            <h2>
-                Everything You Need
-            </h2>
-
-            <p>
-                A complete digital platform for your campus activities.
-            </p>
-
-        </div>
-
-
-        <div class="feature-grid">
-
-            <a asp-controller="Events"
-               asp-action="Index"
-               class="feature-card reveal">
-
-                <div class="feature-icon">
-                    📅
-                </div>
-
-                <h3>
-                    Event Management
-                </h3>
-
-                <p>
-                    Discover, create and manage university events
-                    from one place.
-                </p>
-
-                <span>
-                    Explore Events →
-                </span>
-
-            </a>
-
-
-            <a asp-controller="Calendar"
-               asp-action="Index"
-               class="feature-card reveal">
-
-                <div class="feature-icon">
-                    🗓️
-                </div>
-
-                <h3>
-                    Campus Calendar
-                </h3>
-
-                <p>
-                    View upcoming activities and important
-                    campus dates.
-                </p>
-
-                <span>
-                    Open Calendar →
-                </span>
-
-            </a>
-
-
-            <a asp-controller="Events"
-               asp-action="Search"
-               class="feature-card reveal">
-
-                <div class="feature-icon">
-                    🏛️
-                </div>
-
-                <h3>
-                    Venues & Search
-                </h3>
-
-                <p>
-                    Explore campus auditoriums, halls, and search events by category.
-                </p>
-
-                <span>
-                    Search Venues & Events →
-                </span>
-
-            </a>
-
-
-            <a asp-controller="Announcements"
-               asp-action="Index"
-               class="feature-card reveal">
-
-                <div class="feature-icon">
-                    📢
-                </div>
-
-                <h3>
-                    Announcements
-                </h3>
-
-                <p>
-                    Receive important university announcements
-                    and updates.
-                </p>
-
-                <span>
-                    View Announcements →
-                </span>
-
-            </a>
-
-
-            <a asp-controller="Home"
-               asp-action="Contact"
-               class="feature-card reveal">
-
-                <div class="feature-icon">
-                    🎧
-                </div>
-
-                <h3>
-                    Campus Helpdesk
-                </h3>
-
-                <p>
-                    Reach campus coordinators, book auditoriums, or submit inquiries.
-                </p>
-
-                <span>
-                    Contact Helpdesk →
-                </span>
-
-            </a>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- =========================================
-     STATISTICS
-     ========================================= -->
-
-<section class="statistics-section">
-
-    <div class="statistics-container">
-
-        <div class="stat reveal">
-
-            <div class="stat-number"
-                 data-target="100">
-                0
-            </div>
-
-            <div class="stat-label">
-                Campus Events
-            </div>
-
-        </div>
-
-
-        <div class="stat reveal">
-
-            <div class="stat-number"
-                 data-target="500">
-                0
-            </div>
-
-            <div class="stat-label">
-                Students
-            </div>
-
-        </div>
-
-
-        <div class="stat reveal">
-
-            <div class="stat-number"
-                 data-target="30">
-                0
-            </div>
-
-            <div class="stat-label">
-                Organizations
-            </div>
-
-        </div>
-
-
-        <div class="stat reveal">
-
-            <div class="stat-number"
-                 data-target="20">
-                0
-            </div>
-
-            <div class="stat-label">
-                Departments
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- =========================================
-     HOW IT WORKS
-     ========================================= -->
-
-<section class="process-section">
-
-    <div class="section-container">
-
-        <div class="section-title reveal">
-
-            <span class="section-label">
-                SIMPLE & EASY
-            </span>
-
-            <h2>
-                How HUCEMS Works
-            </h2>
-
-        </div>
-
-
-        <div class="process-grid">
-
-            <div class="process-card reveal">
-
-                <div class="process-number">
-                    01
-                </div>
-
-                <h3>
-                    Create an Account
-                </h3>
-
-                <p>
-                    Register and create your campus profile.
-                </p>
-
-            </div>
-
-
-            <div class="process-card reveal">
-
-                <div class="process-number">
-                    02
-                </div>
-
-                <h3>
-                    Discover Events
-                </h3>
-
-                <p>
-                    Find events and activities that interest you.
-                </p>
-
-            </div>
-
-
-            <div class="process-card reveal">
-
-                <div class="process-number">
-                    03
-                </div>
-
-                <h3>
-                    Participate
-                </h3>
-
-                <p>
-                    Register for events and participate in campus life.
-                </p>
-
-            </div>
-
-
-            <div class="process-card reveal">
-
-                <div class="process-number">
-                    04
-                </div>
-
-                <h3>
-                    Stay Connected
-                </h3>
-
-                <p>
-                    Follow updates and stay connected with your community.
-                </p>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- =========================================
-     CAMPUS HELPDESK & SUPPORT SECTION
-     ========================================= -->
-
-<section class="support-banner-section reveal">
-
-    <div class="section-container">
-
-        <div class="support-banner-card">
-
-            <div class="row align-items-center g-4">
-
-                <div class="col-lg-7">
-
-                    <span class="section-label light">
-                        <i class="bi bi-headset me-1"></i> NEED ASSISTANCE?
-                    </span>
-
-                    <h2>
-                        Campus Support & Inquiry Desk
-                    </h2>
-
-                    <p>
-                        Have questions about event registrations, hall reservations, student club approvals, or portal access? Our campus administration team is here to assist you.
-                    </p>
-
-                    <div class="support-meta-pills">
-                        <span><i class="bi bi-telephone-fill text-warning me-1"></i> +251 (46) 220-4528</span>
-                        <span><i class="bi bi-envelope-fill text-info me-1"></i> events@hawassauniversity.edu.et</span>
-                    </div>
-
-                </div>
-
-                <div class="col-lg-5 text-lg-end">
-
-                    <a asp-controller="Home"
-                       asp-action="Contact"
-                       class="hero-btn primary py-3 px-4 shadow">
-                        <i class="bi bi-headset fs-5"></i>
-                        <span>Open Contact & Support Desk →</span>
+                
+                <div class="d-flex flex-wrap gap-3">
+                    <a asp-controller="Events" asp-action="Index" class="hero-btn-primary">
+                        Explore Events
                     </a>
-
+                    <a asp-controller="Account" asp-action="Login" class="hero-btn-outline">
+                        Sign In to Portal
+                    </a>
+                    <a asp-controller="Calendar" asp-action="Index" class="hero-btn-outline">
+                        Campus Calendar
+                    </a>
                 </div>
-
             </div>
 
+            <div class="col-lg-4 d-none d-lg-block text-center">
+                <div class="p-4 rounded-4 bg-white bg-opacity-10 border border-white border-opacity-15 text-start shadow-sm">
+                    <div class="d-flex align-items-center gap-2 mb-3 text-white">
+                        <i class="bi bi-info-circle-fill fs-5 text-info"></i>
+                        <span class="fw-bold">Campus Access Notice</span>
+                    </div>
+                    <p class="small text-white text-opacity-75 mb-3" style="line-height: 1.5;">
+                        Public event registration is open for campus attendees. Department staff and students can access their personalized schedule using issued university credentials.
+                    </p>
+                    <a asp-controller="Home" asp-action="Contact" class="btn btn-sm btn-light w-100 fw-semibold text-primary">
+                        Contact Administration Desk &rarr;
+                    </a>
+                </div>
+            </div>
         </div>
-
     </div>
-
 </section>
 
+<!-- =======================================================
+     2. QUICK STATS BAR
+     ======================================================= -->
+<div class="container">
+    <div class="stats-banner">
+        <div class="row g-3 divide-y divide-md-0">
+            <div class="col-6 col-md-3 stat-item">
+                <div class="stat-number">120+</div>
+                <div class="stat-label">Active Events</div>
+            </div>
+            <div class="col-6 col-md-3 stat-item">
+                <div class="stat-number">45+</div>
+                <div class="stat-label">Departments</div>
+            </div>
+            <div class="col-6 col-md-3 stat-item">
+                <div class="stat-number">30+</div>
+                <div class="stat-label">Student Clubs</div>
+            </div>
+            <div class="col-6 col-md-3 stat-item">
+                <div class="stat-number">8</div>
+                <div class="stat-label">Campus Venues</div>
+            </div>
+        </div>
+    </div>
+</div>
 
-<!-- =========================================
-     FINAL CTA
-     ========================================= -->
-
-<section class="final-cta reveal">
-
-    <div class="final-cta-content">
-
-        <span class="section-label light">
-            JOIN THE COMMUNITY
-        </span>
-
-        <h2>
-            Your Campus.
-            Your Events.
-            Your Community.
-        </h2>
-
-        <p>
-            Start discovering the activities happening
-            around Hawassa University today.
-        </p>
-
-        <div class="cta-buttons">
-
-            <a asp-controller="Account"
-               asp-action="Register"
-               class="hero-btn primary">
-                Create Account
+<!-- =======================================================
+     3. UPCOMING FEATURED EVENTS
+     ======================================================= -->
+<section class="py-5 mt-4">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
+            <div class="section-header mb-0">
+                <span class="section-tag">Campus Activities</span>
+                <h2 class="section-title">Upcoming University Events</h2>
+                <p class="section-subtitle">Discover academic, cultural, and sports events scheduled across Hawassa University campuses.</p>
+            </div>
+            <a asp-controller="Events" asp-action="Index" class="btn btn-outline-primary btn-sm fw-semibold mt-2 mt-md-0">
+                View All Events &rarr;
             </a>
-
-            <a asp-controller="Events"
-               asp-action="Index"
-               class="hero-btn secondary">
-                Browse Events
-            </a>
-
-            <a asp-controller="Home"
-               asp-action="Contact"
-               class="hero-btn outline">
-                <i class="bi bi-headset me-1"></i>
-                Contact Support Desk
-            </a>
-
         </div>
 
-        <p class="small mt-3">
-            <a asp-controller="Home"
-               asp-action="Privacy"
-               class="text-link me-3">
-                Privacy Policy
-            </a>
-            <span class="text-white-50">&bull;</span>
-            <a asp-controller="Home"
-               asp-action="Contact"
-               class="text-link ms-3">
-                Contact Administration
-            </a>
-        </p>
+        <div class="row g-4">
+            <!-- Event Card 1 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="event-item-card">
+                    <div class="event-img-container">
+                        <img src="~/images/events/research-symposium.jpg" onerror="this.src='https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80'" alt="Annual University Research Symposium" />
+                        <div class="event-date-badge">
+                            <span class="day">15</span>
+                            <span class="month">MAY</span>
+                        </div>
+                    </div>
+                    <div class="event-body">
+                        <span class="badge bg-primary-subtle text-primary mb-2 align-self-start">Academic</span>
+                        <h5 class="event-title">Annual University Research Symposium</h5>
+                        <p class="event-meta mb-2">
+                            <i class="bi bi-geo-alt me-1 text-danger"></i> Main Auditorium (Hall A)
+                        </p>
+                        <p class="small text-muted mb-3" style="line-height: 1.5;">
+                            Multi-disciplinary faculty research presentations, keynote lectures, and student research exhibits.
+                        </p>
+                        <div class="event-footer">
+                            <span class="small text-muted"><i class="bi bi-clock me-1"></i> 09:00 AM</span>
+                            <a asp-controller="Events" asp-action="Index" class="btn btn-sm btn-primary px-3">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Event Card 2 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="event-item-card">
+                    <div class="event-img-container">
+                        <img src="~/images/events/tech-hackathon.jpg" onerror="this.src='https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=80'" alt="Hawassa Tech & Innovation Hackathon" />
+                        <div class="event-date-badge">
+                            <span class="day">22</span>
+                            <span class="month">MAY</span>
+                        </div>
+                    </div>
+                    <div class="event-body">
+                        <span class="badge bg-success-subtle text-success mb-2 align-self-start">Technology</span>
+                        <h5 class="event-title">Hawassa Tech & Innovation Hackathon</h5>
+                        <p class="event-meta mb-2">
+                            <i class="bi bi-geo-alt me-1 text-danger"></i> ICT Directorate Lab 3
+                        </p>
+                        <p class="small text-muted mb-3" style="line-height: 1.5;">
+                            48-hour student programming challenge focusing on software development, AI solutions, and IoT.
+                        </p>
+                        <div class="event-footer">
+                            <span class="small text-muted"><i class="bi bi-clock me-1"></i> 10:00 AM</span>
+                            <a asp-controller="Events" asp-action="Index" class="btn btn-sm btn-primary px-3">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Card 3 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="event-item-card">
+                    <div class="event-img-container">
+                        <img src="~/images/events/cultural-festival.jpg" onerror="this.src='https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80'" alt="University Cultural Heritage Festival" />
+                        <div class="event-date-badge">
+                            <span class="day">29</span>
+                            <span class="month">MAY</span>
+                        </div>
+                    </div>
+                    <div class="event-body">
+                        <span class="badge bg-warning-subtle text-warning-emphasis mb-2 align-self-start">Cultural</span>
+                        <h5 class="event-title">University Cultural Heritage Festival</h5>
+                        <p class="event-meta mb-2">
+                            <i class="bi bi-geo-alt me-1 text-danger"></i> Campus Open Amphitheater
+                        </p>
+                        <p class="small text-muted mb-3" style="line-height: 1.5;">
+                            Celebration of ethnic music, traditional attire, poetry, and regional culinary arts by student societies.
+                        </p>
+                        <div class="event-footer">
+                            <span class="small text-muted"><i class="bi bi-clock me-1"></i> 02:00 PM</span>
+                            <a asp-controller="Events" asp-action="Index" class="btn btn-sm btn-primary px-3">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-
 </section>
 
+<!-- =======================================================
+     4. EVENT CATEGORIES
+     ======================================================= -->
+<section class="py-5 bg-light border-top border-bottom">
+    <div class="container">
+        <div class="section-header text-center mx-auto" style="max-width: 600px;">
+            <span class="section-tag">Explore Themes</span>
+            <h2 class="section-title">Event Categories</h2>
+            <p class="section-subtitle">Find conferences, workshops, and activities organized by campus departments.</p>
+        </div>
 
-@section Scripts {
-    <script src="~/js/home.js"
-            asp-append-version="true"></script>
-}
+        <div class="row g-3">
+            <div class="col-6 col-md-4 col-lg-2">
+                <a asp-controller="Events" asp-action="Index" asp-route-category="Academic" class="category-card">
+                    <div class="category-icon-box bg-primary-subtle text-primary">
+                        <i class="bi bi-mortarboard"></i>
+                    </div>
+                    <div class="category-title">Academic</div>
+                    <div class="category-count">Conferences</div>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <a asp-controller="Events" asp-action="Index" asp-route-category="Technology" class="category-card">
+                    <div class="category-icon-box bg-info-subtle text-info-emphasis">
+                        <i class="bi bi-laptop"></i>
+                    </div>
+                    <div class="category-title">Technology</div>
+                    <div class="category-count">Hackathons</div>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <a asp-controller="Events" asp-action="Index" asp-route-category="Cultural" class="category-card">
+                    <div class="category-icon-box bg-warning-subtle text-warning-emphasis">
+                        <i class="bi bi-palette"></i>
+                    </div>
+                    <div class="category-title">Cultural</div>
+                    <div class="category-count">Festivals & Arts</div>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <a asp-controller="Events" asp-action="Index" asp-route-category="Sports" class="category-card">
+                    <div class="category-icon-box bg-success-subtle text-success">
+                        <i class="bi bi-trophy"></i>
+                    </div>
+                    <div class="category-title">Sports</div>
+                    <div class="category-count">Tournaments</div>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <a asp-controller="Events" asp-action="Index" asp-route-category="Workshop" class="category-card">
+                    <div class="category-icon-box bg-secondary-subtle text-secondary">
+                        <i class="bi bi-journal-text"></i>
+                    </div>
+                    <div class="category-title">Workshops</div>
+                    <div class="category-count">Skill Training</div>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <a asp-controller="Events" asp-action="Categories" class="category-card">
+                    <div class="category-icon-box bg-dark-subtle text-dark">
+                        <i class="bi bi-grid-3x3-gap"></i>
+                    </div>
+                    <div class="category-title">All Categories</div>
+                    <div class="category-count">View Catalog</div>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- =======================================================
+     5. LATEST CAMPUS ANNOUNCEMENTS
+     ======================================================= -->
+<section class="py-5">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
+            <div class="section-header mb-0">
+                <span class="section-tag">Official Notices</span>
+                <h2 class="section-title">Campus Announcements</h2>
+                <p class="section-subtitle">Stay informed about institutional circulars and administrative notices.</p>
+            </div>
+            <a asp-controller="Announcements" asp-action="Index" class="btn btn-outline-secondary btn-sm fw-semibold mt-2 mt-md-0">
+                View All Announcements &rarr;
+            </a>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="p-4 rounded-3 border bg-white shadow-sm h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-danger">Urgent</span>
+                            <span class="small text-muted">Office of Academic Affairs • Today</span>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-2">Registration Schedule for 2025/2026 Academic Conferences</h5>
+                        <p class="small text-secondary mb-3" style="line-height: 1.5;">
+                            All department coordinators are requested to submit upcoming conference and workshop schedules to ensure venue reservation clearance.
+                        </p>
+                    </div>
+                    <a asp-controller="Announcements" asp-action="Index" class="text-primary small fw-semibold text-decoration-none">
+                        Read Official Notice &rarr;
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="p-4 rounded-3 border bg-white shadow-sm h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-info text-white">General</span>
+                            <span class="small text-muted">Dean of Students • Yesterday</span>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-2">Student Union Club Fair & Cultural Week Schedule</h5>
+                        <p class="small text-secondary mb-3" style="line-height: 1.5;">
+                            Official campus societies and registered student clubs are invited to set up informational booths at the central campus lawn during cultural week.
+                        </p>
+                    </div>
+                    <a asp-controller="Announcements" asp-action="Index" class="text-primary small fw-semibold text-decoration-none">
+                        Read Official Notice &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- =======================================================
+     6. INSTITUTIONAL CALL TO ACTION BANNER
+     ======================================================= -->
+<section class="pb-5">
+    <div class="container">
+        <div class="portal-cta-banner">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <h3 class="fw-bold mb-2">Are you an Event Coordinator or Faculty Host?</h3>
+                    <p class="mb-0 text-white-50" style="font-size: 1rem; line-height: 1.5;">
+                        Log in with your university credentials to submit event proposals, reserve auditoriums, manage registrations, and broadcast circulars.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-light btn-lg px-4 fw-bold text-primary shadow-sm">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Sign In to Portal
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -67,11 +67,66 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     }
 
     // =========================================================
+    // SUPERADMIN MASTER GOVERNANCE VIEW MODEL
+    // =========================================================
+    public class SuperAdminMasterDashboardViewModel
+    {
+        public string SuperAdminName { get; set; } = "Super Administrator";
+        public string SuperAdminEmail { get; set; } = "superadmin@hawassauniversity.edu.et";
+        
+        // System Wide Metrics
+        public int TotalPlatformUsers { get; set; }
+        public int ActiveUsersCount { get; set; }
+        public int PendingUserApprovalsCount { get; set; }
+        public int TotalAdministratorsCount { get; set; }
+        public int TotalCampusEvents { get; set; }
+        public int PendingEventApprovalsCount { get; set; }
+        public int TotalClubsCount { get; set; }
+        public int TotalOrganizationsCount { get; set; }
+        public int TotalFacultiesCount { get; set; }
+        public int TotalDepartmentsCount { get; set; }
+        public int TotalAuditLogsCount { get; set; }
+        public long TotalDatabaseRowsEstimated { get; set; }
+        public string DatabaseStatus { get; set; } = "Online / Healthy";
+        public string ServerStatus { get; set; } = "Production Active";
+        public string SystemUptime { get; set; } = "99.99%";
+
+        // Pending user registrations requiring SuperAdmin activation
+        public List<AdminUserApprovalItem> PendingApprovalsList { get; set; } = new();
+
+        // Admin Activity Stream (Actions taken by Admins and Staff)
+        public List<AdminActivityLogItem> AdminActivityFeed { get; set; } = new();
+
+        // Platform events pending approval
+        public List<AdminPendingEventItem> PendingEventsList { get; set; } = new();
+
+        // System Settings summary
+        public bool RequireEventApproval { get; set; } = true;
+        public bool MaintenanceMode { get; set; } = false;
+        public bool EmailNotificationsEnabled { get; set; } = true;
+    }
+
+    public class AdminActivityLogItem
+    {
+        public ulong Id { get; set; }
+        public string Action { get; set; } = string.Empty;
+        public string AdminName { get; set; } = string.Empty;
+        public string AdminEmail { get; set; } = string.Empty;
+        public string AdminRole { get; set; } = "Admin";
+        public string Description { get; set; } = string.Empty;
+        public string? EntityType { get; set; }
+        public ulong? EntityId { get; set; }
+        public string? IpAddress { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+
+    // =========================================================
     // 2. USER MANAGEMENT VIEW MODELS
     // =========================================================
     public class AdminUsersViewModel
     {
         public List<AdminUserRow> Users { get; set; } = new();
+        public List<Department> Departments { get; set; } = new();
         public string? SearchTerm { get; set; }
         public string? RoleFilter { get; set; }
         public string? StatusFilter { get; set; }
@@ -79,6 +134,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public int ActiveCount { get; set; }
         public int SuspendedCount { get; set; }
         public int PendingCount { get; set; }
+        public int PendingApprovalCount { get; set; }
+        public bool IsSuperAdmin { get; set; }
     }
 
     public class AdminUserRow
@@ -88,13 +145,94 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }
+        public string? StudentId { get; set; }
+        public string? EmployeeId { get; set; }
         public string AccountType { get; set; } = "STUDENT";
         public string Status { get; set; } = "ACTIVE";
         public string? DepartmentName { get; set; }
+        public string? RegisteredByAdminName { get; set; }
+        public ulong? RegisteredByAdminId { get; set; }
+        public string? Bio { get; set; }
+        public string? ProfileImageUrl { get; set; }
         public DateTime? LastLoginAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public int EventCount { get; set; }
         public int RegistrationCount { get; set; }
+    }
+
+    public class AdminUserApprovalViewModel
+    {
+        public List<AdminUserApprovalItem> PendingUsers { get; set; } = new();
+        public List<Department> Departments { get; set; } = new();
+        public string? SearchTerm { get; set; }
+        public string? RoleFilter { get; set; }
+        public int TotalPendingCount { get; set; }
+        public int StudentPendingCount { get; set; }
+        public int FacultyPendingCount { get; set; }
+        public int StaffPendingCount { get; set; }
+        public int OrganizationPendingCount { get; set; }
+        public bool IsSuperAdmin { get; set; }
+    }
+
+    public class AdminUserApprovalItem
+    {
+        public ulong Id { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string AccountType { get; set; } = "STUDENT";
+        public string Status { get; set; } = "PENDING";
+        public string? DepartmentName { get; set; }
+        public string? FacultyName { get; set; }
+        public string? StudentId { get; set; }
+        public string? EmployeeId { get; set; }
+        public string? Bio { get; set; }
+        public string? ProfileImageUrl { get; set; }
+        public string? RegisteredByAdminName { get; set; }
+        public ulong? RegisteredByAdminId { get; set; }
+        public DateTime RegisteredAt { get; set; }
+    }
+
+    public class AdminCreateUserInputModel
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string? MiddleName { get; set; }
+        public string LastName { get; set; } = string.Empty;
+        public string? FullName { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string Password { get; set; } = string.Empty;
+        public string AccountType { get; set; } = "STUDENT";
+        public ulong? FacultyId { get; set; }
+        public ulong? DepartmentId { get; set; }
+        public string? StudentId { get; set; }
+        public string? AcademicProgram { get; set; }
+        public string? YearOfStudy { get; set; }
+        public string? EmployeeId { get; set; }
+        public string? AcademicTitle { get; set; }
+        public string? StaffUnit { get; set; }
+        public string? JobTitle { get; set; }
+        public string? OfficeLocation { get; set; }
+        public string? OrganizationName { get; set; }
+        public string? OrganizationType { get; set; }
+        public string? OrganizationAcronym { get; set; }
+        public string? Bio { get; set; }
+        public string? ProfileImageUrl { get; set; }
+        public string? InitialStatus { get; set; }
+        public bool SendWelcomeEmail { get; set; } = true;
+    }
+
+    public class AdminRegisterUserPageViewModel
+    {
+        public List<Department> Departments { get; set; } = new();
+        public List<Faculty> Faculties { get; set; } = new();
+        public bool IsSuperAdmin { get; set; }
+        public string SelectedRole { get; set; } = "STUDENT";
+        public AdminCreateUserInputModel Form { get; set; } = new();
+        public int TotalRegisteredUsersCount { get; set; }
+        public int PendingApprovalsCount { get; set; }
     }
 
     // =========================================================
@@ -137,6 +275,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     public class AdminAnnouncementsViewModel
     {
         public List<AdminAnnouncementRow> Announcements { get; set; } = new();
+        public List<Department> Departments { get; set; } = new();
         public string? SearchTerm { get; set; }
         public int TotalCount { get; set; }
         public int PinnedCount { get; set; }
@@ -347,7 +486,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     {
         public List<AdminNotificationRow> Notifications { get; set; } = new();
         public List<Department> Departments { get; set; } = new();
+        public List<User> Users { get; set; } = new();
         public int TotalSent { get; set; }
+        public int UnreadCount { get; set; }
     }
 
     public class AdminNotificationRow

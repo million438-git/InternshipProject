@@ -7,7 +7,7 @@
 
 <div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h3 fw-bold text-dark mb-1">🏢 Organization & Club Management</h1>
+        <h1 class="h3 fw-bold text-dark mb-1">Organization & Club Management</h1>
         <p class="text-muted small mb-0">Oversee student associations, academic clubs, campus unions, and event organizing bodies.</p>
     </div>
     <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#newOrgModal">
@@ -147,7 +147,7 @@
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content border-0 shadow">
                                         <div class="modal-header">
-                                            <h5 class="modal-title fw-bold">✏️ Edit Campus Organization</h5>
+                                            <h5 class="modal-title fw-bold"><i class="bi bi-pencil me-1 text-primary"></i>Edit Campus Organization</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
                                         <form asp-controller="Admin" asp-action="OrganizationEdit" method="post">
@@ -211,7 +211,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header">
-                <h5 class="modal-title fw-bold">🏢 Register Campus Organization</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-building me-1 text-primary"></i>Register Campus Organization</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-controller="Admin" asp-action="OrganizationCreate" method="post">

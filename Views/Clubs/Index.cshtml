@@ -1,0 +1,428 @@
+@model HawassaUnifiedCampusEventManagementSystem.Models.ClubListViewModel
+
+@{
+    ViewData["Title"] = "Campus Clubs & Communities | Hawassa University";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/clubs.css" asp-append-version="true" />
+}
+
+<div class="container py-4">
+
+    <!-- =========================================================
+         1. HERO BANNER
+         ========================================================= -->
+    <div class="clubs-hero mb-4">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <div class="clubs-hero-badge">
+                    <i class="bi bi-stars"></i>
+                    <span>INTEREST-BASED COMMUNITIES</span>
+                </div>
+                <h1 class="h2 fw-bold text-white mb-2">Campus Clubs & Societies</h1>
+                <p class="text-white-50 mb-4" style="max-width: 620px; line-height: 1.5;">
+                    Discover student associations, tech societies, cultural guilds, and academic communities tailored to your personal passions and career aspirations at Hawassa University.
+                </p>
+
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <a asp-controller="Clubs" asp-action="Interests" class="btn btn-primary px-4 py-2 rounded-pill fw-semibold shadow-sm">
+                        <i class="bi bi-sliders2 me-1"></i> Update My Interests
+                    </a>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a asp-controller="Clubs" asp-action="MyClubs" class="btn btn-outline-light px-3 py-2 rounded-pill fw-semibold">
+                            <i class="bi bi-collection-fill me-1"></i> My Clubs & Memberships
+                        </a>
+                    }
+                    @if (User.IsInRole("SuperAdmin") || User.IsInRole("Admin") || User.IsInRole("Faculty") || User.IsInRole("Staff") || User.IsInRole("Organization") || User.IsInRole("SUPERADMIN") || User.IsInRole("ADMIN") || User.IsInRole("FACULTY") || User.IsInRole("STAFF") || User.IsInRole("ORGANIZATION"))
+                    {
+                        <a asp-controller="Clubs" asp-action="Create" class="btn btn-light text-dark px-3 py-2 rounded-pill fw-semibold shadow-sm">
+                            <i class="bi bi-plus-circle-fill text-primary me-1"></i> Charter New Club
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <div class="col-lg-4 text-lg-end d-none d-lg-block">
+                <div class="p-3 bg-white bg-opacity-10 border border-white border-opacity-15 rounded-4 text-start">
+                    <div class="d-flex align-items-center gap-2 mb-2 text-white">
+                        <i class="bi bi-lightbulb-fill text-warning fs-5"></i>
+                        <span class="fw-bold">How Club Matching Works</span>
+                    </div>
+                    <p class="small text-white text-opacity-75 mb-0" style="line-height: 1.5;">
+                        1. Select your learning & hobby interests.<br />
+                        2. Our system scores clubs matching your topics.<br />
+                        3. Follow for event alerts or apply for official membership!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================
+         2. ADMIN GOVERNANCE BAR (Visible to Admins & SuperAdmins)
+         ========================================================= -->
+    @if (Model.IsUserAdmin)
+    {
+        <div class="card border-0 shadow-sm rounded-4 mb-4 bg-dark text-white p-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-primary text-white p-2 rounded-3">
+                        <i class="bi bi-shield-lock-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold text-white">Platform Administrator Club Governance Hub</h6>
+                        <small class="text-white-50">Manage status approvals, club charters, and membership integrity across campus.</small>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <a asp-action="Create" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold">
+                        <i class="bi bi-plus-circle me-1"></i> Charter New Club
+                    </a>
+                    <a asp-controller="Admin" asp-action="Index" class="btn btn-sm btn-outline-light rounded-pill px-3">
+                        <i class="bi bi-speedometer2 me-1"></i> Admin Panel
+                    </a>
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top border-secondary">
+                <a asp-action="Index" asp-route-status="ALL" asp-route-search="@Model.SearchQuery" asp-route-categoryId="@Model.SelectedCategoryId" asp-route-deptId="@Model.SelectedDepartmentId"
+                   class="btn btn-sm @(Model.StatusFilter == "ALL" ? "btn-light fw-bold" : "btn-outline-secondary text-white-50") rounded-pill px-3">
+                    All Statuses <span class="badge bg-secondary ms-1">@(Model.TotalActiveCount + Model.TotalPendingCount + Model.TotalSuspendedCount)</span>
+                </a>
+                <a asp-action="Index" asp-route-status="ACTIVE" asp-route-search="@Model.SearchQuery" asp-route-categoryId="@Model.SelectedCategoryId" asp-route-deptId="@Model.SelectedDepartmentId"
+                   class="btn btn-sm @(Model.StatusFilter == "ACTIVE" ? "btn-success fw-bold" : "btn-outline-secondary text-white-50") rounded-pill px-3">
+                    <i class="bi bi-check-circle me-1"></i> Active / Verified <span class="badge bg-success ms-1">@Model.TotalActiveCount</span>
+                </a>
+                <a asp-action="Index" asp-route-status="PENDING" asp-route-search="@Model.SearchQuery" asp-route-categoryId="@Model.SelectedCategoryId" asp-route-deptId="@Model.SelectedDepartmentId"
+                   class="btn btn-sm @(Model.StatusFilter == "PENDING" ? "btn-warning text-dark fw-bold" : "btn-outline-secondary text-white-50") rounded-pill px-3">
+                    <i class="bi bi-hourglass-split me-1"></i> Pending Verification <span class="badge bg-warning text-dark ms-1">@Model.TotalPendingCount</span>
+                </a>
+                <a asp-action="Index" asp-route-status="SUSPENDED" asp-route-search="@Model.SearchQuery" asp-route-categoryId="@Model.SelectedCategoryId" asp-route-deptId="@Model.SelectedDepartmentId"
+                   class="btn btn-sm @(Model.StatusFilter == "SUSPENDED" ? "btn-danger fw-bold" : "btn-outline-secondary text-white-50") rounded-pill px-3">
+                    <i class="bi bi-slash-circle me-1"></i> Suspended / Inactive <span class="badge bg-danger ms-1">@Model.TotalSuspendedCount</span>
+                </a>
+            </div>
+        </div>
+    }
+
+    <!-- =========================================================
+         3. USER INTEREST NOTIFICATION BANNER
+         ========================================================= -->
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        @if (Model.HasSelectedInterests)
+        {
+            <div class="alert alert-primary bg-primary-subtle border-primary-subtle rounded-3 p-3 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-primary fs-5"></i>
+                    <div>
+                        <span class="fw-bold text-dark">Personalized Recommendations Active:</span>
+                        <span class="text-muted small ms-1">
+                            Filtering based on: <strong>@string.Join(", ", Model.UserInterestNames)</strong>
+                        </span>
+                    </div>
+                </div>
+                <a asp-controller="Clubs" asp-action="Interests" class="btn btn-sm btn-outline-primary fw-semibold px-3 rounded-pill">
+                    Edit Interests &rarr;
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning bg-warning-subtle border-warning-subtle rounded-3 p-3 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle-fill text-warning-emphasis fs-5"></i>
+                    <div>
+                        <span class="fw-bold text-dark">You haven't set your campus interests yet!</span>
+                        <span class="text-muted small ms-1">Pick your interests (AI, Coding, Debate, Sports) to unlock tailored club recommendations.</span>
+                    </div>
+                </div>
+                <a asp-controller="Clubs" asp-action="Interests" class="btn btn-sm btn-warning text-dark fw-semibold px-4 rounded-pill shadow-sm">
+                    Select My Interests Now
+                </a>
+            </div>
+        }
+    }
+
+    <!-- =========================================================
+         4. SEARCH & CATEGORY FILTER BAR
+         ========================================================= -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 p-3 bg-white">
+        <form method="get" asp-action="Index" class="row g-3 align-items-center">
+            @if (!string.IsNullOrEmpty(Model.StatusFilter))
+            {
+                <input type="hidden" name="status" value="@Model.StatusFilter" />
+            }
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" value="@Model.SearchQuery" class="form-control border-start-0 bg-light" placeholder="Search clubs by name, keywords, or topics..." />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="categoryId" class="form-select bg-light" onchange="this.form.submit()">
+                    <option value="">All Categories & Interests</option>
+                    @foreach (var cat in Model.AvailableCategories)
+                    {
+                        <option value="@cat.Value" selected="@(cat.Selected ? "selected" : null)">@cat.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="deptId" class="form-select bg-light" onchange="this.form.submit()">
+                    <option value="">All Departments</option>
+                    @foreach (var d in Model.AvailableDepartments)
+                    {
+                        <option value="@d.Value" selected="@(d.Selected ? "selected" : null)">@d.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-1 d-grid">
+                <button type="submit" class="btn btn-primary fw-semibold">Filter</button>
+            </div>
+        </form>
+
+        <!-- Quick Category Filter Pills -->
+        <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
+            <a asp-action="Index" asp-route-status="@Model.StatusFilter" class="interest-pill @(Model.SelectedCategoryId == null ? "interest-pill-lg active" : "")">
+                All Topics
+            </a>
+            @foreach (var cat in Model.AvailableCategories.Take(8))
+            {
+                <a asp-action="Index" asp-route-categoryId="@cat.Value" asp-route-status="@Model.StatusFilter" class="interest-pill @(Model.SelectedCategoryId?.ToString() == cat.Value ? "interest-pill-lg active" : "")">
+                    @cat.Text
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- =========================================================
+         5. RECOMMENDED CLUBS (MATCH SCORE HIGHLIGHT)
+         ========================================================= -->
+    @if (Model.RecommendedClubs.Any() && Model.HasSelectedInterests && Model.StatusFilter != "SUSPENDED" && Model.StatusFilter != "PENDING")
+    {
+        <div class="mb-5">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h2 class="h5 fw-bold text-dark mb-0">
+                        <i class="bi bi-magic me-2 text-primary"></i>Recommended For You
+                    </h2>
+                    <p class="text-muted small mb-0">Clubs and societies matching your selected interests</p>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                @foreach (var club in Model.RecommendedClubs)
+                {
+                    var targetId = !string.IsNullOrEmpty(club.Slug) ? club.Slug : club.Id.ToString();
+                    <div class="col-md-6 col-lg-4">
+                        <div class="club-card">
+                            <div class="club-card-header">
+                                <img src="@(!string.IsNullOrEmpty(club.LogoUrl) ? club.LogoUrl : "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&auto=format&fit=crop&q=80")"
+                                     alt="@club.Name Logo"
+                                     class="club-card-avatar"
+                                     onerror="this.src='https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&auto=format&fit=crop&q=80'" />
+                            </div>
+                            <div class="club-card-body">
+                                @if (!string.IsNullOrEmpty(club.RecommendationReason))
+                                {
+                                    <div class="club-recommendation-tag">
+                                        <i class="bi bi-check2-circle"></i>
+                                        <span>@club.RecommendationReason</span>
+                                    </div>
+                                }
+
+                                <h3 class="club-card-title">
+                                    <a asp-action="Details" asp-route-id="@targetId" class="text-dark text-decoration-none hover-primary">
+                                        @club.Name
+                                    </a>
+                                </h3>
+
+                                <p class="small text-muted mb-2">
+                                    <i class="bi bi-building me-1"></i>@(club.DepartmentName ?? club.FacultyName ?? "Hawassa University")
+                                </p>
+
+                                <p class="club-card-desc">@club.Description</p>
+
+                                <div class="d-flex flex-wrap gap-1 mt-auto mb-2">
+                                    @foreach (var tag in club.Interests.Take(3))
+                                    {
+                                        <span class="interest-pill">
+                                            <i class="bi @(tag.Icon ?? "bi-tag")"></i> @tag.Name
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="club-card-footer">
+                                <div class="d-flex align-items-center gap-3 small text-muted">
+                                    <span><i class="bi bi-bell me-1"></i><strong class="text-dark follower-count-@club.Id">@club.FollowerCount</strong> followers</span>
+                                    <span><i class="bi bi-people me-1"></i><strong class="text-dark">@club.MemberCount</strong> members</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    @if (User.Identity?.IsAuthenticated == true)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-follow @(club.IsFollowing ? "btn-outline-secondary" : "btn-primary") px-3 rounded-pill fw-semibold"
+                                                data-club-id="@club.Id"
+                                                onclick="toggleFollow(@club.Id, this)">
+                                            @(club.IsFollowing ? "Following" : "Follow")
+                                        </button>
+                                    }
+                                    <a asp-action="Details" asp-route-id="@targetId" class="btn btn-sm btn-outline-primary px-3 rounded-pill">
+                                        View
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- =========================================================
+         6. ALL CLUBS & SOCIETIES
+         ========================================================= -->
+    <div>
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <h2 class="h5 fw-bold text-dark mb-0">
+                    <i class="bi bi-grid-fill me-2 text-primary"></i>All Campus Clubs & Societies (@Model.AllClubs.Count)
+                </h2>
+                <p class="text-muted small mb-0">Browse and connect with verified university student groups</p>
+            </div>
+        </div>
+
+        @if (Model.AllClubs.Any())
+        {
+            <div class="row g-4">
+                @foreach (var club in Model.AllClubs)
+                {
+                    var targetId = !string.IsNullOrEmpty(club.Slug) ? club.Slug : club.Id.ToString();
+                    <div class="col-md-6 col-lg-4">
+                        <div class="club-card position-relative">
+                            <div class="club-card-header d-flex justify-content-end align-items-start">
+                                @if (Model.IsUserAdmin || club.Status != "ACTIVE")
+                                {
+                                    @if (club.Status == "ACTIVE")
+                                    {
+                                        <span class="badge bg-success shadow-sm"><i class="bi bi-patch-check-fill me-1"></i>ACTIVE</span>
+                                    }
+                                    else if (club.Status == "PENDING")
+                                    {
+                                        <span class="badge bg-warning text-dark shadow-sm"><i class="bi bi-hourglass-split me-1"></i>PENDING REVIEW</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger shadow-sm"><i class="bi bi-slash-circle me-1"></i>@club.Status</span>
+                                    }
+                                }
+                                <img src="@(!string.IsNullOrEmpty(club.LogoUrl) ? club.LogoUrl : "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&auto=format&fit=crop&q=80")"
+                                     alt="@club.Name Logo"
+                                     class="club-card-avatar"
+                                     onerror="this.src='https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&auto=format&fit=crop&q=80'" />
+                            </div>
+                            <div class="club-card-body">
+                                <h3 class="club-card-title">
+                                    <a asp-action="Details" asp-route-id="@targetId" class="text-dark text-decoration-none hover-primary">
+                                        @club.Name
+                                    </a>
+                                </h3>
+
+                                <p class="small text-muted mb-2">
+                                    <i class="bi bi-building me-1"></i>@(club.DepartmentName ?? club.FacultyName ?? "Hawassa University")
+                                </p>
+
+                                <p class="club-card-desc">@club.Description</p>
+
+                                <div class="d-flex flex-wrap gap-1 mt-auto mb-2">
+                                    @foreach (var tag in club.Interests.Take(3))
+                                    {
+                                        <span class="interest-pill">
+                                            <i class="bi @(tag.Icon ?? "bi-tag")"></i> @tag.Name
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="club-card-footer">
+                                <div class="d-flex align-items-center gap-3 small text-muted">
+                                    <span><i class="bi bi-bell me-1"></i><strong class="text-dark follower-count-@club.Id">@club.FollowerCount</strong> followers</span>
+                                    <span><i class="bi bi-people me-1"></i><strong class="text-dark">@club.MemberCount</strong> members</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    @if (User.Identity?.IsAuthenticated == true && club.Status == "ACTIVE")
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-follow @(club.IsFollowing ? "btn-outline-secondary" : "btn-primary") px-3 rounded-pill fw-semibold"
+                                                data-club-id="@club.Id"
+                                                onclick="toggleFollow(@club.Id, this)">
+                                            @(club.IsFollowing ? "Following" : "Follow")
+                                        </button>
+                                    }
+                                    <a asp-action="Details" asp-route-id="@targetId" class="btn btn-sm btn-outline-primary px-3 rounded-pill">
+                                        View
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5 bg-light rounded-4">
+                <i class="bi bi-search fs-1 text-muted d-block mb-3"></i>
+                <h5 class="fw-bold text-dark mb-1">No Clubs Found</h5>
+                <p class="text-muted small mb-3">Try adjusting your search query, status, department, or category filters.</p>
+                <a asp-action="Index" class="btn btn-sm btn-primary rounded-pill px-4">Reset Filters</a>
+            </div>
+        }
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        async function toggleFollow(clubId, btn) {
+            const isCurrentlyFollowing = btn.innerText.trim() === 'Following';
+            const endpoint = isCurrentlyFollowing ? `/Clubs/Unfollow/${clubId}` : `/Clubs/Follow/${clubId}`;
+
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.isFollowing) {
+                        btn.innerText = 'Following';
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-outline-secondary');
+                    } else {
+                        btn.innerText = 'Follow';
+                        btn.classList.remove('btn-outline-secondary');
+                        btn.classList.add('btn-primary');
+                    }
+
+                    // Update follower counts across the page
+                    document.querySelectorAll(`.follower-count-${clubId}`).forEach(el => {
+                        el.innerText = data.followerCount;
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+}

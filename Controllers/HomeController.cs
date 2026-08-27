@@ -52,6 +52,17 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         }
 
         // =====================================================
+        // SITEMAP / ALL PAGES DIRECTORY
+        // URL: /Home/Sitemap or /Sitemap
+        // =====================================================
+        [HttpGet]
+        public IActionResult Sitemap()
+        {
+            ViewData["Title"] = "All Pages Directory & Sitemap";
+            return View();
+        }
+
+        // =====================================================
         // CONTACT PAGE
         // URL: /Home/Contact or /Contact
         // =====================================================

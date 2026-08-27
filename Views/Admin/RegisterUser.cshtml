@@ -1,0 +1,549 @@
+@model HawassaUnifiedCampusEventManagementSystem.Models.AdminRegisterUserPageViewModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Register New Campus User";
+}
+
+<div class="container-fluid px-0">
+    <!-- BREADCRUMB & HEADER -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small">
+                    <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Index" class="text-decoration-none">Admin Dashboard</a></li>
+                    <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Users" class="text-decoration-none">User Directory</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Register User</li>
+                </ol>
+            </nav>
+            <h1 class="h3 fw-bold text-dark mb-1">Register New Campus User</h1>
+            <p class="text-muted small mb-0">Role-based provisioning for Students, Faculty, Staff, Organizations, and Administrators.</p>
+        </div>
+        <div class="d-flex gap-2 mt-3 mt-md-0">
+            <a asp-controller="Admin" asp-action="Users" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bi bi-arrow-left"></i>
+                <span>User Directory (@Model.TotalRegisteredUsersCount)</span>
+            </a>
+            @if (Model.IsSuperAdmin && Model.PendingApprovalsCount > 0)
+            {
+                <a asp-controller="Admin" asp-action="UserApprovals" class="btn btn-warning btn-sm text-dark fw-semibold d-inline-flex align-items-center gap-1 shadow-sm">
+                    <i class="bi bi-clock-history"></i>
+                    <span>Pending Approvals (@Model.PendingApprovalsCount)</span>
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- ROLE POLICY ALERT BANNER -->
+    <div class="alert @(Model.IsSuperAdmin ? "alert-info border-info-subtle" : "alert-warning border-warning") d-flex align-items-start gap-3 p-3 mb-4 rounded-3 shadow-sm">
+        <i class="bi @(Model.IsSuperAdmin ? "bi-shield-check text-primary" : "bi-shield-exclamation text-warning-emphasis") fs-3 flex-shrink-0 mt-1"></i>
+        <div>
+            <h6 class="fw-bold mb-1 @(Model.IsSuperAdmin ? "text-primary" : "text-dark")">
+                @(Model.IsSuperAdmin ? "Master SuperAdmin Provisioning Hub" : "Campus Administrator Provisioning Policy")
+            </h6>
+            <p class="small mb-0 @(Model.IsSuperAdmin ? "text-dark" : "text-secondary")">
+                @if (Model.IsSuperAdmin)
+                {
+                    <span>As a <strong>SuperAdmin</strong>, accounts you create can be activated immediately with instant portal access, or placed in the verification queue. You also have full clearance to provision Administrator accounts.</span>
+                }
+                else
+                {
+                    <span>As a <strong>Campus Administrator</strong>, all user accounts you register are automatically placed in <strong>PENDING</strong> status. The SuperAdmin will verify and activate the account before the user can log in.</span>
+                }
+            </p>
+        </div>
+    </div>
+
+    <form asp-controller="Admin" asp-action="UserCreate" method="post" id="fullRegistrationForm">
+        @Html.AntiForgeryToken()
+
+        <div class="row g-4">
+            <!-- =========================================================================
+                 LEFT COLUMN: ROLE SELECTOR & MAIN FORM FIELDS
+                 ========================================================================= -->
+            <div class="col-lg-8">
+
+                <!-- STEP 1: SELECT ACCOUNT ROLE (INTERACTIVE ROLE CARDS) -->
+                <div class="admin-card p-4 mb-4">
+                    <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                        <span class="badge bg-primary rounded-circle px-2 py-1" style="font-size: 11px;">1</span>
+                        <span>Select Account Role & Type</span>
+                    </h5>
+                    
+                    <div class="row g-3" id="roleCardsGrid">
+                        <!-- STUDENT CARD -->
+                        <div class="col-sm-6 col-md-4">
+                            <label class="role-select-card h-100 p-3 rounded-3 border d-block cursor-pointer position-relative text-center transition-all" for="roleStudent">
+                                <input type="radio" name="accountType" id="roleStudent" value="STUDENT" class="position-absolute top-0 end-0 m-2" checked onchange="switchRoleMode('STUDENT')" />
+                                <div class="role-icon-box bg-primary-subtle text-primary mx-auto mb-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                    <i class="bi bi-mortarboard-fill fs-4"></i>
+                                </div>
+                                <h6 class="fw-bold mb-1 text-dark">Student</h6>
+                                <p class="text-muted small mb-0" style="font-size: 11px;">Undergraduate & Postgraduate campus attendees</p>
+                            </label>
+                        </div>
+
+                        <!-- FACULTY CARD -->
+                        <div class="col-sm-6 col-md-4">
+                            <label class="role-select-card h-100 p-3 rounded-3 border d-block cursor-pointer position-relative text-center transition-all" for="roleFaculty">
+                                <input type="radio" name="accountType" id="roleFaculty" value="FACULTY" class="position-absolute top-0 end-0 m-2" onchange="switchRoleMode('FACULTY')" />
+                                <div class="role-icon-box bg-success-subtle text-success mx-auto mb-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                    <i class="bi bi-person-video3 fs-4"></i>
+                                </div>
+                                <h6 class="fw-bold mb-1 text-dark">Faculty</h6>
+                                <p class="text-muted small mb-0" style="font-size: 11px;">Professors, Lecturers, & Academic Instructors</p>
+                            </label>
+                        </div>
+
+                        <!-- STAFF CARD -->
+                        <div class="col-sm-6 col-md-4">
+                            <label class="role-select-card h-100 p-3 rounded-3 border d-block cursor-pointer position-relative text-center transition-all" for="roleStaff">
+                                <input type="radio" name="accountType" id="roleStaff" value="STAFF" class="position-absolute top-0 end-0 m-2" onchange="switchRoleMode('STAFF')" />
+                                <div class="role-icon-box bg-info-subtle text-info mx-auto mb-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                    <i class="bi bi-briefcase-fill fs-4"></i>
+                                </div>
+                                <h6 class="fw-bold mb-1 text-dark">Staff</h6>
+                                <p class="text-muted small mb-0" style="font-size: 11px;">Registrar, Deans, ICT & Administrative Units</p>
+                            </label>
+                        </div>
+
+                        <!-- ORGANIZATION CARD -->
+                        <div class="col-sm-6 col-md-6">
+                            <label class="role-select-card h-100 p-3 rounded-3 border d-block cursor-pointer position-relative text-center transition-all" for="roleOrg">
+                                <input type="radio" name="accountType" id="roleOrg" value="ORGANIZATION" class="position-absolute top-0 end-0 m-2" onchange="switchRoleMode('ORGANIZATION')" />
+                                <div class="role-icon-box bg-warning-subtle text-warning-emphasis mx-auto mb-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                    <i class="bi bi-building-fill fs-4"></i>
+                                </div>
+                                <h6 class="fw-bold mb-1 text-dark">Student Organization</h6>
+                                <p class="text-muted small mb-0" style="font-size: 11px;">Official Clubs, Societies & Student Union bodies</p>
+                            </label>
+                        </div>
+
+                        <!-- ADMIN CARD -->
+                        <div class="col-sm-6 col-md-6">
+                            <label class="role-select-card h-100 p-3 rounded-3 border d-block cursor-pointer position-relative text-center transition-all @(!Model.IsSuperAdmin ? "opacity-50 bg-light" : "")" for="roleAdmin">
+                                <input type="radio" name="accountType" id="roleAdmin" value="ADMIN" class="position-absolute top-0 end-0 m-2" @(!Model.IsSuperAdmin ? "disabled" : "") onchange="switchRoleMode('ADMIN')" />
+                                <div class="role-icon-box bg-danger-subtle text-danger mx-auto mb-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                    <i class="bi bi-shield-lock-fill fs-4"></i>
+                                </div>
+                                <h6 class="fw-bold mb-1 text-dark">
+                                    Campus Administrator
+                                    @if (!Model.IsSuperAdmin)
+                                    {
+                                        <span class="badge bg-secondary ms-1" style="font-size: 9px;">SuperAdmin Only</span>
+                                    }
+                                </h6>
+                                <p class="text-muted small mb-0" style="font-size: 11px;">System administrative operator with privileged access</p>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: PERSONAL IDENTITY & CONTACT -->
+                <div class="admin-card p-4 mb-4">
+                    <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                        <span class="badge bg-primary rounded-circle px-2 py-1" style="font-size: 11px;">2</span>
+                        <span>Personal Identity & Contact Information</span>
+                    </h5>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-dark">First Name *</label>
+                            <input type="text" name="firstName" id="inputFirstName" class="form-control" required placeholder="e.g. Yohannes" oninput="autoSuggestUsername()" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Middle / Father Name</label>
+                            <input type="text" name="middleName" id="inputMiddleName" class="form-control" placeholder="e.g. Haile" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Grandfather / Last Name *</label>
+                            <input type="text" name="lastName" id="inputLastName" class="form-control" required placeholder="e.g. Gebre" oninput="autoSuggestUsername()" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Portal Username *</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">@@</span>
+                                <input type="text" name="username" id="inputUsername" class="form-control font-monospace" required placeholder="e.g. yohannes_gebre" />
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="autoSuggestUsername(true)" title="Generate suggested username">
+                                    <i class="bi bi-magic"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted" style="font-size: 11px;">Used by user to sign in.</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Campus / Official Email *</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted"><i class="bi bi-envelope-at"></i></span>
+                                <input type="email" name="email" id="inputEmail" class="form-control" required placeholder="e.g. yohannes@hawassa.edu.et" />
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Mobile Phone Number</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted"><i class="bi bi-telephone"></i></span>
+                                <input type="tel" name="phone" class="form-control" placeholder="e.g. +251 911 234567" />
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Profile Image URL (Optional)</label>
+                            <input type="url" name="profileImageUrl" class="form-control" placeholder="https://... or leave empty for avatar" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold text-dark">Bio / Designation Notes</label>
+                            <textarea name="bio" rows="2" class="form-control" placeholder="Brief professional description, student summary, or office notes..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 3: ROLE-SPECIFIC INSTITUTIONAL INFORMATION (DYNAMIC) -->
+                <div class="admin-card p-4 mb-4">
+                    <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                        <span class="badge bg-primary rounded-circle px-2 py-1" style="font-size: 11px;">3</span>
+                        <span id="roleSectionTitle">Institutional Academic Credentials (Student)</span>
+                    </h5>
+
+                    <!-- A. STUDENT SECTION -->
+                    <div id="sectionStudent">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Student ID / Enrollment Number *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-person-badge"></i></span>
+                                    <input type="text" name="studentId" class="form-control font-monospace" placeholder="e.g. UGR/12345/16 or HU/98765/15" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Academic Program</label>
+                                <select name="academicProgram" class="form-select">
+                                    <option value="Undergraduate Regular" selected>Undergraduate Regular Degree</option>
+                                    <option value="Undergraduate Extension">Undergraduate Evening / Extension</option>
+                                    <option value="Postgraduate Masters">Postgraduate Master of Science (MSc)</option>
+                                    <option value="PhD Candidate">Doctor of Philosophy (PhD)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Year of Study / Batch</label>
+                                <select name="yearOfStudy" class="form-select">
+                                    <option value="1st Year (Freshman)" selected>1st Year (Freshman)</option>
+                                    <option value="2nd Year (Sophomore)">2nd Year (Sophomore)</option>
+                                    <option value="3rd Year (Junior)">3rd Year (Junior)</option>
+                                    <option value="4th Year (Senior / Graduating)">4th Year (Senior / Graduating)</option>
+                                    <option value="5th Year (Finalist Engineering / Medicine)">5th Year (Finalist Tech/Med)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- B. FACULTY SECTION -->
+                    <div id="sectionFaculty" class="d-none">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Faculty Employee ID *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-person-vcard"></i></span>
+                                    <input type="text" name="employeeId" id="facultyEmpId" class="form-control font-monospace" placeholder="e.g. FAC-HU-8091" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Academic Title / Rank</label>
+                                <select name="academicTitle" class="form-select">
+                                    <option value="Lecturer" selected>Lecturer</option>
+                                    <option value="Assistant Professor">Assistant Professor</option>
+                                    <option value="Associate Professor">Associate Professor</option>
+                                    <option value="Full Professor">Full Professor</option>
+                                    <option value="Graduate Assistant">Graduate Assistant</option>
+                                    <option value="Department Chair">Department Chairperson</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label small fw-semibold text-dark">Faculty Office Location / Building</label>
+                                <input type="text" name="officeLocation" class="form-control" placeholder="e.g. Technology Complex Block 4, Room 208" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- C. STAFF SECTION -->
+                    <div id="sectionStaff" class="d-none">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Staff Employee ID *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-person-badge-fill"></i></span>
+                                    <input type="text" name="employeeId" id="staffEmpId" class="form-control font-monospace" placeholder="e.g. EMP-HU-1042" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Administrative Office / Unit</label>
+                                <select name="staffUnit" class="form-select">
+                                    <option value="Office of the Registrar" selected>Office of the Registrar</option>
+                                    <option value="Dean of Students Affairs">Dean of Students Affairs</option>
+                                    <option value="University Library Directorate">University Library Directorate</option>
+                                    <option value="ICT & Enterprise Systems Directorate">ICT & Enterprise Systems Directorate</option>
+                                    <option value="Campus Facilities & Venues">Campus Facilities & Venues</option>
+                                    <option value="Campus Security & Safety">Campus Security & Safety</option>
+                                    <option value="Health & Medical Services">Health & Medical Services</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Job Title / Designation</label>
+                                <input type="text" name="jobTitle" class="form-control" placeholder="e.g. Senior Registrar Officer / Event Logistics Specialist" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Office Room / Ext.</label>
+                                <input type="text" name="officeLocation" class="form-control" placeholder="e.g. Admin Tower Floor 3, Ext 412" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- D. ORGANIZATION SECTION -->
+                    <div id="sectionOrganization" class="d-none">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label small fw-semibold text-dark">Club / Organization Name *</label>
+                                <input type="text" name="organizationName" class="form-control" placeholder="e.g. Hawassa University Computing Society" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold text-dark">Short Acronym</label>
+                                <input type="text" name="organizationAcronym" class="form-control font-monospace" placeholder="e.g. HUCS" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Organization Category</label>
+                                <select name="organizationType" class="form-select">
+                                    <option value="CLUB" selected>Academic & Interest Club</option>
+                                    <option value="SOCIETY">Student Society</option>
+                                    <option value="UNION">Student Union Body</option>
+                                    <option value="SPORTS">Sports Association</option>
+                                    <option value="COMMUNITY">Tech & Innovation Community</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- E. ADMIN SECTION -->
+                    <div id="sectionAdmin" class="d-none">
+                        <div class="alert alert-danger-subtle border border-danger-subtle p-3 rounded-3 mb-0 small">
+                            <div class="fw-bold text-danger mb-1"><i class="bi bi-shield-lock-fill me-1"></i>Administrator Clearance Scope</div>
+                            <p class="mb-0 text-dark">This will provision a full Campus Administrator account with operational permissions over events, announcements, venues, and student approvals across Hawassa University.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 4: ACADEMIC DEPARTMENT AFFILIATION -->
+                <div class="admin-card p-4 mb-4">
+                    <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                        <span class="badge bg-primary rounded-circle px-2 py-1" style="font-size: 11px;">4</span>
+                        <span>Academic Department Affiliation</span>
+                    </h5>
+
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label small fw-semibold text-dark">Assigned Department / Academic Unit</label>
+                            <select name="departmentId" class="form-select">
+                                <option value="">-- General / Non-Departmental / All-Campus --</option>
+                                @foreach (var dept in Model.Departments)
+                                {
+                                    <option value="@dept.id">
+                                        @dept.name (@(dept.code ?? "DEPT")) @(dept.faculty != null ? $"— {dept.faculty.name}" : "")
+                                    </option>
+                                }
+                            </select>
+                            <small class="text-muted" style="font-size: 11px;">Connects user with their department calendar, faculty announcements, and targeted student event invites.</small>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- =========================================================================
+                 RIGHT COLUMN: SECURITY, CREDENTIALS, STATUS & SUBMIT
+                 ========================================================================= -->
+            <div class="col-lg-4">
+
+                <!-- SECURITY & PASSWORD CARD -->
+                <div class="admin-card p-4 mb-4 shadow-sm">
+                    <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-key-fill text-primary"></i>
+                        <span>Security & Access</span>
+                    </h5>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Initial Temporary Password *</label>
+                        <div class="input-group mb-1">
+                            <input type="text" name="password" id="inputPassword" class="form-control font-monospace" required value="@Model.Form.Password" />
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="generateRandomPassword()" title="Generate new strong password">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted" style="font-size: 11px;">User will use this password to sign in to the portal.</small>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="sendWelcomeEmail" id="sendWelcomeEmail" value="true" checked />
+                        <label class="form-check-label small fw-semibold text-dark" for="sendWelcomeEmail">
+                            Dispatch email notification to user with login instructions
+                        </label>
+                    </div>
+                </div>
+
+                <!-- ACCOUNT STATUS & GOVERNANCE -->
+                <div class="admin-card p-4 mb-4 shadow-sm border @(Model.IsSuperAdmin ? "border-primary-subtle" : "border-warning-subtle")">
+                    <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-check @(Model.IsSuperAdmin ? "text-primary" : "text-warning")"></i>
+                        <span>Account Status Governance</span>
+                    </h5>
+
+                    @if (Model.IsSuperAdmin)
+                    {
+                        <div class="d-flex flex-column gap-2 mb-3">
+                            <div class="form-check p-3 rounded-3 border bg-success-subtle bg-opacity-25 border-success-subtle">
+                                <input class="form-check-input" type="radio" name="initialStatus" id="statusActive" value="ACTIVE" checked />
+                                <label class="form-check-label d-block cursor-pointer" for="statusActive">
+                                    <strong class="text-success d-block small"><i class="bi bi-check-circle-fill me-1"></i>Active (Instant Login)</strong>
+                                    <span class="text-muted" style="font-size: 11px;">Activate immediately without waiting in queue.</span>
+                                </label>
+                            </div>
+
+                            <div class="form-check p-3 rounded-3 border bg-warning-subtle bg-opacity-25 border-warning-subtle">
+                                <input class="form-check-input" type="radio" name="initialStatus" id="statusPending" value="PENDING" />
+                                <label class="form-check-label d-block cursor-pointer" for="statusPending">
+                                    <strong class="text-warning-emphasis d-block small"><i class="bi bi-hourglass-split me-1"></i>Pending (Approval Queue)</strong>
+                                    <span class="text-muted" style="font-size: 11px;">Hold account in pending status for later review.</span>
+                                </label>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-3 rounded-3 border border-warning bg-warning-subtle bg-opacity-25 mb-3">
+                            <div class="d-flex align-items-center gap-2 text-warning-emphasis fw-bold small mb-1">
+                                <i class="bi bi-lock-fill"></i>
+                                <span>Status: PENDING (Locked)</span>
+                            </div>
+                            <p class="text-secondary mb-0" style="font-size: 11px; line-height: 1.4;">
+                                As a regular Administrator, this account will be registered in <strong>PENDING</strong> status and submitted to the SuperAdmin approval dashboard.
+                            </p>
+                            <input type="hidden" name="initialStatus" value="PENDING" />
+                        </div>
+                    }
+                </div>
+
+                <!-- SUBMIT ACTION CARD -->
+                <div class="admin-card p-4 shadow-sm text-center">
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-2 mb-2">
+                        <i class="bi bi-person-check-fill fs-5"></i>
+                        <span>Register & Create Account</span>
+                    </button>
+                    <a asp-controller="Admin" asp-action="Users" class="btn btn-light border w-100 btn-sm text-muted">
+                        Cancel & Return
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    .role-select-card {
+        transition: all 0.2s ease-in-out;
+        background: #fff;
+    }
+    .role-select-card:hover {
+        border-color: #2563eb !important;
+        background: #f8fafc;
+        transform: translateY(-2px);
+    }
+    .role-select-card input[type="radio"]:checked + .role-icon-box {
+        transform: scale(1.1);
+    }
+    .role-select-card:has(input[type="radio"]:checked) {
+        border-color: #2563eb !important;
+        background: #eff6ff;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    }
+</style>
+
+<script>
+    function switchRoleMode(role) {
+        var secStudent = document.getElementById('sectionStudent');
+        var secFaculty = document.getElementById('sectionFaculty');
+        var secStaff = document.getElementById('sectionStaff');
+        var secOrg = document.getElementById('sectionOrganization');
+        var secAdmin = document.getElementById('sectionAdmin');
+        var titleEl = document.getElementById('roleSectionTitle');
+
+        // Hide all
+        secStudent.classList.add('d-none');
+        secFaculty.classList.add('d-none');
+        secStaff.classList.add('d-none');
+        secOrg.classList.add('d-none');
+        secAdmin.classList.add('d-none');
+
+        // Disable unused employee id inputs to avoid conflict
+        var facEmp = document.getElementById('facultyEmpId');
+        var stfEmp = document.getElementById('staffEmpId');
+        if (facEmp) facEmp.disabled = true;
+        if (stfEmp) stfEmp.disabled = true;
+
+        if (role === 'STUDENT') {
+            secStudent.classList.remove('d-none');
+            titleEl.textContent = 'Institutional Academic Credentials (Student)';
+        } else if (role === 'FACULTY') {
+            secFaculty.classList.remove('d-none');
+            if (facEmp) facEmp.disabled = false;
+            titleEl.textContent = 'Faculty & Academic Rank Information';
+        } else if (role === 'STAFF') {
+            secStaff.classList.remove('d-none');
+            if (stfEmp) stfEmp.disabled = false;
+            titleEl.textContent = 'Administrative Unit & Staff Details';
+        } else if (role === 'ORGANIZATION') {
+            secOrg.classList.remove('d-none');
+            titleEl.textContent = 'Club & Organization Profile';
+        } else if (role === 'ADMIN') {
+            secAdmin.classList.remove('d-none');
+            titleEl.textContent = 'Administrator Privilege Confirmation';
+        }
+    }
+
+    function autoSuggestUsername(force) {
+        var first = document.getElementById('inputFirstName').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+        var last = document.getElementById('inputLastName').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+        var userField = document.getElementById('inputUsername');
+        var emailField = document.getElementById('inputEmail');
+
+        if (first && last && (userField.value === '' || force)) {
+            var suggested = first + '_' + last;
+            userField.value = suggested;
+            if (emailField && emailField.value === '') {
+                emailField.value = first + '.' + last + '@@hawassa.edu.et';
+            }
+        }
+    }
+
+    function generateRandomPassword() {
+        var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@@#$%';
+        var pwd = 'HU@@';
+        for (var i = 0; i < 6; i++) {
+            pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById('inputPassword').value = pwd;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // Init with role from url param if present
+        var urlParams = new URLSearchParams(window.location.search);
+        var initialRole = urlParams.get('role') || '@Model.SelectedRole';
+        var targetRadio = document.getElementById('role' + (initialRole.charAt(0).toUpperCase() + initialRole.slice(1).toLowerCase()));
+        if (targetRadio && !targetRadio.disabled) {
+            targetRadio.checked = true;
+            switchRoleMode(initialRole.toUpperCase());
+        } else {
+            switchRoleMode('STUDENT');
+        }
+    });
+</script>

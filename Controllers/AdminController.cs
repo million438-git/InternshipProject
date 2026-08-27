@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using HawassaUnifiedCampusEventManagementSystem.Data;
 using HawassaUnifiedCampusEventManagementSystem.Models;
+using HawassaUnifiedCampusEventManagementSystem.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,11 +21,13 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly ILogger<AdminController> _logger;
+        private readonly IEmailSender _emailSender;
 
-        public AdminController(ApplicationDbContext db, ILogger<AdminController> logger)
+        public AdminController(ApplicationDbContext db, ILogger<AdminController> logger, IEmailSender emailSender)
         {
             _db = db;
             _logger = logger;
+            _emailSender = emailSender;
         }
 
         private ulong? GetCurrentUserId()
@@ -66,6 +69,15 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             {
                 _logger.LogError(ex, "Failed to write audit log for action: {Action}", action);
             }
+        }
+
+        // =========================================================
+        // CLUBS & STUDENT SOCIETIES ACCESS
+        // =========================================================
+        [HttpGet]
+        public IActionResult Clubs()
+        {
+            return RedirectToAction("Index", "Clubs");
         }
 
         // =========================================================
@@ -168,6 +180,132 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             return View(vm);
         }
 
+        // =========================================================
+        // 1B. SUPERADMIN MASTER GOVERNANCE COMMAND CENTER
+        // =========================================================
+        [HttpGet]
+        public async Task<IActionResult> SuperAdmin()
+        {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Access Restricted: The SuperAdmin Master Command Center is exclusive to Central Super Administrator accounts.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var vm = new SuperAdminMasterDashboardViewModel
+            {
+                SuperAdminName = GetCurrentUserName(),
+                SuperAdminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "superadmin@hawassauniversity.edu.et"
+            };
+
+            try
+            {
+                vm.TotalPlatformUsers = await _db.users.CountAsync();
+                vm.ActiveUsersCount = await _db.users.CountAsync(u => u.account_status == "ACTIVE");
+                vm.TotalCampusEvents = await _db.events.CountAsync();
+                vm.PendingEventApprovalsCount = await _db.events.CountAsync(e => e.approval_status == "PENDING");
+                vm.TotalClubsCount = await _db.clubs.CountAsync();
+                vm.TotalOrganizationsCount = await _db.organizations.CountAsync();
+                vm.TotalFacultiesCount = await _db.faculties.CountAsync();
+                vm.TotalDepartmentsCount = await _db.departments.CountAsync();
+                vm.TotalAuditLogsCount = await _db.audit_logs.CountAsync();
+                vm.TotalAdministratorsCount = await _db.users.CountAsync(u => u.account_type == "ADMIN" || u.account_type == "SUPERADMIN");
+
+                // Live Pending Users List
+                var pendingUsers = await _db.users
+                    .Include(u => u.department)
+                        .ThenInclude(d => d!.faculty)
+                    .Include(u => u.user_roleusers)
+                        .ThenInclude(ur => ur.assigned_byNavigation)
+                    .Where(u => u.account_status == "PENDING" || u.account_status == "PENDING_APPROVAL")
+                    .OrderByDescending(u => u.created_at)
+                    .Take(10)
+                    .ToListAsync();
+
+                vm.PendingUserApprovalsCount = await _db.users.CountAsync(u => u.account_status == "PENDING" || u.account_status == "PENDING_APPROVAL");
+
+                vm.PendingApprovalsList = pendingUsers.Select(u =>
+                {
+                    var assignedBy = u.user_roleusers.FirstOrDefault(ur => ur.assigned_byNavigation != null)?.assigned_byNavigation;
+                    var regName = assignedBy != null ? $"{assignedBy.first_name} {assignedBy.last_name}".Trim() : "Campus Administrator";
+                    return new AdminUserApprovalItem
+                    {
+                        Id = u.id,
+                        FullName = $"{u.first_name} {u.last_name}".Trim(),
+                        Username = u.username,
+                        Email = u.email,
+                        Phone = u.phone,
+                        AccountType = u.account_type,
+                        Status = u.account_status,
+                        DepartmentName = u.department?.name ?? "General Campus",
+                        FacultyName = u.department?.faculty?.name,
+                        StudentId = u.student_id,
+                        EmployeeId = u.employee_id,
+                        Bio = u.bio,
+                        ProfileImageUrl = u.profile_image_url,
+                        RegisteredByAdminName = regName,
+                        RegisteredByAdminId = assignedBy?.id,
+                        RegisteredAt = u.created_at
+                    };
+                }).ToList();
+
+                // Admin Activity Logs (Actions performed across campus)
+                var adminActivityLogs = await _db.audit_logs
+                    .Include(a => a.user)
+                    .OrderByDescending(a => a.created_at)
+                    .Take(12)
+                    .ToListAsync();
+
+                vm.AdminActivityFeed = adminActivityLogs.Select(l => new AdminActivityLogItem
+                {
+                    Id = l.id,
+                    Action = l.action,
+                    AdminName = l.user != null ? $"{l.user.first_name} {l.user.last_name}".Trim() : "System Automation",
+                    AdminEmail = l.user?.email ?? "system@hawassa.edu.et",
+                    AdminRole = l.user?.account_type ?? "SYSTEM",
+                    Description = l.description ?? l.action,
+                    EntityType = l.entity_type,
+                    EntityId = l.entity_id,
+                    IpAddress = l.ip_address,
+                    Timestamp = l.created_at
+                }).ToList();
+
+                // Pending events
+                var pendingEvents = await _db.events
+                    .Include(e => e.organizer)
+                    .Include(e => e.category)
+                    .Include(e => e.venue)
+                    .Where(e => e.approval_status == "PENDING")
+                    .OrderBy(e => e.start_at)
+                    .Take(6)
+                    .ToListAsync();
+
+                vm.PendingEventsList = pendingEvents.Select(e => new AdminPendingEventItem
+                {
+                    Id = e.id,
+                    Title = e.title,
+                    Organizer = e.organizer != null ? $"{e.organizer.first_name} {e.organizer.last_name}".Trim() : "Campus Member",
+                    Category = e.category?.name ?? "General",
+                    StartAt = e.start_at,
+                    Venue = e.venue?.name ?? "Main Campus"
+                }).ToList();
+
+                // Estimate DB rows
+                var userCount = await _db.users.LongCountAsync();
+                var eventCount = await _db.events.LongCountAsync();
+                var auditCount = await _db.audit_logs.LongCountAsync();
+                var notifCount = await _db.notifications.LongCountAsync();
+                var regCount = await _db.registrations.LongCountAsync();
+                vm.TotalDatabaseRowsEstimated = userCount + eventCount + auditCount + notifCount + regCount;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error assembling SuperAdmin Master Dashboard data");
+            }
+
+            return View(vm);
+        }
+
         private void PopulateOverviewFallbacks(AdminOverviewViewModel vm)
         {
             vm.TotalUsers = 1245;
@@ -219,6 +357,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     .Include(u => u.department)
                     .Include(u => u._eventorganizers)
                     .Include(u => u.registrations)
+                    .Include(u => u.user_roleusers)
+                        .ThenInclude(ur => ur.assigned_byNavigation)
                     .AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(search))
@@ -227,7 +367,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     query = query.Where(u => u.first_name.ToLower().Contains(s) ||
                                              u.last_name.ToLower().Contains(s) ||
                                              u.email.ToLower().Contains(s) ||
-                                             u.username.ToLower().Contains(s));
+                                             u.username.ToLower().Contains(s) ||
+                                             (u.student_id != null && u.student_id.ToLower().Contains(s)) ||
+                                             (u.employee_id != null && u.employee_id.ToLower().Contains(s)));
                 }
 
                 if (!string.IsNullOrWhiteSpace(role) && role != "ALL")
@@ -242,29 +384,47 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
                 var list = await query.OrderByDescending(u => u.created_at).ToListAsync();
 
-                vm.Users = list.Select(u => new AdminUserRow
+                vm.Users = list.Select(u =>
                 {
-                    Id = u.id,
-                    FullName = $"{u.first_name} {u.last_name}".Trim(),
-                    Username = u.username,
-                    Email = u.email,
-                    Phone = u.phone,
-                    AccountType = u.account_type,
-                    Status = u.account_status,
-                    DepartmentName = u.department?.name ?? "General",
-                    CreatedAt = u.created_at,
-                    EventCount = u._eventorganizers.Count,
-                    RegistrationCount = u.registrations.Count
+                    var assignedBy = u.user_roleusers.FirstOrDefault(ur => ur.assigned_byNavigation != null)?.assigned_byNavigation;
+                    var regName = assignedBy != null ? $"{assignedBy.first_name} {assignedBy.last_name}".Trim() : null;
+                    return new AdminUserRow
+                    {
+                        Id = u.id,
+                        FullName = $"{u.first_name} {u.last_name}".Trim(),
+                        Username = u.username,
+                        Email = u.email,
+                        Phone = u.phone,
+                        StudentId = u.student_id,
+                        EmployeeId = u.employee_id,
+                        AccountType = u.account_type,
+                        Status = u.account_status,
+                        DepartmentName = u.department?.name ?? "General",
+                        RegisteredByAdminName = regName,
+                        RegisteredByAdminId = assignedBy?.id,
+                        Bio = u.bio,
+                        ProfileImageUrl = u.profile_image_url,
+                        CreatedAt = u.created_at,
+                        EventCount = u._eventorganizers.Count,
+                        RegistrationCount = u.registrations.Count
+                    };
                 }).ToList();
 
                 vm.TotalCount = vm.Users.Count;
                 vm.ActiveCount = vm.Users.Count(u => u.Status == "ACTIVE");
                 vm.SuspendedCount = vm.Users.Count(u => u.Status == "SUSPENDED");
-                vm.PendingCount = vm.Users.Count(u => u.Status == "PENDING");
+                vm.PendingCount = vm.Users.Count(u => u.Status == "PENDING" || u.Status == "PENDING_APPROVAL");
+                vm.PendingApprovalCount = vm.PendingCount;
+                vm.IsSuperAdmin = IsSuperAdmin();
+                vm.Departments = await _db.departments
+                    .Where(d => d.is_active == null || d.is_active == true)
+                    .OrderBy(d => d.name)
+                    .ToListAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error querying users");
+                vm.Departments = new List<Department>();
             }
 
             return View(vm);
@@ -400,6 +560,785 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteUser(ulong id) => await UserDelete(id);
 
+        // ---------------------------------------------------------
+        // USER PROVISIONING & APPROVAL WORKFLOW
+        // ---------------------------------------------------------
+
+        [HttpGet]
+        public async Task<IActionResult> RegisterUser(string? role = "STUDENT")
+        {
+            var selectedRole = string.IsNullOrWhiteSpace(role) ? "STUDENT" : role.Trim().ToUpperInvariant();
+            var vm = new AdminRegisterUserPageViewModel
+            {
+                IsSuperAdmin = IsSuperAdmin(),
+                SelectedRole = selectedRole,
+                Departments = await _db.departments
+                    .Include(d => d.faculty)
+                    .Where(d => d.is_active == null || d.is_active == true)
+                    .OrderBy(d => d.name)
+                    .ToListAsync(),
+                Faculties = await _db.faculties
+                    .Where(f => f.is_active == null || f.is_active == true)
+                    .OrderBy(f => f.name)
+                    .ToListAsync(),
+                TotalRegisteredUsersCount = await _db.users.CountAsync(),
+                PendingApprovalsCount = await _db.users.CountAsync(u => u.account_status == "PENDING" || u.account_status == "PENDING_APPROVAL"),
+                Form = new AdminCreateUserInputModel
+                {
+                    AccountType = selectedRole,
+                    Password = "HU@" + DateTime.UtcNow.Year + "!" + new Random().Next(100, 999)
+                }
+            };
+
+            return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CreateUser(string? role = "STUDENT") => await RegisterUser(role);
+
+        [HttpGet]
+        public async Task<IActionResult> UserCreate(string? role = "STUDENT") => await RegisterUser(role);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UserCreate(
+            string? firstName,
+            string? middleName,
+            string? lastName,
+            string? fullName,
+            string username,
+            string email,
+            string? phone,
+            string password,
+            string? accountType = "STUDENT",
+            ulong? departmentId = null,
+            ulong? facultyId = null,
+            string? studentId = null,
+            string? academicProgram = null,
+            string? yearOfStudy = null,
+            string? employeeId = null,
+            string? academicTitle = null,
+            string? staffUnit = null,
+            string? jobTitle = null,
+            string? officeLocation = null,
+            string? organizationName = null,
+            string? organizationType = null,
+            string? organizationAcronym = null,
+            string? bio = null,
+            string? profileImageUrl = null,
+            string? initialStatus = null,
+            bool sendWelcomeEmail = true)
+        {
+            try
+            {
+                // 1. Resolve & validate names
+                string finalFirst = (firstName ?? "").Trim();
+                string finalLast = (lastName ?? "").Trim();
+                string? finalMiddle = string.IsNullOrWhiteSpace(middleName) ? null : middleName.Trim();
+
+                if (string.IsNullOrWhiteSpace(finalFirst) && !string.IsNullOrWhiteSpace(fullName))
+                {
+                    var parts = fullName.Trim().Split(' ', 3, StringSplitOptions.RemoveEmptyEntries);
+                    finalFirst = parts.Length > 0 ? parts[0] : "User";
+                    if (parts.Length == 2)
+                    {
+                        finalLast = parts[1];
+                    }
+                    else if (parts.Length >= 3)
+                    {
+                        finalMiddle = parts[1];
+                        finalLast = parts[2];
+                    }
+                    else
+                    {
+                        finalLast = finalFirst;
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(finalFirst) || finalFirst.Length < 2)
+                {
+                    TempData["ErrorMessage"] = "Please enter a valid first name.";
+                    return RedirectToAction(nameof(RegisterUser), new { role = accountType });
+                }
+
+                if (string.IsNullOrWhiteSpace(finalLast))
+                {
+                    finalLast = finalFirst;
+                }
+
+                // 2. Validate Username
+                if (string.IsNullOrWhiteSpace(username) || username.Trim().Length < 3)
+                {
+                    TempData["ErrorMessage"] = "Username must be at least 3 characters.";
+                    return RedirectToAction(nameof(RegisterUser), new { role = accountType });
+                }
+
+                username = username.Trim().ToLowerInvariant().Replace(" ", "_");
+                if (await _db.users.AnyAsync(u => u.username.ToLower() == username))
+                {
+                    TempData["ErrorMessage"] = $"The username '{username}' is already in use. Please choose another username.";
+                    return RedirectToAction(nameof(RegisterUser), new { role = accountType });
+                }
+
+                // 3. Validate Email
+                if (string.IsNullOrWhiteSpace(email) || !email.Contains('@') || !email.Contains('.'))
+                {
+                    TempData["ErrorMessage"] = "Please provide a valid official email address.";
+                    return RedirectToAction(nameof(RegisterUser), new { role = accountType });
+                }
+
+                email = email.Trim().ToLowerInvariant();
+                if (await _db.users.AnyAsync(u => u.email.ToLower() == email))
+                {
+                    TempData["ErrorMessage"] = $"An account with email '{email}' already exists in the system.";
+                    return RedirectToAction(nameof(RegisterUser), new { role = accountType });
+                }
+
+                // 4. Validate Password
+                if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
+                {
+                    TempData["ErrorMessage"] = "Password must be at least 6 characters long.";
+                    return RedirectToAction(nameof(RegisterUser), new { role = accountType });
+                }
+
+                // 5. Validate Role Security
+                var normType = (accountType ?? "STUDENT").Trim().ToUpperInvariant();
+                if ((normType == "ADMIN" || normType == "SUPERADMIN") && !IsSuperAdmin())
+                {
+                    TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin accounts can create or promote Administrator accounts.";
+                    return RedirectToAction(nameof(Users));
+                }
+
+                // 6. Determine Initial Account Status
+                // If created by regular Admin: STRICTLY 'PENDING'
+                // If created by SuperAdmin: Can be 'ACTIVE' (default) or 'PENDING'
+                string statusToAssign = "PENDING";
+                bool isVerified = false;
+
+                if (IsSuperAdmin())
+                {
+                    statusToAssign = string.Equals(initialStatus, "PENDING", StringComparison.OrdinalIgnoreCase) ? "PENDING" : "ACTIVE";
+                    isVerified = statusToAssign == "ACTIVE";
+                }
+
+                // Construct comprehensive bio/metadata string if not provided
+                string? finalBio = !string.IsNullOrWhiteSpace(bio) ? bio.Trim() : null;
+                if (string.IsNullOrWhiteSpace(finalBio))
+                {
+                    if (normType == "STUDENT")
+                    {
+                        var prog = string.IsNullOrWhiteSpace(academicProgram) ? "Regular" : academicProgram.Trim();
+                        var yr = string.IsNullOrWhiteSpace(yearOfStudy) ? "1st Year" : yearOfStudy.Trim();
+                        finalBio = $"Student | {yr} ({prog})";
+                    }
+                    else if (normType == "FACULTY")
+                    {
+                        var title = string.IsNullOrWhiteSpace(academicTitle) ? "Faculty Member" : academicTitle.Trim();
+                        var office = string.IsNullOrWhiteSpace(officeLocation) ? "" : $" | Office: {officeLocation.Trim()}";
+                        finalBio = $"{title}{office}";
+                    }
+                    else if (normType == "STAFF")
+                    {
+                        var unit = string.IsNullOrWhiteSpace(staffUnit) ? "Campus Administration" : staffUnit.Trim();
+                        var title = string.IsNullOrWhiteSpace(jobTitle) ? "Staff Member" : jobTitle.Trim();
+                        finalBio = $"{title} - {unit}";
+                    }
+                    else if (normType == "ORGANIZATION")
+                    {
+                        var orgN = !string.IsNullOrWhiteSpace(organizationName) ? organizationName.Trim() : "Student Organization";
+                        finalBio = $"{orgN} - {organizationType ?? "Club"}";
+                    }
+                }
+
+                var newUser = new User
+                {
+                    username = username,
+                    email = email,
+                    phone = phone?.Trim(),
+                    password_hash = AccountController.HashPassword(password),
+                    first_name = finalFirst,
+                    middle_name = finalMiddle,
+                    last_name = finalLast,
+                    department_id = departmentId.HasValue && departmentId.Value > 0 ? departmentId.Value : null,
+                    student_id = normType == "STUDENT" ? studentId?.Trim() : null,
+                    employee_id = (normType == "STAFF" || normType == "FACULTY" || normType == "ADMIN") ? employeeId?.Trim() : null,
+                    profile_image_url = !string.IsNullOrWhiteSpace(profileImageUrl) ? profileImageUrl.Trim() : null,
+                    bio = finalBio,
+                    account_type = normType,
+                    account_status = statusToAssign,
+                    email_verified = isVerified,
+                    phone_verified = isVerified,
+                    created_at = DateTime.UtcNow,
+                    updated_at = DateTime.UtcNow
+                };
+
+                _db.users.Add(newUser);
+                await _db.SaveChangesAsync();
+
+                // 7. Link Role in user_roles table
+                string roleName = normType switch
+                {
+                    "SUPERADMIN" => "SuperAdmin",
+                    "ADMIN" => "Admin",
+                    "FACULTY" => "Faculty",
+                    "STAFF" => "Staff",
+                    "ORGANIZATION" => "Organization",
+                    _ => "Student"
+                };
+
+                var roleObj = await _db.roles.FirstOrDefaultAsync(r => r.name.ToLower() == roleName.ToLower());
+                if (roleObj != null)
+                {
+                    _db.user_roles.Add(new user_role
+                    {
+                        user_id = newUser.id,
+                        role_id = roleObj.id,
+                        assigned_by = GetCurrentUserId(),
+                        assigned_at = DateTime.UtcNow
+                    });
+                    await _db.SaveChangesAsync();
+                }
+
+                // 8. If organization, create or update organization entity
+                if (normType == "ORGANIZATION" && !string.IsNullOrWhiteSpace(organizationName))
+                {
+                    try
+                    {
+                        var org = new Organization
+                        {
+                            name = organizationName.Trim(),
+                            short_name = !string.IsNullOrWhiteSpace(organizationAcronym) ? organizationAcronym.Trim().ToUpperInvariant() : username.ToUpperInvariant(),
+                            organization_type = !string.IsNullOrWhiteSpace(organizationType) ? organizationType.Trim().ToUpperInvariant() : "CLUB",
+                            email = email,
+                            phone = phone?.Trim(),
+                            description = finalBio ?? $"Official campus organization registered by administration for {finalFirst} {finalLast}",
+                            status = statusToAssign,
+                            department_id = departmentId.HasValue && departmentId.Value > 0 ? departmentId.Value : null,
+                            created_at = DateTime.UtcNow,
+                            updated_at = DateTime.UtcNow
+                        };
+                        _db.organizations.Add(org);
+                        await _db.SaveChangesAsync();
+                    }
+                    catch (Exception orgEx)
+                    {
+                        _logger.LogWarning(orgEx, "Could not create corresponding organization record.");
+                    }
+                }
+
+                // 9. Security Audit Logging
+                var creatorName = GetCurrentUserName();
+                var isPending = statusToAssign == "PENDING";
+                var auditAction = isPending ? "USER_REGISTERED_BY_ADMIN_PENDING" : "USER_REGISTERED_BY_SUPERADMIN_ACTIVE";
+                var auditDesc = $"Admin '{creatorName}' registered user account '{username}' ({email}, Role: {roleName}, Status: {statusToAssign})";
+                await LogAuditAsync(auditAction, "USER", newUser.id, auditDesc);
+
+                // 10. Dispatch SuperAdmin In-App Notifications (If Pending)
+                if (isPending)
+                {
+                    try
+                    {
+                        var superAdmins = await _db.users
+                            .Where(u => u.account_type == "SUPERADMIN" || u.user_roleusers.Any(ur => ur.role.name == "SuperAdmin" || ur.role.name == "SUPERADMIN"))
+                            .ToListAsync();
+
+                        foreach (var sa in superAdmins)
+                        {
+                            _db.notifications.Add(new Notification
+                            {
+                                user_id = sa.id,
+                                title = "User Registration Awaiting Approval",
+                                message = $"Admin '{creatorName}' registered new {roleName} '{finalFirst} {finalLast}' (@{username}). Review & activate.",
+                                notification_type = "SYSTEM",
+                                related_entity_type = "USER",
+                                related_entity_id = newUser.id,
+                                action_url = "/Admin/UserApprovals",
+                                is_read = false,
+                                created_at = DateTime.UtcNow
+                            });
+                        }
+                        await _db.SaveChangesAsync();
+                    }
+                    catch (Exception notifEx)
+                    {
+                        _logger.LogWarning(notifEx, "Could not send notification to SuperAdmins for pending registration.");
+                    }
+                }
+
+                // 11. Automated Email Notification
+                if (sendWelcomeEmail)
+                {
+                    try
+                    {
+                        string emailSubject = isPending ? "Hawassa University Portal - Account Created (Pending SuperAdmin Approval)" : "Hawassa University Portal - Account Created & Activated";
+                        string emailBody = isPending ?
+                            $@"<h3>Hello {finalFirst},</h3>
+                               <p>Your campus account has been registered by Campus Administration (<strong>{creatorName}</strong>) with username <strong>{username}</strong>.</p>
+                               <p><strong>Role:</strong> {roleName}<br/>
+                               <strong>Account Status:</strong> Pending SuperAdmin Approval.</p>
+                               <p>Once the SuperAdmin approves and activates your account, you will be able to log in with your credentials.</p>
+                               <p>Hawassa Unified Campus Event Management System</p>" :
+                            $@"<h3>Welcome to HUCEMS, {finalFirst}!</h3>
+                               <p>Your campus account has been provisioned and activated by Campus Administration (<strong>{creatorName}</strong>).</p>
+                               <p><strong>Username:</strong> {username}<br/>
+                               <strong>Temporary Password:</strong> <code>{password}</code><br/>
+                               <strong>Role:</strong> {roleName}</p>
+                               <p>You can sign in immediately at: <a href='http://localhost:5110/Account/Login'>http://localhost:5110/Account/Login</a></p>
+                               <p>Hawassa Unified Campus Event Management System</p>";
+
+                        await _emailSender.SendEmailAsync(email, emailSubject, emailBody);
+                    }
+                    catch (Exception mailEx)
+                    {
+                        _logger.LogWarning(mailEx, "Could not send notification email to {Email}", email);
+                    }
+                }
+
+                if (isPending)
+                {
+                    TempData["SuccessMessage"] = $"User '{username}' ({finalFirst} {finalLast}) registered successfully! The account is in PENDING status awaiting SuperAdmin authorization.";
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = $"User '{username}' ({finalFirst} {finalLast}) registered and activated successfully!";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating user in Admin");
+                TempData["ErrorMessage"] = "Failed to create user: " + ex.Message;
+            }
+
+            return RedirectToAction(nameof(Users));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateUser(
+            string? firstName,
+            string? middleName,
+            string? lastName,
+            string? fullName,
+            string username,
+            string email,
+            string? phone,
+            string password,
+            string? accountType = "STUDENT",
+            ulong? departmentId = null,
+            ulong? facultyId = null,
+            string? studentId = null,
+            string? academicProgram = null,
+            string? yearOfStudy = null,
+            string? employeeId = null,
+            string? academicTitle = null,
+            string? staffUnit = null,
+            string? jobTitle = null,
+            string? officeLocation = null,
+            string? organizationName = null,
+            string? organizationType = null,
+            string? organizationAcronym = null,
+            string? bio = null,
+            string? profileImageUrl = null,
+            string? initialStatus = null,
+            bool sendWelcomeEmail = true) =>
+            await UserCreate(firstName, middleName, lastName, fullName, username, email, phone, password, accountType, departmentId, facultyId, studentId, academicProgram, yearOfStudy, employeeId, academicTitle, staffUnit, jobTitle, officeLocation, organizationName, organizationType, organizationAcronym, bio, profileImageUrl, initialStatus, sendWelcomeEmail);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UserApprove(ulong id, string? returnUrl = null)
+        {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin accounts have authorization to approve and activate pending user registrations.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            try
+            {
+                var user = await _db.users
+                    .Include(u => u.user_roleusers)
+                        .ThenInclude(ur => ur.assigned_byNavigation)
+                    .FirstOrDefaultAsync(u => u.id == id);
+
+                if (user == null)
+                {
+                    TempData["ErrorMessage"] = "User account not found.";
+                    return RedirectToAction(nameof(Users));
+                }
+
+                user.account_status = "ACTIVE";
+                user.email_verified = true;
+                user.phone_verified = true;
+                user.updated_at = DateTime.UtcNow;
+
+                // If organization account, activate corresponding organization record
+                if (user.account_type == "ORGANIZATION" && !string.IsNullOrWhiteSpace(user.email))
+                {
+                    var userEmailLower = user.email.ToLower();
+                    var org = await _db.organizations.FirstOrDefaultAsync(o => o.email != null && o.email.ToLower() == userEmailLower);
+                    if (org != null)
+                    {
+                        org.status = "ACTIVE";
+                        org.updated_at = DateTime.UtcNow;
+                    }
+                }
+
+                await _db.SaveChangesAsync();
+
+                var superAdminName = GetCurrentUserName();
+                await LogAuditAsync("USER_APPROVED_BY_SUPERADMIN", "USER", id, $"SuperAdmin '{superAdminName}' approved and activated user '{user.username}' ({user.email}, Role: {user.account_type})");
+
+                // Notify registering Admin if known
+                var assignedBy = user.user_roleusers.FirstOrDefault()?.assigned_byNavigation;
+                if (assignedBy != null && assignedBy.id != GetCurrentUserId())
+                {
+                    try
+                    {
+                        _db.notifications.Add(new Notification
+                        {
+                            user_id = assignedBy.id,
+                            title = "User Registration Approved",
+                            message = $"SuperAdmin '{superAdminName}' approved and activated user '{user.username}' ({user.first_name} {user.last_name}).",
+                            notification_type = "SYSTEM",
+                            related_entity_type = "USER",
+                            related_entity_id = user.id,
+                            action_url = "/Admin/Users",
+                            is_read = false,
+                            created_at = DateTime.UtcNow
+                        });
+                        await _db.SaveChangesAsync();
+                    }
+                    catch { }
+                }
+
+                // Send activation notification email
+                try
+                {
+                    string emailSubject = "Hawassa University Portal - Account Approved & Activated!";
+                    string emailBody = $@"<h3>Account Approved!</h3>
+                        <p>Hello {user.first_name} {user.last_name},</p>
+                        <p>Great news! Your Hawassa University portal account (<strong>{user.username}</strong>) has been approved and activated by the SuperAdmin.</p>
+                        <p>You can now sign in immediately at: <a href='http://localhost:5110/Account/Login'>http://localhost:5110/Account/Login</a></p>
+                        <p>Hawassa Unified Campus Event Management System</p>";
+
+                    await _emailSender.SendEmailAsync(user.email, emailSubject, emailBody);
+                }
+                catch (Exception mailEx)
+                {
+                    _logger.LogWarning(mailEx, "Could not send approval email to user {Email}", user.email);
+                }
+
+                TempData["SuccessMessage"] = $"Account for '{user.username}' ({user.first_name} {user.last_name}) has been approved and activated!";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error approving user {UserId}", id);
+                TempData["ErrorMessage"] = "Failed to approve user: " + ex.Message;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Users));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveUser(ulong id, string? returnUrl = null) => await UserApprove(id, returnUrl);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UserReject(ulong id, string? reason = null, string? returnUrl = null)
+        {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin accounts have authorization to reject user registrations.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            try
+            {
+                var user = await _db.users
+                    .Include(u => u.user_roleusers)
+                        .ThenInclude(ur => ur.assigned_byNavigation)
+                    .FirstOrDefaultAsync(u => u.id == id);
+
+                if (user == null)
+                {
+                    TempData["ErrorMessage"] = "User account not found.";
+                    return RedirectToAction(nameof(Users));
+                }
+
+                user.account_status = "INACTIVE";
+                user.updated_at = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+
+                var note = string.IsNullOrWhiteSpace(reason) ? "Administrative verification did not meet requirements." : reason.Trim();
+                var superAdminName = GetCurrentUserName();
+                await LogAuditAsync("USER_REJECTED_BY_SUPERADMIN", "USER", id, $"SuperAdmin '{superAdminName}' rejected user registration for '{user.username}' ({user.email}). Note: {note}");
+
+                // Notify registering Admin if known
+                var assignedBy = user.user_roleusers.FirstOrDefault()?.assigned_byNavigation;
+                if (assignedBy != null && assignedBy.id != GetCurrentUserId())
+                {
+                    try
+                    {
+                        _db.notifications.Add(new Notification
+                        {
+                            user_id = assignedBy.id,
+                            title = "User Registration Declined",
+                            message = $"SuperAdmin '{superAdminName}' declined registration for user '{user.username}'. Reason: {note}",
+                            notification_type = "SYSTEM",
+                            related_entity_type = "USER",
+                            related_entity_id = user.id,
+                            action_url = "/Admin/Users",
+                            is_read = false,
+                            created_at = DateTime.UtcNow
+                        });
+                        await _db.SaveChangesAsync();
+                    }
+                    catch { }
+                }
+
+                // Send rejection explanation email
+                try
+                {
+                    string emailSubject = "Hawassa University Portal - Registration Status Update";
+                    string emailBody = $@"<h3>Registration Status Update</h3>
+                        <p>Hello {user.first_name} {user.last_name},</p>
+                        <p>Your registration request for account <strong>{user.username}</strong> was reviewed by the SuperAdmin and could not be approved at this time.</p>
+                        <p><strong>Reason / Note:</strong> {note}</p>
+                        <p>If you believe this is an error, please contact your academic department administration.</p>
+                        <p>Hawassa Unified Campus Event Management System</p>";
+
+                    await _emailSender.SendEmailAsync(user.email, emailSubject, emailBody);
+                }
+                catch { }
+
+                TempData["SuccessMessage"] = $"Registration for user '{user.username}' has been declined and set to INACTIVE.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error rejecting user {UserId}", id);
+                TempData["ErrorMessage"] = "Failed to reject user: " + ex.Message;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Users));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BatchApproveUsers(List<ulong> userIds, string? returnUrl = null)
+        {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin accounts have authorization to approve users in bulk.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            if (userIds == null || !userIds.Any())
+            {
+                TempData["ErrorMessage"] = "No users selected for approval.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            int approvedCount = 0;
+            try
+            {
+                var usersToApprove = await _db.users
+                    .Where(u => userIds.Contains(u.id) && (u.account_status == "PENDING" || u.account_status == "PENDING_APPROVAL"))
+                    .ToListAsync();
+
+                foreach (var user in usersToApprove)
+                {
+                    user.account_status = "ACTIVE";
+                    user.email_verified = true;
+                    user.phone_verified = true;
+                    user.updated_at = DateTime.UtcNow;
+
+                    if (user.account_type == "ORGANIZATION" && !string.IsNullOrWhiteSpace(user.email))
+                    {
+                        var userEmailLower = user.email.ToLower();
+                        var org = await _db.organizations.FirstOrDefaultAsync(o => o.email != null && o.email.ToLower() == userEmailLower);
+                        if (org != null)
+                        {
+                            org.status = "ACTIVE";
+                            org.updated_at = DateTime.UtcNow;
+                        }
+                    }
+
+                    approvedCount++;
+                }
+
+                await _db.SaveChangesAsync();
+                await LogAuditAsync("BATCH_USERS_APPROVED_BY_SUPERADMIN", "USER", 0, $"SuperAdmin '{GetCurrentUserName()}' batch approved and activated {approvedCount} user accounts.");
+                TempData["SuccessMessage"] = $"Successfully approved and activated {approvedCount} user accounts in bulk!";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error batch approving users");
+                TempData["ErrorMessage"] = "Failed to batch approve users: " + ex.Message;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Users));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveAllPending(string? returnUrl = null)
+        {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin accounts have authorization to approve all users.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            int approvedCount = 0;
+            try
+            {
+                var pendingUsers = await _db.users
+                    .Where(u => u.account_status == "PENDING" || u.account_status == "PENDING_APPROVAL")
+                    .ToListAsync();
+
+                foreach (var user in pendingUsers)
+                {
+                    user.account_status = "ACTIVE";
+                    user.email_verified = true;
+                    user.phone_verified = true;
+                    user.updated_at = DateTime.UtcNow;
+
+                    if (user.account_type == "ORGANIZATION" && !string.IsNullOrWhiteSpace(user.email))
+                    {
+                        var userEmailLower = user.email.ToLower();
+                        var org = await _db.organizations.FirstOrDefaultAsync(o => o.email != null && o.email.ToLower() == userEmailLower);
+                        if (org != null)
+                        {
+                            org.status = "ACTIVE";
+                            org.updated_at = DateTime.UtcNow;
+                        }
+                    }
+
+                    approvedCount++;
+                }
+
+                await _db.SaveChangesAsync();
+                await LogAuditAsync("ALL_PENDING_USERS_APPROVED_BY_SUPERADMIN", "USER", 0, $"SuperAdmin '{GetCurrentUserName()}' approved and activated all {approvedCount} pending user accounts.");
+                TempData["SuccessMessage"] = $"Successfully approved and activated all {approvedCount} pending user accounts!";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error approving all pending users");
+                TempData["ErrorMessage"] = "Failed to approve all pending users: " + ex.Message;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Users));
+        }
+
+        // =========================================================
+        // DEDICATED SUPERADMIN USER APPROVALS CENTER
+        // =========================================================
+        [HttpGet]
+        public async Task<IActionResult> UserApprovals(string? search, string? role)
+        {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Access Restricted: User Registration Approvals & Account Activation is exclusive to Super Administrator accounts.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var vm = new AdminUserApprovalViewModel
+            {
+                SearchTerm = search,
+                RoleFilter = role,
+                IsSuperAdmin = true
+            };
+
+            try
+            {
+                var query = _db.users
+                    .Include(u => u.department)
+                        .ThenInclude(d => d!.faculty)
+                    .Include(u => u.user_roleusers)
+                        .ThenInclude(ur => ur.assigned_byNavigation)
+                    .Where(u => u.account_status == "PENDING" || u.account_status == "PENDING_APPROVAL")
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    query = query.Where(u => u.first_name.ToLower().Contains(s) ||
+                                             u.last_name.ToLower().Contains(s) ||
+                                             u.email.ToLower().Contains(s) ||
+                                             u.username.ToLower().Contains(s) ||
+                                             (u.student_id != null && u.student_id.ToLower().Contains(s)) ||
+                                             (u.employee_id != null && u.employee_id.ToLower().Contains(s)));
+                }
+
+                if (!string.IsNullOrWhiteSpace(role) && role != "ALL")
+                {
+                    query = query.Where(u => u.account_type == role);
+                }
+
+                var list = await query.OrderByDescending(u => u.created_at).ToListAsync();
+
+                vm.PendingUsers = list.Select(u =>
+                {
+                    var assignedBy = u.user_roleusers.FirstOrDefault(ur => ur.assigned_byNavigation != null)?.assigned_byNavigation;
+                    var regName = assignedBy != null ? $"{assignedBy.first_name} {assignedBy.last_name}".Trim() : "Campus Administrator";
+                    return new AdminUserApprovalItem
+                    {
+                        Id = u.id,
+                        FullName = $"{u.first_name} {u.last_name}".Trim(),
+                        Username = u.username,
+                        Email = u.email,
+                        Phone = u.phone,
+                        AccountType = u.account_type,
+                        Status = u.account_status,
+                        DepartmentName = u.department?.name ?? "General Campus",
+                        FacultyName = u.department?.faculty?.name,
+                        StudentId = u.student_id,
+                        EmployeeId = u.employee_id,
+                        Bio = u.bio,
+                        ProfileImageUrl = u.profile_image_url,
+                        RegisteredByAdminName = regName,
+                        RegisteredByAdminId = assignedBy?.id,
+                        RegisteredAt = u.created_at
+                    };
+                }).ToList();
+
+                var allPending = await _db.users.Where(u => u.account_status == "PENDING" || u.account_status == "PENDING_APPROVAL").ToListAsync();
+                vm.TotalPendingCount = allPending.Count;
+                vm.StudentPendingCount = allPending.Count(u => u.account_type == "STUDENT");
+                vm.FacultyPendingCount = allPending.Count(u => u.account_type == "FACULTY");
+                vm.StaffPendingCount = allPending.Count(u => u.account_type == "STAFF");
+                vm.OrganizationPendingCount = allPending.Count(u => u.account_type == "ORGANIZATION");
+
+                vm.Departments = await _db.departments
+                    .Where(d => d.is_active == null || d.is_active == true)
+                    .OrderBy(d => d.name)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading user approvals");
+            }
+
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectUser(ulong id, string? reason = null, string? returnUrl = null) => await UserReject(id, reason, returnUrl);
+
         // =========================================================
         // 3. EVENT MANAGEMENT
         // =========================================================
@@ -479,7 +1418,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EventApprove(ulong id)
         {
-            var evt = await _db.events.FindAsync(id);
+            var evt = await _db.events
+                .Include(e => e.organizer)
+                    .ThenInclude(o => o.department)
+                .FirstOrDefaultAsync(e => e.id == id);
+
             if (evt != null)
             {
                 evt.approval_status = "APPROVED";
@@ -487,6 +1430,60 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 evt.updated_at = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
                 await LogAuditAsync("EVENT_APPROVED", "EVENT", id, $"Approved and published event: {evt.title}");
+
+                // Personalization: Alert students subscribed to this department
+                if (evt.organizer?.department_id != null)
+                {
+                    try
+                    {
+                        var deptId = evt.organizer.department_id.Value;
+                        var deptName = evt.organizer.department?.name ?? "Academic Department";
+                        var subscribers = await _db.user_dept_subscriptions
+                            .Where(s => s.department_id == deptId && s.notify_on_new_event)
+                            .ToListAsync();
+
+                        foreach (var sub in subscribers)
+                        {
+                            if (sub.user_id != evt.organizer_id)
+                            {
+                                _db.notifications.Add(new Notification
+                                {
+                                    user_id = sub.user_id,
+                                    title = $"New Event: {deptName}",
+                                    message = $"{deptName} announced a newly approved event: '{evt.title}' on {evt.start_at:MMM dd, yyyy}. Register now!",
+                                    notification_type = "EVENT",
+                                    related_entity_type = "EVENT",
+                                    related_entity_id = evt.id,
+                                    action_url = $"/Events/Details/{evt.id}",
+                                    is_read = false,
+                                    created_at = DateTime.UtcNow
+                                });
+                            }
+                        }
+                        // Also notify the event organizer
+                        if (evt.organizer_id > 0)
+                        {
+                            _db.notifications.Add(new Notification
+                            {
+                                user_id = evt.organizer_id,
+                                title = "Event Approved & Live",
+                                message = $"Congratulations! Your event '{evt.title}' has been approved and published to the campus portal.",
+                                notification_type = "EVENT",
+                                related_entity_type = "EVENT",
+                                related_entity_id = evt.id,
+                                action_url = $"/Events/Details/{evt.id}",
+                                is_read = false,
+                                created_at = DateTime.UtcNow
+                            });
+                        }
+                        await _db.SaveChangesAsync();
+                    }
+                    catch (Exception notifEx)
+                    {
+                        _logger.LogWarning(notifEx, "Could not notify department subscribers for approved event {EventId}", id);
+                    }
+                }
+
                 TempData["SuccessMessage"] = $"Event '{evt.title}' approved and published successfully.";
             }
             return RedirectToAction(nameof(Events));
@@ -502,6 +1499,23 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 evt.approval_status = "REJECTED";
                 evt.status = "DRAFT";
                 evt.updated_at = DateTime.UtcNow;
+
+                if (evt.organizer_id > 0)
+                {
+                    _db.notifications.Add(new Notification
+                    {
+                        user_id = evt.organizer_id,
+                        title = "Event Submission Update",
+                        message = $"Your event '{evt.title}' requires review/updates. Feedback: {reason ?? "Admin discretion. Please review event guidelines."}",
+                        notification_type = "EVENT",
+                        related_entity_type = "EVENT",
+                        related_entity_id = evt.id,
+                        action_url = $"/Events/Details/{evt.id}",
+                        is_read = false,
+                        created_at = DateTime.UtcNow
+                    });
+                }
+
                 await _db.SaveChangesAsync();
                 await LogAuditAsync("EVENT_REJECTED", "EVENT", id, $"Rejected event: {evt.title}. Reason: {reason ?? "Admin discretion"}");
                 TempData["SuccessMessage"] = $"Event '{evt.title}' has been rejected.";
@@ -585,6 +1599,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var vm = new AdminAnnouncementsViewModel { SearchTerm = search };
             try
             {
+                vm.Departments = await _db.departments.Where(d => d.is_active == true).OrderBy(d => d.name).ToListAsync();
+
                 var query = _db.announcements
                     .Include(a => a.author)
                     .Include(a => a.department)
@@ -625,19 +1641,36 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AnnouncementCreate(string title, string content, string? priority, bool isPinned)
+        public async Task<IActionResult> AnnouncementCreate(
+            string title, 
+            string content, 
+            string? priority, 
+            bool isPinned,
+            string? announcementType = "GENERAL",
+            string? targetAudience = "ALL",
+            ulong? departmentId = null,
+            bool sendNotificationAlert = false)
         {
+            if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(content))
+            {
+                TempData["ErrorMessage"] = "Please provide both a title and content for the announcement.";
+                return RedirectToAction(nameof(Announcements));
+            }
+
             try
             {
+                var priorityVal = string.IsNullOrEmpty(priority) ? (isPinned ? "HIGH" : "NORMAL") : priority.ToUpperInvariant();
                 var ann = new Announcement
                 {
-                    title = title,
+                    title = title.Trim(),
                     slug = title.Trim().ToLower().Replace(" ", "-") + "-" + DateTime.UtcNow.Ticks,
-                    content = content,
-                    priority = string.IsNullOrEmpty(priority) ? (isPinned ? "HIGH" : "NORMAL") : priority,
-                    announcement_type = "GENERAL",
+                    content = content.Trim(),
+                    summary = content.Trim().Length > 150 ? content.Trim().Substring(0, 147) + "..." : content.Trim(),
+                    priority = priorityVal,
+                    announcement_type = !string.IsNullOrWhiteSpace(announcementType) ? announcementType.ToUpperInvariant() : "GENERAL",
                     status = "PUBLISHED",
                     author_id = GetCurrentUserId() ?? 1,
+                    department_id = (departmentId.HasValue && departmentId.Value > 0) ? departmentId.Value : null,
                     published_at = DateTime.UtcNow,
                     created_at = DateTime.UtcNow,
                     updated_at = DateTime.UtcNow
@@ -645,35 +1678,92 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 _db.announcements.Add(ann);
                 await _db.SaveChangesAsync();
                 await LogAuditAsync("ANNOUNCEMENT_CREATED", "ANNOUNCEMENT", ann.id, $"Published announcement: {title}");
-                TempData["SuccessMessage"] = "Announcement published successfully.";
+
+                // Automated Announcement Alerting: Dispatch in-app notifications to target users
+                var shouldAlert = sendNotificationAlert || priorityVal == "URGENT" || priorityVal == "HIGH";
+                if (shouldAlert)
+                {
+                    try
+                    {
+                        var audienceUpper = targetAudience?.Trim().ToUpperInvariant() ?? "ALL";
+                        IQueryable<User> targetQuery = _db.users.AsNoTracking()
+                            .Where(u => u.account_status != "SUSPENDED" && u.account_status != "LOCKED" && u.account_status != "INACTIVE");
+
+                        if (departmentId.HasValue && departmentId.Value > 0)
+                        {
+                            var deptId = departmentId.Value;
+                            var subscribedUserIds = await _db.user_dept_subscriptions
+                                .Where(s => s.department_id == deptId && s.notify_on_new_event)
+                                .Select(s => s.user_id)
+                                .ToListAsync();
+
+                            targetQuery = targetQuery.Where(u => u.department_id == deptId || subscribedUserIds.Contains(u.id));
+                        }
+                        else if (audienceUpper == "STUDENTS")
+                        {
+                            targetQuery = targetQuery.Where(u => u.account_type == "STUDENT");
+                        }
+                        else if (audienceUpper == "FACULTY")
+                        {
+                            targetQuery = targetQuery.Where(u => u.account_type == "FACULTY" || u.account_type == "STAFF");
+                        }
+                        else if (audienceUpper == "ORGANIZERS")
+                        {
+                            targetQuery = targetQuery.Where(u => u.account_type == "ORGANIZATION");
+                        }
+
+                        var recipientIds = await targetQuery.Select(u => u.id).Take(5000).ToListAsync();
+                        if (recipientIds.Any())
+                        {
+                            var notifTitle = priorityVal == "URGENT" ? $"🚨 URGENT: {ann.title}" : $"📢 Announcement: {ann.title}";
+                            var notifMessage = ann.summary ?? (ann.content.Length > 120 ? ann.content.Substring(0, 117) + "..." : ann.content);
+                            var now = DateTime.UtcNow;
+
+                            var notifications = recipientIds.Select(uid => new Notification
+                            {
+                                user_id = uid,
+                                title = notifTitle,
+                                message = notifMessage,
+                                notification_type = "ANNOUNCEMENT",
+                                related_entity_type = "ANNOUNCEMENT",
+                                related_entity_id = ann.id,
+                                action_url = $"/Announcements/Details/{ann.id}",
+                                is_read = false,
+                                created_at = now
+                            }).ToList();
+
+                            _db.notifications.AddRange(notifications);
+                            await _db.SaveChangesAsync();
+                        }
+                    }
+                    catch (Exception alertEx)
+                    {
+                        _logger.LogWarning(alertEx, "Failed to dispatch automated announcement alert notifications.");
+                    }
+                }
+
+                TempData["SuccessMessage"] = "Announcement published and target recipients alerted successfully.";
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating announcement");
-                TempData["ErrorMessage"] = "Failed to publish announcement.";
+                TempData["ErrorMessage"] = "Failed to publish announcement: " + ex.Message;
             }
             return RedirectToAction(nameof(Announcements));
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AnnouncementTogglePin(ulong id)
-        {
-            var ann = await _db.announcements.FindAsync(id);
-            if (ann != null)
-            {
-                ann.priority = ann.priority == "HIGH" ? "NORMAL" : "HIGH";
-                ann.updated_at = DateTime.UtcNow;
-                await _db.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Announcement priority updated.";
-            }
-            return RedirectToAction(nameof(Announcements));
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateAnnouncement(string title, string content, string? priority, bool isPinned)
-            => await AnnouncementCreate(title, content, priority, isPinned);
+        public async Task<IActionResult> CreateAnnouncement(
+            string title, 
+            string content, 
+            string? priority, 
+            bool isPinned,
+            string? announcementType = "GENERAL",
+            string? targetAudience = "ALL",
+            ulong? departmentId = null,
+            bool sendNotificationAlert = false)
+            => await AnnouncementCreate(title, content, priority, isPinned, announcementType, targetAudience, departmentId, sendNotificationAlert);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -1642,7 +2732,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var vm = new AdminNotificationsViewModel();
             try
             {
-                vm.Departments = await _db.departments.OrderBy(d => d.name).ToListAsync();
+                vm.Departments = await _db.departments.Where(d => d.is_active == true).OrderBy(d => d.name).ToListAsync();
+                vm.Users = await _db.users.AsNoTracking().Where(u => u.account_status == "ACTIVE").OrderBy(u => u.first_name).Take(100).ToListAsync();
 
                 var list = await _db.notifications
                     .OrderByDescending(n => n.created_at)
@@ -1654,12 +2745,13 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     Id = n.id,
                     Title = n.title,
                     Message = n.message,
-                    TargetAudience = n.related_entity_type == "BROADCAST" ? "Campus Broadcast" : "Campus Members",
+                    TargetAudience = n.related_entity_type == "BROADCAST" ? "Campus Broadcast" : n.related_entity_type == "DIRECT" ? "Direct User Alert" : "Campus Alert",
                     Type = n.notification_type,
                     CreatedAt = n.created_at
                 }).ToList();
 
                 vm.TotalSent = await _db.notifications.CountAsync();
+                vm.UnreadCount = await _db.notifications.CountAsync(n => !n.is_read);
             }
             catch (Exception ex)
             {
@@ -1670,7 +2762,15 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> NotificationSend(string title, string message, string? targetAudience)
+        public async Task<IActionResult> NotificationSend(
+            string title, 
+            string message, 
+            string? targetAudience,
+            ulong? departmentId = null,
+            ulong? targetUserId = null,
+            string? targetUsername = null,
+            string? notificationType = "ANNOUNCEMENT",
+            string? actionUrl = null)
         {
             if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(message))
             {
@@ -1679,11 +2779,50 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             }
 
             var audienceUpper = targetAudience?.Trim().ToUpperInvariant() ?? "ALL";
+            var typeVal = !string.IsNullOrWhiteSpace(notificationType) ? notificationType.ToUpperInvariant() : "ANNOUNCEMENT";
+
+            // Case 1: Specific single user direct alert
+            if (audienceUpper == "SPECIFIC_USER")
+            {
+                ulong? recipientId = targetUserId;
+                if (!recipientId.HasValue && !string.IsNullOrWhiteSpace(targetUsername))
+                {
+                    var u = await _db.users.FirstOrDefaultAsync(x => x.username == targetUsername.Trim() || x.email == targetUsername.Trim());
+                    if (u != null) recipientId = u.id;
+                }
+
+                if (!recipientId.HasValue)
+                {
+                    TempData["ErrorMessage"] = "Specified user could not be located.";
+                    return RedirectToAction(nameof(Notifications));
+                }
+
+                var directNotif = new Notification
+                {
+                    user_id = recipientId.Value,
+                    title = title.Trim(),
+                    message = message.Trim(),
+                    notification_type = typeVal,
+                    related_entity_type = "DIRECT",
+                    action_url = actionUrl,
+                    is_read = false,
+                    created_at = DateTime.UtcNow
+                };
+                _db.notifications.Add(directNotif);
+                await _db.SaveChangesAsync();
+
+                await LogAuditAsync("DIRECT_NOTIFICATION_SENT", "NOTIFICATION", directNotif.id, $"Sent direct alert to user {recipientId.Value}: '{title.Trim()}'");
+                TempData["SuccessMessage"] = $"Direct notification successfully delivered to user (ID: {recipientId.Value}).";
+                return RedirectToAction(nameof(Notifications));
+            }
+
+            // Case 2: Broadcast or Group-targeted alerts
             var audienceLabel = audienceUpper switch
             {
                 "STUDENTS" => "Students Only",
                 "FACULTY" => "Faculty & Staff Only",
                 "ORGANIZERS" => "Club Leaders & Organizers",
+                "DEPARTMENT" => "Specific Academic Department",
                 _ => "All Campus Members"
             };
 
@@ -1711,6 +2850,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     {
                         query = query.Where(u => u.account_type == "ORGANIZATION");
                     }
+                    else if (audienceUpper == "DEPARTMENT" && departmentId.HasValue && departmentId.Value > 0)
+                    {
+                        var deptId = departmentId.Value;
+                        query = query.Where(u => u.department_id == deptId);
+                    }
 
                     var batchUserIds = await query
                         .OrderBy(u => u.id)
@@ -1729,8 +2873,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         user_id = uid,
                         title = title.Trim(),
                         message = message.Trim(),
-                        notification_type = "ANNOUNCEMENT",
+                        notification_type = typeVal,
                         related_entity_type = "BROADCAST",
+                        action_url = actionUrl,
                         is_read = false,
                         created_at = now
                     }).ToList();
@@ -1748,7 +2893,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 await LogAuditAsync("BROADCAST_NOTIFICATION_SENT", "NOTIFICATION", null,
                     $"Sent broadcast notification '{title.Trim()}' to {totalDispatched} recipients (Audience: {audienceLabel}).");
 
-                TempData["SuccessMessage"] = $"Notification successfully broadcasted to {totalDispatched} campus members ({audienceLabel}).";
+                TempData["SuccessMessage"] = $"Notification successfully dispatched to {totalDispatched} campus members ({audienceLabel}).";
             }
             catch (Exception ex)
             {
@@ -1773,6 +2918,12 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =========================================================
         public async Task<IActionResult> Roles()
         {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Access Restricted: Role-Based Access Control (RBAC) is exclusive to Super Administrator accounts.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var vm = new AdminRolesPermissionsViewModel();
             try
             {
@@ -1997,6 +3148,12 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =========================================================
         public async Task<IActionResult> AuditLogs(string? search)
         {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Access Restricted: Security Audit Logs are exclusive to Super Administrator accounts.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var vm = new AdminAuditLogsViewModel { SearchTerm = search };
             try
             {
@@ -2100,6 +3257,12 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> Settings()
         {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Access Restricted: Platform Configuration & System Settings are exclusive to Super Administrator accounts.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var vm = new AdminSettingsViewModel();
             try
             {
@@ -2233,12 +3396,21 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 var facultyCount = await _db.faculties.LongCountAsync();
                 var roleCount = await _db.roles.LongCountAsync();
 
-                vm.EstimatedTotalRows = userCount + eventCount + announcementCount + auditLogCount + orgCount + deptCount + venueCount + regCount + commentCount + facultyCount + roleCount;
+                var clubCount = await _db.clubs.LongCountAsync();
+                var clubInterestCount = await _db.club_interests.LongCountAsync();
+                var followerCount = await _db.club_followers.LongCountAsync();
+                var memberCount = await _db.club_members.LongCountAsync();
+
+                vm.EstimatedTotalRows = userCount + eventCount + announcementCount + auditLogCount + orgCount + deptCount + venueCount + regCount + commentCount + facultyCount + roleCount + clubCount + clubInterestCount + followerCount + memberCount;
 
                 vm.TableStats = new List<DatabaseTableStatItem>
                 {
                     new() { TableName = "users", RowCount = userCount, Description = "Registered student, faculty, staff and admin identity records." },
                     new() { TableName = "events", RowCount = eventCount, Description = "Master campus event schedule, details and capacity." },
+                    new() { TableName = "clubs", RowCount = clubCount, Description = "Interest-based campus clubs, technical guilds, and student societies." },
+                    new() { TableName = "club_interests", RowCount = clubInterestCount, Description = "Multi-category interest tags assigned to campus clubs." },
+                    new() { TableName = "club_followers", RowCount = followerCount, Description = "Student club following subscriptions for event feeds." },
+                    new() { TableName = "club_members", RowCount = memberCount, Description = "Official membership applications and approved rosters." },
                     new() { TableName = "announcements", RowCount = announcementCount, Description = "Official broadcasts, circulars, and community feeds." },
                     new() { TableName = "audit_logs", RowCount = auditLogCount, Description = "Security access, auth events, and critical audit trails." },
                     new() { TableName = "registrations", RowCount = regCount, Description = "Student attendance tickets and event reservations." },
@@ -2966,6 +4138,17 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     new() { Name = "department_id", DisplayName = "Dept ID", DataType = "number" },
                     new() { Name = "created_at", DisplayName = "Created At", DataType = "datetime", IsReadOnly = true }
                 },
+                "clubs" => new List<DatabaseColumnMeta>
+                {
+                    new() { Name = "id", DisplayName = "ID", DataType = "number", IsPrimaryKey = true, IsReadOnly = true },
+                    new() { Name = "name", DisplayName = "Club Name", DataType = "string", IsRequired = true },
+                    new() { Name = "slug", DisplayName = "Slug", DataType = "string", IsRequired = true },
+                    new() { Name = "short_name", DisplayName = "Short Name", DataType = "string" },
+                    new() { Name = "status", DisplayName = "Status", DataType = "enum", EnumOptions = new() { "ACTIVE", "PENDING", "SUSPENDED", "INACTIVE" }, DefaultValue = "ACTIVE" },
+                    new() { Name = "department_id", DisplayName = "Dept ID", DataType = "number" },
+                    new() { Name = "president_id", DisplayName = "President ID", DataType = "number" },
+                    new() { Name = "created_at", DisplayName = "Created At", DataType = "datetime", IsReadOnly = true }
+                },
                 "departments" => new List<DatabaseColumnMeta>
                 {
                     new() { Name = "id", DisplayName = "ID", DataType = "number", IsPrimaryKey = true, IsReadOnly = true },
@@ -3155,6 +4338,30 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                                 ["phone"] = i.phone,
                                 ["status"] = i.status,
                                 ["department_id"] = i.department_id,
+                                ["created_at"] = i.created_at.ToString("yyyy-MM-dd HH:mm")
+                            });
+                        }
+                    }
+                    break;
+
+                case "clubs":
+                    {
+                        var q = _db.clubs.AsQueryable();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            q = q.Where(c => c.name.ToLower().Contains(s) || (c.short_name != null && c.short_name.ToLower().Contains(s)));
+                        total = await q.CountAsync();
+                        var items = await q.OrderByDescending(c => c.id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+                        foreach (var i in items)
+                        {
+                            rows.Add(new Dictionary<string, object?>
+                            {
+                                ["id"] = i.id,
+                                ["name"] = i.name,
+                                ["slug"] = i.slug,
+                                ["short_name"] = i.short_name,
+                                ["status"] = i.status,
+                                ["department_id"] = i.department_id,
+                                ["president_id"] = i.president_id,
                                 ["created_at"] = i.created_at.ToString("yyyy-MM-dd HH:mm")
                             });
                         }

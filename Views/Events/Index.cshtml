@@ -1,326 +1,170 @@
 @model IEnumerable<HawassaUnifiedCampusEventManagementSystem.Models.Event>
 
 @{
-    ViewData["Title"] = "Events";
+    ViewData["Title"] = "Campus Events Directory | HUCEMS";
 }
 
 @section Styles {
-
-    <link rel="stylesheet"
-          href="~/css/events.css"
-          asp-append-version="true" />
-
+    <link rel="stylesheet" href="~/css/events.css" asp-append-version="true" />
 }
 
-<div class="events-page">
-
-    <div class="container">
-
-        <!-- =====================================================
-             HEADER
-             ===================================================== -->
-
-        <div class="events-header">
-
-            <div>
-
-                <span class="events-eyebrow">
-                    HUCEMS EVENTS
-                </span>
-
-                <h1>
-                    Discover Campus Events
-                </h1>
-
-                <p>
-                    Find events, workshops, seminars, activities,
-                    clubs and opportunities happening across campus.
-                </p>
-
-            </div>
-
-
-            <div>
-                @if (User.Identity?.IsAuthenticated == true)
-                {
-                    <a asp-controller="Events"
-                       asp-action="Create"
-                       class="events-create-button">
-                        <i class="bi bi-plus-lg"></i>
-                        Create Event
-                    </a>
-                }
-                else
-                {
-                    <a asp-controller="Account"
-                       asp-action="Register"
-                       asp-route-returnUrl="/Events/Create"
-                       class="events-create-button">
-                        <i class="bi bi-person-plus"></i>
-                        Register to Create Event
-                    </a>
-                }
-            </div>
-
-        </div>
-
-
-        <!-- =====================================================
-             SUCCESS MESSAGE
-             ===================================================== -->
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="events-alert">
-
-                <i class="bi bi-check-circle-fill"></i>
-
-                <span>
-                    @TempData["SuccessMessage"]
-                </span>
-
-            </div>
-        }
-
-
-        <!-- =====================================================
-             SEARCH / FILTER
-             ===================================================== -->
-
-        <form asp-controller="Events"
-              asp-action="Index"
-              method="get"
-              class="events-filter">
-
-            <div class="events-search">
-
-                <i class="bi bi-search"></i>
-
-                <input type="search"
-                       name="search"
-                       value="@ViewBag.Search"
-                       placeholder="Search events..." />
-
-            </div>
-
-
-            <select name="category"
-                    class="events-category-select">
-
-                <option value="">
-                    All Categories
-                </option>
-
-                <option value="Technology">
-                    Technology
-                </option>
-
-                <option value="Business">
-                    Business
-                </option>
-
-                <option value="Culture">
-                    Culture
-                </option>
-
-                <option value="Cybersecurity">
-                    Cybersecurity
-                </option>
-
-                <option value="Sports">
-                    Sports
-                </option>
-
-                <option value="Academic">
-                    Academic
-                </option>
-
-                <option value="Social">
-                    Social
-                </option>
-
-            </select>
-
-
-            <button type="submit"
-                    class="events-filter-button">
-
-                <i class="bi bi-funnel"></i>
-
-                Filter
-
-            </button>
-
-
-            <a asp-controller="Events"
-               asp-action="Index"
-               class="events-clear-button">
-
-                Clear
-
-            </a>
-
-        </form>
-
-
-        <!-- =====================================================
-             EVENT COUNT
-             ===================================================== -->
-
-        <div class="events-result-header">
-
-            <strong>
-                @Model.Count() Events
-            </strong>
-
-            <span>
-                Upcoming campus activities
+<div class="container py-5">
+    <!-- PAGE HEADER -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 pb-3 border-bottom">
+        <div>
+            <span class="badge bg-primary-subtle text-primary fw-bold px-3 py-1 rounded-pill mb-2">
+                <i class="bi bi-calendar2-range me-1"></i> Hawassa University Activities
             </span>
-
+            <h1 class="h2 fw-bold text-dark mb-1">Campus Events Directory</h1>
+            <p class="text-muted small mb-0">Explore academic conferences, workshops, sports tournaments, and student club activities.</p>
         </div>
 
-
-        <!-- =====================================================
-             EVENTS
-             ===================================================== -->
-        @if (Model.Any())
-        {
-            <div class="events-grid">
-
-                @foreach (var item in Model)
-                {
-                    <article class="event-card">
-
-
-                        <!-- EVENT DATE -->
-
-                        <div class="event-date">
-
-                            <span class="event-month">
-                                @item.EventDate.ToString("MMM")
-                            </span>
-
-                            <strong>
-                                @item.EventDate.Day
-                            </strong>
-
-                            <span>
-                                @item.EventDate.ToString("ddd")
-                            </span>
-
-                        </div>
-
-
-                        <!-- EVENT CONTENT -->
-
-                        <div class="event-content">
-
-                            <div class="event-card-top">
-
-                                <span class="event-category">
-
-                                    @item.Category
-
-                                </span>
-
-                            </div>
-
-
-                            <h2>
-
-                                @item.Title
-
-                            </h2>
-
-
-                            <p class="event-description">
-
-                                @(!string.IsNullOrEmpty(item.Description) && item.Description.Length > 150
-                                    ? item.Description.Substring(0, 150) + "..."
-                                    : item.Description ?? string.Empty)
-
-                            </p>
-
-
-                            <div class="event-meta">
-
-                                <span>
-
-                                    <i class="bi bi-clock"></i>
-
-                                    @item.StartTime.ToString(@"hh\:mm")
-
-                                </span>
-
-
-                                <span>
-
-                                    <i class="bi bi-geo-alt"></i>
-
-                                    @item.Venue
-
-                                </span>
-
-                            </div>
-
-
-                            <div class="event-card-footer">
-
-                                <span>
-
-                                    <i class="bi bi-person"></i>
-
-                                    @item.Organizer
-
-                                </span>
-
-
-                                <a asp-controller="Events"
-                                   asp-action="Details"
-                                   asp-route-id="@item.Id">
-
-                                    View Details
-
-                                    <i class="bi bi-arrow-right"></i>
-
-                                </a>
-
-                            </div>
-
-                        </div>
-
-                    </article>
-                }
-
-            </div>
-        }
-        else
-        {
-            <div class="events-empty">
-
-                <div class="events-empty-icon">
-
-                    <i class="bi bi-calendar-x"></i>
-
-                </div>
-
-                <h2>
-                    No events found
-                </h2>
-
-                <p>
-                    Try another search or category.
-                </p>
-
-                <a asp-controller="Events"
-                   asp-action="Index">
-
-                    Show All Events
-
+        <div>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-controller="Events" asp-action="Create" class="btn btn-primary px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-sm">
+                    <i class="bi bi-plus-circle-fill"></i>
+                    <span>Create Event</span>
                 </a>
-
-            </div>
-        }
-
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="/Events/Create" class="btn btn-outline-primary px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    <span>Sign In to Create Event</span>
+                </a>
+            }
+        </div>
     </div>
 
+    <!-- SUCCESS ALERT -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4 rounded-3 p-3 d-flex align-items-center gap-2" role="alert">
+            <i class="bi bi-check-circle-fill fs-4 text-success"></i>
+            <span class="small fw-semibold">@TempData["SuccessMessage"]</span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- FILTER BAR -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+        <form asp-controller="Events" asp-action="Index" method="get" class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="search" name="search" value="@ViewBag.Search" class="form-control border-start-0" placeholder="Search events by title, keyword, or venue..." />
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <select name="category" class="form-select">
+                    <option value="">All Categories</option>
+                    <option value="Academic">Academic & Conferences</option>
+                    <option value="Technology">Technology & Innovation</option>
+                    <option value="Cultural">Cultural & Arts</option>
+                    <option value="Sports">Sports & Athletics</option>
+                    <option value="Workshop">Workshops & Training</option>
+                    <option value="Social">Social & Community</option>
+                </select>
+            </div>
+
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary fw-semibold flex-grow-1">
+                    <i class="bi bi-funnel me-1"></i> Filter
+                </button>
+                <a asp-controller="Events" asp-action="Index" class="btn btn-outline-secondary">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- EVENTS RESULT COUNT -->
+    <div class="d-flex justify-content-between align-items-center mb-3 text-muted small">
+        <span>Showing <strong>@Model.Count()</strong> scheduled events</span>
+        <span>Hawassa University Main, IoT & Health Campuses</span>
+    </div>
+
+    <!-- EVENTS GRID -->
+    @if (Model.Any())
+    {
+        <div class="row g-4">
+            @foreach (var item in Model)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column transition-all" style="border: 1px solid #e2e8f0 !important;">
+                        <!-- EVENT IMAGE & DATE BADGE -->
+                        <div class="position-relative" style="height: 180px; background: #f1f5f9; overflow: hidden;">
+                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+                            {
+                                <img src="@item.ImageUrl" alt="@item.Title" class="w-100 h-100 object-fit-cover" />
+                            }
+                            else
+                            {
+                                <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80" alt="@item.Title" class="w-100 h-100 object-fit-cover" />
+                            }
+                            <div class="position-absolute top-0 start-0 m-3 bg-white text-dark rounded-3 px-2 py-1 text-center shadow-sm" style="min-width: 50px;">
+                                <strong class="d-block text-primary fs-5 lh-1">@item.EventDate.Day</strong>
+                                <small class="text-uppercase fw-bold text-muted" style="font-size: 10px;">@item.EventDate.ToString("MMM")</small>
+                            </div>
+                            @if (!string.IsNullOrEmpty(item.Category))
+                            {
+                                <span class="position-absolute top-0 end-0 m-3 badge bg-dark bg-opacity-75 text-white">
+                                    @item.Category
+                                </span>
+                            }
+                        </div>
+
+                        <!-- EVENT BODY -->
+                        <div class="card-body p-4 d-flex flex-column flex-grow-1">
+                            <h5 class="card-title fw-bold text-dark mb-2 line-clamp-2">
+                                <a asp-controller="Events" asp-action="Details" asp-route-id="@item.Id" class="text-dark text-decoration-none hover-primary">
+                                    @item.Title
+                                </a>
+                            </h5>
+
+                            <p class="card-text text-muted small mb-3 flex-grow-1" style="line-height: 1.5;">
+                                @(string.IsNullOrEmpty(item.ShortDescription) ? (item.Description != null && item.Description.Length > 110 ? item.Description.Substring(0, 110) + "..." : item.Description) : item.ShortDescription)
+                            </p>
+
+                            <div class="small text-secondary mb-3">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <i class="bi bi-geo-alt text-danger"></i>
+                                    <span class="text-truncate">@(string.IsNullOrEmpty(item.Venue) ? "Main Campus Hall" : item.Venue)</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-clock text-primary"></i>
+                                    <span>@item.StartTime.ToString(@"hh\:mm") @(item.EndTime.HasValue ? "- " + item.EndTime.Value.ToString(@"hh\:mm") : "")</span>
+                                </div>
+                            </div>
+
+                            <!-- EVENT FOOTER / RSVP -->
+                            <div class="pt-3 border-top d-flex align-items-center justify-content-between">
+                                <span class="small text-muted">
+                                    <i class="bi bi-people me-1"></i> @item.RegisteredCount / @(item.Capacity.HasValue ? item.Capacity.Value.ToString() : "Open")
+                                </span>
+                                <a asp-controller="Events" asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-primary px-3 fw-semibold">
+                                    View & RSVP &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5 bg-white rounded-4 border p-5 shadow-sm">
+            <i class="bi bi-calendar-x fs-1 text-muted mb-3 d-block"></i>
+            <h4 class="fw-bold text-dark">No Events Found</h4>
+            <p class="text-muted small mx-auto" style="max-width: 420px;">
+                No scheduled activities match your search criteria. Try selecting a different category or clearing filters.
+            </p>
+            <a asp-controller="Events" asp-action="Index" class="btn btn-outline-primary btn-sm mt-2">
+                Show All Events
+            </a>
+        </div>
+    }
 </div>

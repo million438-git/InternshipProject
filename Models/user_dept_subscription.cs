@@ -6,15 +6,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HawassaUnifiedCampusEventManagementSystem.Models;
 
-[PrimaryKey("user_id", "department_id")]
 [Index("department_id", Name = "idx_user_dept_sub_department")]
+[Index("user_id", Name = "idx_user_dept_sub_user")]
+[Index("user_id", "department_id", Name = "uq_user_dept_subscription", IsUnique = true)]
 public partial class user_dept_subscription
 {
     [Key]
+    public ulong sub_id { get; set; }
+
     public ulong user_id { get; set; }
 
-    [Key]
     public ulong department_id { get; set; }
+
+    public bool notify_on_new_event { get; set; } = true;
 
     [MaxLength(6)]
     public DateTime subscribed_at { get; set; }
@@ -27,3 +31,4 @@ public partial class user_dept_subscription
     [InverseProperty("user_dept_subscriptions")]
     public virtual User user { get; set; } = null!;
 }
+

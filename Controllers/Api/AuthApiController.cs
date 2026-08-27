@@ -99,9 +99,19 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers.Api
                     return Unauthorized(new { success = false, message = "Invalid email/username or password." });
                 }
 
-                if (dbUser.account_status == "SUSPENDED" || dbUser.account_status == "LOCKED")
+                if (dbUser.account_status == "PENDING" || dbUser.account_status == "PENDING_APPROVAL")
                 {
-                    return StatusCode(403, new { success = false, message = "Account is suspended or locked." });
+                    return StatusCode(403, new { success = false, message = "Your account is pending SuperAdmin approval before activation." });
+                }
+
+                if (dbUser.account_status == "SUSPENDED" || dbUser.account_status == "LOCKED" || dbUser.account_status == "INACTIVE")
+                {
+                    return StatusCode(403, new { success = false, message = "Account is inactive, suspended, or locked. Please contact campus administration." });
+                }
+
+                if (dbUser.account_status != "ACTIVE")
+                {
+                    return StatusCode(403, new { success = false, message = "Account is not active." });
                 }
 
                 // Resolve user role

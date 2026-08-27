@@ -1,0 +1,503 @@
+@model HawassaUnifiedCampusEventManagementSystem.Models.PersonalizationPreferencesViewModel
+@{
+    ViewData["Title"] = "Personalization & Notification Hub";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <style>
+        .pref-hero {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0c4a6e 100%);
+            border-radius: 1.5rem;
+            color: #fff;
+            padding: 2.5rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .pref-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, rgba(0, 0, 0, 0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .pref-stat-card {
+            background: #fff;
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.25s ease;
+        }
+        .pref-stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .category-interest-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 1.25rem;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            user-select: none;
+        }
+        .category-interest-card:hover {
+            border-color: #0284c7;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px -2px rgba(2, 132, 199, 0.12);
+        }
+        .category-interest-card.active {
+            border-color: #0284c7;
+            background: #f0f9ff;
+            box-shadow: 0 0 0 1px #0284c7;
+        }
+        .dept-sub-card {
+            background: #fff;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+        }
+        .dept-sub-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+        }
+        .dept-sub-card.subscribed {
+            border-left: 4px solid #10b981;
+            background: #fcfdfc;
+        }
+        .pill-tag {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+            font-weight: 600;
+        }
+    </style>
+}
+
+<div class="container py-4">
+
+    <!-- Anti-Forgery Token for AJAX calls -->
+    @Html.AntiForgeryToken()
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Account" asp-action="Profile" class="text-decoration-none">My Profile</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Personalization & Subscriptions</li>
+        </ol>
+    </nav>
+
+    <!-- Feedback Alerts -->
+    <div id="ajaxAlertContainer"></div>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Hero Banner -->
+    <div class="pref-hero mb-4 shadow">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-white bg-opacity-10 rounded-pill mb-3 text-cyan border border-white border-opacity-25" style="font-size: 13px;">
+                    <i class="bi bi-person-lines-fill"></i>
+                    <span>Personalized Campus Experience Engine</span>
+                </div>
+                <h1 class="display-6 fw-bold mb-2">Campus Personalization & Alerts</h1>
+                <p class="text-light text-opacity-75 mb-0" style="max-width: 650px;">
+                    Tailor your Hawassa University event discovery feed, follow academic departments for instant new event push notifications, and customize your topic interests.
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
+                <a asp-controller="Account" asp-action="Profile" class="btn btn-outline-light rounded-pill px-4 me-2">
+                    <i class="bi bi-person-circle me-1"></i> Profile
+                </a>
+                <a asp-controller="Dashboard" asp-action="Student" class="btn btn-primary rounded-pill px-4 shadow-sm" style="background-color: #0284c7; border: none;">
+                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Personalization KPI Metrics -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="pref-stat-card d-flex align-items-center gap-3">
+                <div class="p-3 bg-primary-subtle text-primary rounded-4">
+                    <i class="bi bi-tags-fill fs-3"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-semibold text-uppercase">Topic Interests</div>
+                    <div class="fs-3 fw-bold text-dark" id="selectedCatsCounter">@Model.SelectedCategoriesCount</div>
+                    <small class="text-muted">Selected event categories</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="pref-stat-card d-flex align-items-center gap-3">
+                <div class="p-3 bg-success-subtle text-success rounded-4">
+                    <i class="bi bi-building-check fs-3"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-semibold text-uppercase">Subscribed Departments</div>
+                    <div class="fs-3 fw-bold text-dark" id="subscribedDeptsCounter">@Model.SubscribedDepartmentsCount</div>
+                    <small class="text-muted">Followed academic wings</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="pref-stat-card d-flex align-items-center gap-3">
+                <div class="p-3 bg-warning-subtle text-warning-emphasis rounded-4">
+                    <i class="bi bi-bell-fill fs-3"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-semibold text-uppercase">Event Push Alerts</div>
+                    <div class="fs-3 fw-bold text-dark" id="alertsCounter">@Model.AlertsEnabledCount</div>
+                    <small class="text-muted">Instant notifications active</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-pills mb-4 bg-light p-2 rounded-4 shadow-sm border" id="prefTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-pill fw-semibold px-4 py-2" id="categories-tab" data-bs-toggle="pill" data-bs-target="#categories-content" type="button" role="tab">
+                <i class="bi bi-bookmark-star me-2"></i>1. Category Interests (USER_CATEGORY_INTERESTS)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill fw-semibold px-4 py-2" id="depts-tab" data-bs-toggle="pill" data-bs-target="#depts-content" type="button" role="tab">
+                <i class="bi bi-building me-2"></i>2. Department Subscriptions (USER_DEPT_SUBSCRIPTIONS)
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="prefTabsContent">
+
+        <!-- =========================================================
+             TAB 1: USER_CATEGORY_INTERESTS
+             ========================================================= -->
+        <div class="tab-pane fade show active" id="categories-content" role="tabpanel">
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">
+                            <i class="bi bi-stars text-primary me-2"></i>Event Topic & Category Preferences
+                        </h4>
+                        <p class="text-muted small mb-0">
+                            Select topics you are interested in. The recommendation algorithm will surface matching symposiums, hackathons, and clubs.
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="selectAllCategories(true)">
+                            <i class="bi bi-check-all me-1"></i>Select All
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="selectAllCategories(false)">
+                            <i class="bi bi-x-circle me-1"></i>Clear
+                        </button>
+                        <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" id="btnSaveCategoryInterests" onclick="saveCategoryInterests()">
+                            <i class="bi bi-check-lg me-1"></i>Save Interests
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    @foreach (var cat in Model.Categories)
+                    {
+                        <div class="col-sm-6 col-md-4 col-lg-3">
+                            <div class="category-interest-card h-100 @(cat.IsSelected ? "active" : "")" 
+                                 data-category-id="@cat.CategoryId"
+                                 onclick="toggleCategoryCard(this)">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="rounded-3 p-2 d-inline-flex align-items-center justify-content-center" style="background-color: @(cat.ColorHex ?? "#0284c7")20; color: @(cat.ColorHex ?? "#0284c7"); width: 42px; height: 42px;">
+                                        <i class="bi @(cat.Icon ?? "bi-tag") fs-4"></i>
+                                    </div>
+                                    <div class="form-check m-0">
+                                        <input class="form-check-input category-checkbox" type="checkbox" value="@cat.CategoryId" @(cat.IsSelected ? "checked" : "") onclick="event.stopPropagation(); updateCategorySelectionState();">
+                                    </div>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">@cat.CategoryName</h6>
+                                <p class="text-muted small mb-2" style="font-size: 12px; line-height: 1.4; min-height: 34px;">
+                                    @(cat.Description ?? "Campus category for university activities.")
+                                </p>
+                                <div class="d-flex align-items-center justify-content-between mt-auto pt-2 border-top">
+                                    <span class="badge bg-light text-muted border font-monospace" style="font-size: 11px;">
+                                        <i class="bi bi-calendar-event me-1"></i>@cat.AssociatedEventsCount Events
+                                    </span>
+                                    <span class="selection-status badge @(cat.IsSelected ? "bg-primary text-white" : "bg-light text-muted border")" style="font-size: 10px;">
+                                        @(cat.IsSelected ? "Active Interest" : "Not Selected")
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+                    <button type="button" class="btn btn-primary rounded-pill px-5 shadow-sm" onclick="saveCategoryInterests()">
+                        <i class="bi bi-check2-circle me-2"></i>Apply & Save Category Interests
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- =========================================================
+             TAB 2: USER_DEPT_SUBSCRIPTIONS
+             ========================================================= -->
+        <div class="tab-pane fade" id="depts-content" role="tabpanel">
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">
+                            <i class="bi bi-bell-fill text-warning me-2"></i>Academic Department Subscriptions & Push Alerts
+                        </h4>
+                        <p class="text-muted small mb-0">
+                            Follow academic faculties to receive real-time push alerts (<code>notify_on_new_event = true</code>) when your department or other wings schedule seminars, guest lectures, and workshops.
+                        </p>
+                    </div>
+                    <div>
+                        <span class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill fw-semibold">
+                            <i class="bi bi-shield-check me-1"></i>Automated Push Alert System Active
+                        </span>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    @foreach (var dept in Model.DepartmentSubscriptions)
+                    {
+                        <div class="col-md-6 col-lg-4">
+                            <div class="dept-sub-card h-100 d-flex flex-column @(dept.IsSubscribed ? "subscribed" : "")" id="deptCard_@dept.DepartmentId">
+                                <div class="d-flex align-items-start justify-content-between mb-2">
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-0">@dept.DepartmentName</h6>
+                                        <small class="text-muted">@(dept.FacultyName ?? "Hawassa University Faculty")</small>
+                                    </div>
+                                    <span class="badge bg-light text-dark border font-monospace">@(dept.DepartmentCode ?? $"D-{dept.DepartmentId}")</span>
+                                </div>
+
+                                <div class="small text-muted mb-3">
+                                    <i class="bi bi-geo-alt me-1 text-danger"></i>Building: @(dept.Building ?? "Main Campus Wing")
+                                    <span class="mx-1">&bull;</span>
+                                    <i class="bi bi-calendar3 me-1 text-primary"></i>@dept.ActiveEventsCount Active Events
+                                </div>
+
+                                <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between">
+                                    <!-- Subscribe Toggle Button -->
+                                    <button type="button" 
+                                            class="btn btn-sm rounded-pill px-3 fw-semibold @(dept.IsSubscribed ? "btn-success" : "btn-outline-primary")"
+                                            id="subBtn_@dept.DepartmentId"
+                                            onclick="toggleDeptSubscription(@dept.DepartmentId)">
+                                        <i class="bi @(dept.IsSubscribed ? "bi-check-circle-fill" : "bi-plus-circle") me-1"></i>
+                                        <span id="subBtnText_@dept.DepartmentId">@(dept.IsSubscribed ? "Subscribed" : "Subscribe")</span>
+                                    </button>
+
+                                    <!-- Push Alert Toggle Switch -->
+                                    <div class="form-check form-switch m-0 d-flex align-items-center gap-1 @(dept.IsSubscribed ? "" : "opacity-50")" 
+                                         id="alertWrapper_@dept.DepartmentId"
+                                         title="Toggle push notification alerts when new events are posted">
+                                        <input class="form-check-input" type="checkbox" role="switch" 
+                                               id="notifySwitch_@dept.DepartmentId"
+                                               @(dept.IsSubscribed && dept.NotifyOnNewEvent ? "checked" : "")
+                                               @(dept.IsSubscribed ? "" : "disabled")
+                                               onchange="toggleDeptAlert(@dept.DepartmentId, this.checked)">
+                                        <label class="form-check-label small fw-semibold text-muted" for="notifySwitch_@dept.DepartmentId" style="font-size: 11px;">
+                                            <i class="bi bi-bell"></i> Alerts
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        function showFeedback(type, message) {
+            const container = document.getElementById('ajaxAlertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show rounded-3 shadow-sm mb-4`;
+            alert.innerHTML = `
+                <i class="bi ${type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            container.innerHTML = '';
+            container.appendChild(alert);
+            window.scrollTo({ top: container.offsetTop - 80, behavior: 'smooth' });
+        }
+
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        }
+
+        function toggleCategoryCard(cardEl) {
+            const checkbox = cardEl.querySelector('.category-checkbox');
+            checkbox.checked = !checkbox.checked;
+            updateCategorySelectionState();
+        }
+
+        function updateCategorySelectionState() {
+            let selectedCount = 0;
+            document.querySelectorAll('.category-interest-card').forEach(card => {
+                const cb = card.querySelector('.category-checkbox');
+                const statusBadge = card.querySelector('.selection-status');
+                if (cb.checked) {
+                    card.classList.add('active');
+                    statusBadge.className = 'selection-status badge bg-primary text-white';
+                    statusBadge.innerText = 'Active Interest';
+                    selectedCount++;
+                } else {
+                    card.classList.remove('active');
+                    statusBadge.className = 'selection-status badge bg-light text-muted border';
+                    statusBadge.innerText = 'Not Selected';
+                }
+            });
+            document.getElementById('selectedCatsCounter').innerText = selectedCount;
+        }
+
+        function selectAllCategories(state) {
+            document.querySelectorAll('.category-checkbox').forEach(cb => cb.checked = state);
+            updateCategorySelectionState();
+        }
+
+        async function saveCategoryInterests() {
+            const btn = document.getElementById('btnSaveCategoryInterests');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+
+            const selectedIds = [];
+            document.querySelectorAll('.category-checkbox:checked').forEach(cb => {
+                selectedIds.push(parseInt(cb.value));
+            });
+
+            try {
+                const response = await fetch('/Account/SaveCategoryInterests', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ categoryIds: selectedIds, interestLevel: 'HIGH' })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showFeedback('success', `Successfully updated your category interests! (${selectedIds.length} categories active). Recommendations refreshed.`);
+                } else {
+                    showFeedback('danger', data.message || 'Failed to update category interests.');
+                }
+            } catch (err) {
+                showFeedback('danger', 'Error connecting to server. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function toggleDeptSubscription(departmentId) {
+            const btn = document.getElementById(`subBtn_${departmentId}`);
+            const btnText = document.getElementById(`subBtnText_${departmentId}`);
+            const card = document.getElementById(`deptCard_${departmentId}`);
+            const alertWrapper = document.getElementById(`alertWrapper_${departmentId}`);
+            const notifySwitch = document.getElementById(`notifySwitch_${departmentId}`);
+
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/Account/ToggleDepartmentSubscription', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ departmentId: departmentId, notifyOnNewEvent: true })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    if (data.isSubscribed) {
+                        btn.className = 'btn btn-sm rounded-pill px-3 fw-semibold btn-success';
+                        btn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i><span>Subscribed</span>';
+                        card.classList.add('subscribed');
+                        alertWrapper.classList.remove('opacity-50');
+                        notifySwitch.disabled = false;
+                        notifySwitch.checked = true;
+                    } else {
+                        btn.className = 'btn btn-sm rounded-pill px-3 fw-semibold btn-outline-primary';
+                        btn.innerHTML = '<i class="bi bi-plus-circle me-1"></i><span>Subscribe</span>';
+                        card.classList.remove('subscribed');
+                        alertWrapper.classList.add('opacity-50');
+                        notifySwitch.disabled = true;
+                        notifySwitch.checked = false;
+                    }
+
+                    document.getElementById('subscribedDeptsCounter').innerText = data.totalSubscribedCount;
+                    updateAlertsCounter();
+                    showFeedback('success', data.message);
+                } else {
+                    showFeedback('danger', data.message || 'Failed to toggle subscription.');
+                }
+            } catch (err) {
+                showFeedback('danger', 'Error communicating with server.');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function toggleDeptAlert(departmentId, isChecked) {
+            try {
+                const response = await fetch('/Account/ToggleDepartmentAlert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ departmentId: departmentId, notifyOnNewEvent: isChecked })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    updateAlertsCounter();
+                    showFeedback('success', data.message);
+                } else {
+                    showFeedback('danger', data.message || 'Failed to update alert preference.');
+                }
+            } catch (err) {
+                showFeedback('danger', 'Network error updating alert preference.');
+            }
+        }
+
+        function updateAlertsCounter() {
+            let activeAlerts = 0;
+            document.querySelectorAll('input[role="switch"]:checked').forEach(sw => {
+                if (!sw.disabled) activeAlerts++;
+            });
+            document.getElementById('alertsCounter').innerText = activeAlerts;
+        }
+    </script>
+}

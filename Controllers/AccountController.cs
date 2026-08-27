@@ -168,9 +168,21 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 return View();
             }
 
+            if (dbUser.account_status == "PENDING" || dbUser.account_status == "PENDING_APPROVAL")
+            {
+                ViewBag.Error = "Your account has been registered by Campus Administration and is currently pending SuperAdmin approval before activation. You will receive access once approved.";
+                return View();
+            }
+
             if (dbUser.account_status == "SUSPENDED" || dbUser.account_status == "LOCKED" || dbUser.account_status == "INACTIVE")
             {
-                ViewBag.Error = "Your account is currently inactive or suspended. Please contact campus security administration.";
+                ViewBag.Error = "Your account is currently inactive, locked, or suspended. Please contact campus security administration.";
+                return View();
+            }
+
+            if (dbUser.account_status != "ACTIVE")
+            {
+                ViewBag.Error = "Your account is not active. Please contact campus administration.";
                 return View();
             }
 
@@ -271,286 +283,33 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         }
 
         // =====================================================
-        // REGISTER
+        // REGISTER (RESTRICTED - ADMIN-MANAGED ONLY)
         // =====================================================
 
         // GET: /Account/Register
         [HttpGet]
-        public async Task<IActionResult> Register(string? returnUrl = null)
+        public IActionResult Register(string? returnUrl = null)
         {
             if (User.Identity?.IsAuthenticated == true)
             {
-                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                if (User.IsInRole("SuperAdmin") || User.IsInRole("Admin") || User.IsInRole("SUPERADMIN") || User.IsInRole("ADMIN"))
                 {
-                    return Redirect(returnUrl);
+                    return RedirectToAction("Users", "Admin");
                 }
                 return RedirectToAction("Index", "Dashboard");
             }
 
-            ViewBag.ReturnUrl = returnUrl;
-            await LoadDepartmentsViewBagAsync();
-            return View();
+            TempData["InfoMessage"] = "Public self-registration is restricted. All campus accounts are provisioned exclusively by authorized Campus Administrators. Please sign in with your issued credentials or contact your campus administrator.";
+            return RedirectToAction(nameof(Login), new { returnUrl });
         }
 
         // POST: /Account/Register
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(
-            string fullName,
-            string username,
-            string email,
-            string phone,
-            string password,
-            string confirmPassword,
-            string? accountType = "Student",
-            ulong? departmentId = null,
-            string? studentId = null,
-            string? employeeId = null,
-            string? organizationName = null,
-            string? organizationType = null,
-            string? bio = null,
-            string? returnUrl = null)
+        public IActionResult Register(string? returnUrl = null, [FromForm] string? dummy = null)
         {
-            ViewBag.ReturnUrl = returnUrl;
-
-            // 1. SECURITY POLICY GUARD: Block public registration as Admin or SuperAdmin
-            var normType = (accountType ?? "Student").Trim().ToUpperInvariant();
-            if (normType == "ADMIN" || normType == "SUPERADMIN" || normType == "SUPER_ADMIN" || normType == "ADMINISTRATOR")
-            {
-                ViewBag.Error = "Security Policy: Administrative and SuperAdmin accounts cannot be self-registered publicly. They must be provisioned internally by an authorized University SuperAdmin.";
-                await LoadDepartmentsViewBagAsync();
-                return View();
-            }
-
-            // 2. Full Name Validation
-            if (string.IsNullOrWhiteSpace(fullName) || fullName.Trim().Length < 3)
-            {
-                ViewBag.Error = "Please enter your full legal name (First and Last name).";
-                await LoadDepartmentsViewBagAsync();
-                return View();
-            }
-
-            // 3. Username Validation
-            if (string.IsNullOrWhiteSpace(username) || username.Trim().Length < 3)
-            {
-                ViewBag.Error = "Please choose a valid username (at least 3 alphanumeric characters).";
-                await LoadDepartmentsViewBagAsync();
-                return View();
-            }
-
-            username = username.Trim().ToLowerInvariant().Replace(" ", "_");
-            if (await _db.users.AnyAsync(u => u.username == username))
-            {
-                ViewBag.Error = $"The username '{username}' is already taken. Please choose another username.";
-                await LoadDepartmentsViewBagAsync();
-                return View();
-            }
-
-            // 4. Email Validation
-            if (string.IsNullOrWhiteSpace(email) || !email.Contains('@') || !email.Contains('.'))
-            {
-                ViewBag.Error = "Please enter a valid campus or personal email address.";
-                await LoadDepartmentsViewBagAsync();
-                return View();
-            }
-
-            email = email.Trim().ToLowerInvariant();
-            if (await _db.users.AnyAsync(u => u.email == email))
-            {
-                ViewBag.Error = "An account with this email address already exists. Please log in.";
-                await LoadDepartmentsViewBagAsync();
-                return View();
-            }
-
-            // 5. Phone Validation
-            if (string.IsNullOrWhiteSpace(phone) || phone.Trim().Length < 8)
-            {
-                ViewBag.Error = "Please enter a valid contact phone number (e.g. +251 911 234567).";
-                await LoadDepartmentsViewBagAsync();
-                return View();
-            }
-
-            // 6. Role-Specific Real Identification Requirements
-            string dbAccountType = "STUDENT";
-            string roleClaim = "Student";
-
-            if (normType == "STAFF")
-            {
-                dbAccountType = "STAFF";
-                roleClaim = "Staff";
-                if (string.IsNullOrWhiteSpace(employeeId))
-                {
-                    ViewBag.Error = "Staff registration requires a valid University Staff ID (e.g., EMP-HU-1042).";
-                    await LoadDepartmentsViewBagAsync();
-                    return View();
-                }
-            }
-            else if (normType == "FACULTY")
-            {
-                dbAccountType = "FACULTY";
-                roleClaim = "Faculty";
-                if (string.IsNullOrWhiteSpace(employeeId))
-                {
-                    ViewBag.Error = "Faculty registration requires an Academic Staff ID (e.g., FAC-HU-8091).";
-                    await LoadDepartmentsViewBagAsync();
-                    return View();
-                }
-            }
-            else if (normType == "ORGANIZATION")
-            {
-                dbAccountType = "ORGANIZATION";
-                roleClaim = "Organization";
-                if (string.IsNullOrWhiteSpace(organizationName))
-                {
-                    ViewBag.Error = "Club/Organization registration requires the official club or association name.";
-                    await LoadDepartmentsViewBagAsync();
-                    return View();
-                }
-            }
-            else
-            {
-                // STUDENT
-                dbAccountType = "STUDENT";
-                roleClaim = "Student";
-                if (string.IsNullOrWhiteSpace(studentId))
-                {
-                    ViewBag.Error = "Student registration requires a valid Student ID Number (e.g., UGR/1234/16 or HU/45821/15).";
-                    await LoadDepartmentsViewBagAsync();
-                    return View();
-                }
-            }
-
-            // 7. Password Security Validation
-            if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
-            {
-                ViewBag.Error = "Password must be at least 8 characters long.";
-                await LoadDepartmentsViewBagAsync();
-                return View();
-            }
-
-            if (password != confirmPassword)
-            {
-                ViewBag.Error = "Passwords do not match.";
-                await LoadDepartmentsViewBagAsync();
-                return View();
-            }
-
-            // Split name into first and last name
-            var nameParts = fullName.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-            var firstName = nameParts.Length > 0 ? nameParts[0] : fullName.Trim();
-            var lastName = nameParts.Length > 1 ? nameParts[1] : firstName;
-
-            try
-            {
-                var newUser = new User
-                {
-                    username = username,
-                    email = email,
-                    phone = phone.Trim(),
-                    password_hash = HashPassword(password),
-                    first_name = firstName,
-                    last_name = lastName,
-                    department_id = departmentId.HasValue && departmentId.Value > 0 ? departmentId.Value : null,
-                    student_id = normType == "STUDENT" ? studentId?.Trim() : null,
-                    employee_id = (normType == "STAFF" || normType == "FACULTY") ? employeeId?.Trim() : null,
-                    bio = normType == "ORGANIZATION" ? (!string.IsNullOrWhiteSpace(organizationName) ? organizationName.Trim() : bio?.Trim()) : bio?.Trim(),
-                    account_type = dbAccountType,
-                    account_status = "ACTIVE",
-                    email_verified = true,
-                    phone_verified = true,
-                    created_at = DateTime.UtcNow,
-                    updated_at = DateTime.UtcNow
-                };
-
-                _db.users.Add(newUser);
-                await _db.SaveChangesAsync();
-
-                // If registering as Organization, also ensure organization record is linked
-                if (normType == "ORGANIZATION" && !string.IsNullOrWhiteSpace(organizationName))
-                {
-                    try
-                    {
-                        var org = new Organization
-                        {
-                            name = organizationName.Trim(),
-                            short_name = username.ToUpperInvariant(),
-                            organization_type = !string.IsNullOrWhiteSpace(organizationType) ? organizationType.Trim().ToUpperInvariant() : "CLUB",
-                            email = email,
-                            phone = phone.Trim(),
-                            description = bio?.Trim() ?? $"Official campus organization led by {firstName} {lastName}",
-                            status = "ACTIVE",
-                            department_id = departmentId.HasValue && departmentId.Value > 0 ? departmentId.Value : null,
-                            created_at = DateTime.UtcNow,
-                            updated_at = DateTime.UtcNow
-                        };
-                        _db.organizations.Add(org);
-                        await _db.SaveChangesAsync();
-                    }
-                    catch (Exception orgEx)
-                    {
-                        _logger.LogWarning(orgEx, "Could not create corresponding organization record.");
-                    }
-                }
-
-                // Associate role in user_roles table
-                try
-                {
-                    var targetRole = await _db.roles.FirstOrDefaultAsync(r => r.name.ToLower() == roleClaim.ToLower());
-                    if (targetRole != null)
-                    {
-                        _db.user_roles.Add(new user_role
-                        {
-                            user_id = newUser.id,
-                            role_id = targetRole.id,
-                            assigned_at = DateTime.UtcNow
-                        });
-                        await _db.SaveChangesAsync();
-                    }
-                }
-                catch (Exception roleEx)
-                {
-                    _logger.LogWarning(roleEx, "Could not assign user_role record; user account_type was set.");
-                }
-
-                // Sign the user in
-                var claims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.NameIdentifier, newUser.id.ToString()),
-                    new Claim(ClaimTypes.Name, $"{firstName} {lastName}".Trim()),
-                    new Claim(ClaimTypes.Email, email),
-                    new Claim(ClaimTypes.Role, roleClaim)
-                };
-
-                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                var authProperties = new AuthenticationProperties
-                {
-                    IsPersistent = true,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
-                };
-
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
-
-                TempData["SuccessMessage"] = $"Registration successful! Welcome to HUCEMS, {firstName}.";
-
-                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-                {
-                    return Redirect(returnUrl);
-                }
-
-                return roleClaim switch
-                {
-                    "Faculty" or "Staff" => RedirectToAction("Staff", "Dashboard"),
-                    "Organization" => RedirectToAction("Organization", "Dashboard"),
-                    _ => RedirectToAction("Student", "Dashboard")
-                };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to save registered user to database.");
-                ViewBag.Error = "An error occurred while saving your account: " + ex.Message;
-                await LoadDepartmentsViewBagAsync();
-                return View();
-            }
+            TempData["InfoMessage"] = "Public self-registration is restricted. Campus accounts are issued exclusively by authorized Campus Administrators.";
+            return RedirectToAction(nameof(Login), new { returnUrl });
         }
 
         // =====================================================
@@ -601,6 +360,16 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         ViewData["Department"] = dbUser.department?.name ?? "Computer Cyber Security";
                         ViewData["University"] = "Hawassa University";
                         ViewData["UserId"] = $"HUCEMS-{dbUser.id:D4}";
+
+                        // Personalization Metrics
+                        ViewData["SubscribedDeptsCount"] = await _db.user_dept_subscriptions.CountAsync(s => s.user_id == uid);
+                        ViewData["SelectedInterestsCount"] = await _db.user_category_interests.CountAsync(i => i.user_id == uid);
+                        ViewData["UserInterests"] = await _db.user_category_interests
+                            .Include(i => i.category)
+                            .Where(i => i.user_id == uid)
+                            .Select(i => i.category.name)
+                            .ToListAsync();
+
                         return View();
                     }
                 }
@@ -947,6 +716,253 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 ViewBag.Email = email;
                 ViewBag.Token = token;
                 return View();
+            }
+        }
+
+        // =====================================================
+        // PERSONALIZATION & NOTIFICATION PREFERENCES
+        // =====================================================
+
+        // GET: /Account/Preferences
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> Preferences()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !ulong.TryParse(userIdStr, out ulong uid))
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            var user = await _db.users
+                .Include(u => u.department)
+                .FirstOrDefaultAsync(u => u.id == uid);
+
+            if (user == null) return NotFound();
+
+            var vm = new PersonalizationPreferencesViewModel
+            {
+                UserId = user.id,
+                UserName = $"{user.first_name} {user.last_name}".Trim(),
+                UserEmail = user.email,
+                UserRole = user.account_type ?? "Student",
+                PrimaryDepartmentName = user.department?.name
+            };
+
+            // 1. Load User's Category Interests
+            var userInterests = await _db.user_category_interests
+                .Where(i => i.user_id == uid)
+                .ToDictionaryAsync(i => i.category_id);
+
+            var allCategories = await _db.event_categories
+                .Include(c => c._events)
+                .Where(c => c.is_active == true)
+                .OrderBy(c => c.name)
+                .ToListAsync();
+
+            vm.Categories = allCategories.Select(c =>
+            {
+                var isSelected = userInterests.TryGetValue(c.id, out var userInt);
+                return new CategoryInterestItemViewModel
+                {
+                    CategoryId = c.id,
+                    InterestId = isSelected ? userInt?.interest_id : null,
+                    CategoryName = c.name,
+                    Description = c.description,
+                    Icon = c.icon,
+                    ColorHex = null,
+                    IsSelected = isSelected,
+                    InterestLevel = isSelected && userInt != null ? userInt.interest_level : "MEDIUM",
+                    CreatedAt = isSelected && userInt != null ? userInt.created_at : null,
+                    AssociatedEventsCount = c._events.Count(e => e.status == "PUBLISHED")
+                };
+            }).ToList();
+
+            // 2. Load User's Department Subscriptions
+            var userDeptSubs = await _db.user_dept_subscriptions
+                .Where(s => s.user_id == uid)
+                .ToDictionaryAsync(s => s.department_id);
+
+            var allDepts = await _db.departments
+                .Include(d => d.faculty)
+                .Include(d => d.users)
+                    .ThenInclude(u => u._eventorganizers)
+                .Where(d => d.is_active == true)
+                .OrderBy(d => d.name)
+                .ToListAsync();
+
+            vm.DepartmentSubscriptions = allDepts.Select(d =>
+            {
+                var isSubbed = userDeptSubs.TryGetValue(d.id, out var sub);
+                return new DepartmentSubscriptionItemViewModel
+                {
+                    SubId = isSubbed ? sub?.sub_id : null,
+                    DepartmentId = d.id,
+                    DepartmentName = d.name,
+                    DepartmentCode = d.code,
+                    FacultyName = d.faculty?.name,
+                    Building = null,
+                    IsSubscribed = isSubbed,
+                    NotifyOnNewEvent = isSubbed ? (sub?.notify_on_new_event ?? true) : true,
+                    SubscribedAt = isSubbed ? sub?.subscribed_at : null,
+                    ActiveEventsCount = d.users.SelectMany(u => u._eventorganizers).Count(e => e.status == "PUBLISHED" && e.start_at >= DateTime.UtcNow)
+                };
+            }).ToList();
+
+            return View(vm);
+        }
+
+        // POST: /Account/SaveCategoryInterests
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveCategoryInterests([FromBody] SaveInterestsRequest request)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !ulong.TryParse(userIdStr, out ulong uid))
+            {
+                return Json(new { success = false, message = "User session expired." });
+            }
+
+            try
+            {
+                var existing = await _db.user_category_interests
+                    .Where(i => i.user_id == uid)
+                    .ToListAsync();
+
+                _db.user_category_interests.RemoveRange(existing);
+
+                if (request.CategoryIds != null && request.CategoryIds.Any())
+                {
+                    foreach (var catId in request.CategoryIds.Distinct())
+                    {
+                        _db.user_category_interests.Add(new user_category_interest
+                        {
+                            user_id = uid,
+                            category_id = catId,
+                            interest_level = !string.IsNullOrWhiteSpace(request.InterestLevel) ? request.InterestLevel : "HIGH",
+                            created_at = DateTime.UtcNow
+                        });
+                    }
+                }
+
+                await _db.SaveChangesAsync();
+                return Json(new { success = true, count = request.CategoryIds?.Count ?? 0, message = "Category interests saved successfully!" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving category interests for user {UserId}", uid);
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // POST: /Account/ToggleDepartmentSubscription
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleDepartmentSubscription([FromBody] DeptSubscriptionToggleRequest request)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !ulong.TryParse(userIdStr, out ulong uid))
+            {
+                return Json(new { success = false, message = "User session expired." });
+            }
+
+            try
+            {
+                var dept = await _db.departments.FindAsync(request.DepartmentId);
+                if (dept == null)
+                {
+                    return Json(new { success = false, message = "Department not found." });
+                }
+
+                var existingSub = await _db.user_dept_subscriptions
+                    .FirstOrDefaultAsync(s => s.user_id == uid && s.department_id == request.DepartmentId);
+
+                bool isSubscribed;
+                bool notifyOnNewEvent = true;
+
+                if (existingSub != null)
+                {
+                    _db.user_dept_subscriptions.Remove(existingSub);
+                    isSubscribed = false;
+                }
+                else
+                {
+                    notifyOnNewEvent = request.NotifyOnNewEvent ?? true;
+                    var newSub = new user_dept_subscription
+                    {
+                        user_id = uid,
+                        department_id = request.DepartmentId,
+                        notify_on_new_event = notifyOnNewEvent,
+                        subscribed_at = DateTime.UtcNow
+                    };
+                    _db.user_dept_subscriptions.Add(newSub);
+                    isSubscribed = true;
+                }
+
+                await _db.SaveChangesAsync();
+                var totalSubs = await _db.user_dept_subscriptions.CountAsync(s => s.user_id == uid);
+
+                return Json(new
+                {
+                    success = true,
+                    isSubscribed,
+                    notifyOnNewEvent,
+                    totalSubscribedCount = totalSubs,
+                    departmentName = dept.name,
+                    message = isSubscribed
+                        ? $"Subscribed to '{dept.name}'. Push alerts for new events are ACTIVE."
+                        : $"Unsubscribed from '{dept.name}'."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error toggling department subscription for user {UserId}", uid);
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // POST: /Account/ToggleDepartmentAlert
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleDepartmentAlert([FromBody] DeptSubscriptionToggleRequest request)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !ulong.TryParse(userIdStr, out ulong uid))
+            {
+                return Json(new { success = false, message = "User session expired." });
+            }
+
+            try
+            {
+                var existingSub = await _db.user_dept_subscriptions
+                    .Include(s => s.department)
+                    .FirstOrDefaultAsync(s => s.user_id == uid && s.department_id == request.DepartmentId);
+
+                if (existingSub == null)
+                {
+                    return Json(new { success = false, message = "Subscription record not found. Please subscribe to this department first." });
+                }
+
+                existingSub.notify_on_new_event = request.NotifyOnNewEvent ?? !existingSub.notify_on_new_event;
+                await _db.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    notifyOnNewEvent = existingSub.notify_on_new_event,
+                    departmentName = existingSub.department?.name,
+                    message = existingSub.notify_on_new_event
+                        ? $"Push alerts turned ON for {existingSub.department?.name} events."
+                        : $"Push alerts muted for {existingSub.department?.name} events."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating alert status for user {UserId}", uid);
+                return Json(new { success = false, message = ex.Message });
             }
         }
     }

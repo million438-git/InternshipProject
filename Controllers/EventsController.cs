@@ -324,8 +324,47 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 updated_at = DateTime.UtcNow
             };
 
+            var organizerUser = await _db.users.Include(u => u.department).FirstOrDefaultAsync(u => u.id == organizerId.Value);
+
             _db.events.Add(entity);
             await _db.SaveChangesAsync();
+
+            // Personalization: Dispatch push alerts to students subscribed to this department
+            if (entity.status == "PUBLISHED" && organizerUser?.department_id != null)
+            {
+                try
+                {
+                    var deptId = organizerUser.department_id.Value;
+                    var deptName = organizerUser.department?.name ?? "Academic Department";
+                    var subscribers = await _db.user_dept_subscriptions
+                        .Where(s => s.department_id == deptId && s.notify_on_new_event)
+                        .ToListAsync();
+
+                    foreach (var sub in subscribers)
+                    {
+                        if (sub.user_id != organizerId.Value)
+                        {
+                            _db.notifications.Add(new Notification
+                            {
+                                user_id = sub.user_id,
+                                title = $"New Event: {deptName}",
+                                message = $"{deptName} posted a new event: '{entity.title}' on {entity.start_at:MMM dd, yyyy}. Reserve your spot now!",
+                                notification_type = "EVENT",
+                                related_entity_type = "EVENT",
+                                related_entity_id = entity.id,
+                                action_url = $"/Events/Details/{entity.id}",
+                                is_read = false,
+                                created_at = DateTime.UtcNow
+                            });
+                        }
+                    }
+                    await _db.SaveChangesAsync();
+                }
+                catch (Exception notifEx)
+                {
+                    _logger.LogWarning(notifEx, "Could not dispatch department event subscription alerts.");
+                }
+            }
 
             if (isAdmin)
             {
@@ -585,6 +624,26 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     created_at = DateTime.UtcNow
                 };
                 _db.notifications.Add(notification);
+
+                // Notify event organizer of new registration
+                if (e.organizer_id > 0 && e.organizer_id != currentUserId.Value)
+                {
+                    var studentUser = await _db.users.FindAsync(currentUserId.Value);
+                    var studentName = studentUser != null ? $"{studentUser.first_name} {studentUser.last_name}".Trim() : "A campus member";
+                    _db.notifications.Add(new Notification
+                    {
+                        user_id = e.organizer_id,
+                        title = "New Event Registration",
+                        message = $"{studentName} has registered for '{e.title}' (Ticket: {regCode}).",
+                        notification_type = "EVENT",
+                        related_entity_type = "EVENT",
+                        related_entity_id = e.id,
+                        action_url = $"/Events/Details/{e.id}",
+                        is_read = false,
+                        created_at = DateTime.UtcNow
+                    });
+                }
+
                 await _db.SaveChangesAsync();
             }
             catch (Exception notifEx)
@@ -611,12 +670,27 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             if (!currentUserId.HasValue) return Unauthorized();
 
             var reg = await _db.registrations
+                .Include(r => r._event)
                 .FirstOrDefaultAsync(r => r.event_id == id && r.user_id == currentUserId.Value && r.status == "REGISTERED");
 
             if (reg != null)
             {
                 reg.status = "CANCELLED";
                 reg.cancelled_at = DateTime.UtcNow;
+
+                _db.notifications.Add(new Notification
+                {
+                    user_id = currentUserId.Value,
+                    title = "Registration Cancelled",
+                    message = $"Your registration for '{reg._event?.title ?? "the event"}' was cancelled.",
+                    notification_type = "REGISTRATION",
+                    related_entity_type = "EVENT",
+                    related_entity_id = id,
+                    action_url = $"/Events/Details/{id}",
+                    is_read = false,
+                    created_at = DateTime.UtcNow
+                });
+
                 await _db.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Your registration has been cancelled.";
             }

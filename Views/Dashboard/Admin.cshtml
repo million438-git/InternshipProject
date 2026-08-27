@@ -24,7 +24,7 @@
                         </ol>
                     </nav>
                     <div class="d-flex align-items-center gap-2 mb-1">
-                        <h1 class="hero-title h2 fw-bold text-white mb-0">Campus Event Administration &bull; @Model.UserName 🛡️</h1>
+                        <h1 class="hero-title h2 fw-bold text-white mb-0">Campus Administration &bull; @Model.UserName</h1>
                         <span class="badge role-badge bg-white text-danger fw-bold px-3 py-1 shadow-sm">
                             <i class="bi bi-shield-lock-fill me-1"></i> CAMPUS ADMIN
                         </span>
@@ -36,6 +36,10 @@
                 </div>
 
                 <div class="hero-actions d-flex flex-wrap align-items-center gap-2">
+                    <a asp-controller="Admin" asp-action="RegisterUser" class="btn btn-primary shadow-sm d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-person-plus-fill"></i>
+                        <span>Register User</span>
+                    </a>
                     <a asp-controller="Admin" asp-action="Index" class="btn btn-danger shadow-sm d-inline-flex align-items-center gap-2" style="background-color: #e11d48; border-color: #e11d48;">
                         <i class="bi bi-speedometer2"></i>
                         <span>Admin Control Center</span>
@@ -224,6 +228,14 @@
                     </div>
                     <div class="card-body p-3">
                         <div class="d-grid gap-2">
+                            <a asp-controller="Admin" asp-action="RegisterUser" class="btn btn-light border text-start d-flex align-items-center justify-content-between p-2 px-3">
+                                <span><i class="bi bi-person-plus-fill me-2 text-primary"></i>Register New Campus User</span>
+                                <span class="badge bg-primary-subtle text-primary small">Provision</span>
+                            </a>
+                            <a asp-controller="Clubs" asp-action="Index" class="btn btn-light border text-start d-flex align-items-center justify-content-between p-2 px-3">
+                                <span><i class="bi bi-stars me-2 text-warning"></i>Campus Clubs & Societies</span>
+                                <i class="bi bi-chevron-right text-muted"></i>
+                            </a>
                             <a asp-controller="Admin" asp-action="Users" class="btn btn-light border text-start d-flex align-items-center justify-content-between p-2 px-3">
                                 <span><i class="bi bi-people me-2 text-primary"></i>User Accounts Directory</span>
                                 <i class="bi bi-chevron-right text-muted"></i>

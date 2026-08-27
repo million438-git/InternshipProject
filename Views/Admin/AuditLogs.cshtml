@@ -1,14 +1,14 @@
 @model HawassaUnifiedCampusEventManagementSystem.Models.AdminAuditLogsViewModel
 
 @{
-    Layout = "_AdminLayout";
+    Layout = "_SuperAdminLayout";
     ViewData["Title"] = "Security & Audit Logs";
 }
 
 <div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h3 fw-bold text-dark mb-1">🛡️ Security & Audit Trail</h1>
-        <p class="text-muted small mb-0">Immutable records of who, what, when, and where actions were executed across the platform.</p>
+        <h1 class="h3 fw-bold text-dark mb-1">Security & Audit Trail</h1>
+        <p class="text-muted small mb-0">Record of authentication events, user provisioning, role changes, and system activities.</p>
     </div>
     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportTableToCSV('auditLogsTable', 'hawassa_security_audit_logs.csv')">
         <i class="bi bi-download me-1"></i>Export Log CSV

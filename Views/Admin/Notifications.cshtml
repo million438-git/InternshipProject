@@ -2,18 +2,59 @@
 
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Notification Management";
+    ViewData["Title"] = "Notification Management & Dispatch Hub";
 }
 
 <div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h3 fw-bold text-dark mb-1">🔔 Notification Management & Broadcasts</h1>
-        <p class="text-muted small mb-0">Send instant campus alerts, broadcast event notices, and manage push communications.</p>
+        <h1 class="h3 fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-bell text-primary"></i> Notification & Push Alert Management
+        </h1>
+        <p class="text-muted small mb-0">Send targeted direct user alerts, department bulletins, and campus-wide emergency broadcasts.</p>
     </div>
-    <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#broadcastNotificationModal">
-        <i class="bi bi-send"></i>
-        <span>Send Broadcast</span>
-    </button>
+    <div class="d-flex gap-2">
+        <a asp-controller="Notifications" asp-action="Index" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 shadow-sm">
+            <i class="bi bi-inbox"></i>
+            <span>Preview My Inbox</span>
+        </a>
+        <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#broadcastNotificationModal">
+            <i class="bi bi-send"></i>
+            <span>Dispatch Alert / Broadcast</span>
+        </button>
+    </div>
+</div>
+
+<!-- =======================================================
+     METRICS CARDS
+     ======================================================= -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-primary-subtle text-primary"><i class="bi bi-send-check"></i></div>
+            <div>
+                <div class="stat-num">@Model.TotalSent</div>
+                <div class="stat-desc">Total Dispatched Alerts</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-warning-subtle text-warning"><i class="bi bi-bell"></i></div>
+            <div>
+                <div class="stat-num">@Model.UnreadCount</div>
+                <div class="stat-desc">Unread User Alerts</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="admin-stat-card">
+            <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-broadcast-pin"></i></div>
+            <div>
+                <div class="stat-num">@Model.Departments.Count</div>
+                <div class="stat-desc">Active Academic Channels</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- =======================================================
@@ -21,30 +62,57 @@
      ======================================================= -->
 <div class="admin-card overflow-hidden">
     <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
-        <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Broadcast History</h2>
-        <span class="badge bg-light text-secondary border">@Model.TotalSent Total Dispatches</span>
+        <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Recent Notification Feed & Broadcast Logs</h2>
+        <span class="badge bg-light text-secondary border">Showing Latest 50 Dispatches</span>
     </div>
     <div class="table-responsive">
         <table class="table admin-table" id="notificationsTable">
             <thead>
                 <tr>
                     <th>Title & Notification Message</th>
-                    <th>Target Audience</th>
+                    <th>Target Scope</th>
                     <th>Type</th>
                     <th>Sent Timestamp</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var n in Model.Notifications)
+                @if (Model.Notifications.Any())
+                {
+                    @foreach (var n in Model.Notifications)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark">@n.Title</div>
+                                <small class="text-muted text-break">@n.Message</small>
+                            </td>
+                            <td>
+                                @if (n.TargetAudience.Contains("Direct"))
+                                {
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-person-fill me-1"></i>@n.TargetAudience</span>
+                                }
+                                else if (n.TargetAudience.Contains("Broadcast"))
+                                {
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle"><i class="bi bi-broadcast me-1"></i>@n.TargetAudience</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary border">@n.TargetAudience</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border font-monospace">@n.Type</span>
+                            </td>
+                            <td class="small text-muted">@n.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")</td>
+                        </tr>
+                    }
+                }
+                else
                 {
                     <tr>
-                        <td>
-                            <div class="fw-bold text-dark">@n.Title</div>
-                            <small class="text-muted">@n.Message</small>
+                        <td colspan="4" class="text-center py-4 text-muted">
+                            <i class="bi bi-bell-slash fs-4 d-block mb-1"></i>
+                            No notifications dispatched yet.
                         </td>
-                        <td><span class="badge bg-secondary-subtle text-secondary">@n.TargetAudience</span></td>
-                        <td><span class="badge bg-primary-subtle text-primary">@n.Type</span></td>
-                        <td class="small text-muted">@n.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")</td>
                     </tr>
                 }
             </tbody>
@@ -53,13 +121,13 @@
 </div>
 
 <!-- =======================================================
-     BROADCAST MODAL
+     BROADCAST & DIRECT ALERT MODAL
      ======================================================= -->
 <div class="modal fade" id="broadcastNotificationModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow">
             <div class="modal-header">
-                <h5 class="modal-title fw-bold">🔔 Broadcast Campus Notification</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-bell me-2 text-primary"></i>Dispatch Campus Alert or Targeted Message</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-controller="Admin" asp-action="NotificationSend" method="post">
@@ -67,27 +135,89 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label small fw-semibold">Alert Title</label>
-                        <input type="text" name="title" class="form-control form-control-sm" required placeholder="e.g. Schedule Update: African Hall Auditorium" />
+                        <input type="text" name="title" class="form-control form-control-sm" required placeholder="e.g. Schedule Update: African Hall Auditorium / Account Action Required" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold">Message</label>
-                        <textarea name="message" rows="4" class="form-control form-control-sm" required placeholder="Type the alert message to be delivered to user notification feeds..."></textarea>
+                        <textarea name="message" rows="4" class="form-control form-control-sm" required placeholder="Type the alert message to be delivered to recipient notification feeds..."></textarea>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold">Target Audience</label>
-                        <select name="targetAudience" class="form-select form-select-sm">
-                            <option value="ALL">All Campus Members (Broad)</option>
-                            <option value="STUDENTS">Students Only</option>
-                            <option value="FACULTY">Faculty & Staff Only</option>
-                            <option value="ORGANIZERS">Club Leaders & Organizers</option>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Target Audience</label>
+                            <select name="targetAudience" class="form-select form-select-sm" id="notifAudienceSelect" onchange="toggleNotifTargetFields(this.value)">
+                                <option value="ALL">All Campus Members (Broad Broadcast)</option>
+                                <option value="STUDENTS">Students Only</option>
+                                <option value="FACULTY">Faculty & Staff Only</option>
+                                <option value="ORGANIZERS">Club Leaders & Event Hosts</option>
+                                <option value="DEPARTMENT">Specific Academic Department</option>
+                                <option value="SPECIFIC_USER">Specific Individual User (Direct Message)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Notification Type</label>
+                            <select name="notificationType" class="form-select form-select-sm">
+                                <option value="ANNOUNCEMENT">Announcement</option>
+                                <option value="EVENT">Event Alert</option>
+                                <option value="REMINDER">Reminder</option>
+                                <option value="SYSTEM">System Notice</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- CONDITIONAL: DEPARTMENT SELECTOR -->
+                    <div class="mb-3" id="notifDeptGroup" style="display: none;">
+                        <label class="form-label small fw-semibold">Choose Academic Department</label>
+                        <select name="departmentId" class="form-select form-select-sm">
+                            <option value="">-- Select Target Department --</option>
+                            @foreach (var d in Model.Departments)
+                            {
+                                <option value="@d.id">@d.name</option>
+                            }
                         </select>
                     </div>
+
+                    <!-- CONDITIONAL: SPECIFIC USER SELECTOR -->
+                    <div class="mb-3 p-3 bg-light rounded-3 border" id="notifUserGroup" style="display: none;">
+                        <label class="form-label small fw-semibold text-primary">Direct Target Recipient User</label>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <select name="targetUserId" class="form-select form-select-sm">
+                                    <option value="">-- Choose From Active Users List --</option>
+                                    @foreach (var u in Model.Users)
+                                    {
+                                        <option value="@u.id">@u.first_name @u.last_name (@u.account_type - @u.username)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="text" name="targetUsername" class="form-control form-control-sm" placeholder="Or enter Username / Email / ID..." />
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-1">Select from the dropdown or type the recipient's username or email address.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Action URL (Optional Link)</label>
+                        <input type="text" name="actionUrl" class="form-control form-control-sm" placeholder="e.g. /Events/Details/12 or /Announcements/Details/4" />
+                        <small class="text-muted">Recipients can click "View Details" to navigate directly to this destination.</small>
+                    </div>
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-primary px-3"><i class="bi bi-send me-1"></i>Dispatch Alert</button>
+                    <button type="submit" class="btn btn-sm btn-primary px-3"><i class="bi bi-send me-1"></i>Dispatch Alert Now</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+    function toggleNotifTargetFields(val) {
+        var deptGroup = document.getElementById('notifDeptGroup');
+        var userGroup = document.getElementById('notifUserGroup');
+        if (deptGroup) deptGroup.style.display = val === 'DEPARTMENT' ? 'block' : 'none';
+        if (userGroup) userGroup.style.display = val === 'SPECIFIC_USER' ? 'block' : 'none';
+    }
+</script>

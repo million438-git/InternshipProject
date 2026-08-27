@@ -24,7 +24,7 @@
                         </ol>
                     </nav>
                     <div class="d-flex align-items-center gap-2 mb-1">
-                        <h1 class="hero-title h2 fw-bold text-white mb-0">Welcome back, @Model.UserName! 🎓</h1>
+                        <h1 class="hero-title h2 fw-bold text-white mb-0">Student Portal &bull; @Model.UserName</h1>
                         <span class="badge role-badge bg-white text-primary fw-bold px-3 py-1 shadow-sm">
                             <i class="bi bi-mortarboard-fill me-1"></i> STUDENT
                         </span>
@@ -67,56 +67,86 @@
         <!-- =====================================================
              STUDENT STATS COUNTERS
              ===================================================== -->
-        <section class="dashboard-stat-grid mb-4">
-            <div class="dashboard-stat-card card border-0 shadow-sm">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon-wrapper bg-primary-subtle text-primary rounded-3">
-                        <i class="bi bi-ticket-perforated-fill fs-3"></i>
+        <section class="row g-3 mb-4">
+            <div class="col-sm-6 col-lg-2">
+                <div class="dashboard-stat-card card border-0 shadow-sm h-100 p-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="p-2 bg-primary-subtle text-primary rounded-3">
+                            <i class="bi bi-ticket-perforated-fill fs-4"></i>
+                        </div>
+                        <span class="stat-label text-muted small fw-semibold">Registered</span>
                     </div>
-                    <div>
-                        <span class="stat-label text-muted small d-block">Registered Events</span>
-                        <strong class="stat-number fs-3 fw-bold text-dark">@Model.RegisteredEventsCount</strong>
-                        <span class="badge bg-success-subtle text-success small mt-1"><i class="bi bi-check-circle me-1"></i>Active</span>
-                    </div>
+                    <strong class="stat-number fs-4 fw-bold text-dark">@Model.RegisteredEventsCount</strong>
+                    <span class="badge bg-success-subtle text-success small mt-auto" style="font-size: 10px;">Active Passes</span>
                 </div>
             </div>
 
-            <div class="dashboard-stat-card card border-0 shadow-sm">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon-wrapper bg-success-subtle text-success rounded-3">
-                        <i class="bi bi-check2-all fs-3"></i>
+            <div class="col-sm-6 col-lg-2">
+                <div class="dashboard-stat-card card border-0 shadow-sm h-100 p-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="p-2 bg-success-subtle text-success rounded-3">
+                            <i class="bi bi-building-check fs-4"></i>
+                        </div>
+                        <span class="stat-label text-muted small fw-semibold">Dept Follows</span>
                     </div>
-                    <div>
-                        <span class="stat-label text-muted small d-block">Attended Sessions</span>
-                        <strong class="stat-number fs-3 fw-bold text-dark">@Model.AttendedEventsCount</strong>
-                        <span class="text-muted small d-block" style="font-size: 11px;">This Academic Year</span>
-                    </div>
+                    <strong class="stat-number fs-4 fw-bold text-dark">@Model.SubscribedDepartmentsCount</strong>
+                    <a asp-controller="Account" asp-action="Preferences" class="small text-primary text-decoration-none mt-auto" style="font-size: 10px;">
+                        Manage Follows &rarr;
+                    </a>
                 </div>
             </div>
 
-            <div class="dashboard-stat-card card border-0 shadow-sm">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon-wrapper bg-warning-subtle text-warning-emphasis rounded-3">
-                        <i class="bi bi-mortarboard-fill fs-3"></i>
+            <div class="col-sm-6 col-lg-2">
+                <div class="dashboard-stat-card card border-0 shadow-sm h-100 p-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="p-2 bg-warning-subtle text-warning-emphasis rounded-3">
+                            <i class="bi bi-bookmark-star-fill fs-4"></i>
+                        </div>
+                        <span class="stat-label text-muted small fw-semibold">Interests</span>
                     </div>
-                    <div>
-                        <span class="stat-label text-muted small d-block">Workshops Enrolled</span>
-                        <strong class="stat-number fs-3 fw-bold text-dark">@Model.UpcomingWorkshopsCount</strong>
-                        <span class="badge bg-warning-subtle text-warning-emphasis small mt-1">Active Workshops</span>
-                    </div>
+                    <strong class="stat-number fs-4 fw-bold text-dark">@Model.SelectedInterestsCount</strong>
+                    <a asp-controller="Account" asp-action="Preferences" class="small text-warning-emphasis text-decoration-none mt-auto" style="font-size: 10px;">
+                        Edit Categories &rarr;
+                    </a>
                 </div>
             </div>
 
-            <div class="dashboard-stat-card card border-0 shadow-sm">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon-wrapper bg-info-subtle text-info-emphasis rounded-3">
-                        <i class="bi bi-patch-check-fill fs-3"></i>
+            <div class="col-sm-6 col-lg-2">
+                <div class="dashboard-stat-card card border-0 shadow-sm h-100 p-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="p-2 bg-info-subtle text-info-emphasis rounded-3">
+                            <i class="bi bi-check2-all fs-4"></i>
+                        </div>
+                        <span class="stat-label text-muted small fw-semibold">Attended</span>
                     </div>
-                    <div>
-                        <span class="stat-label text-muted small d-block">Certificates Earned</span>
-                        <strong class="stat-number fs-3 fw-bold text-dark">@Model.EarnedCertificatesCount</strong>
-                        <span class="text-primary small d-block" style="font-size: 11px;">Verified digital badges</span>
+                    <strong class="stat-number fs-4 fw-bold text-dark">@Model.AttendedEventsCount</strong>
+                    <span class="text-muted small mt-auto" style="font-size: 10px;">Sessions</span>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-2">
+                <div class="dashboard-stat-card card border-0 shadow-sm h-100 p-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="p-2 bg-secondary-subtle text-secondary rounded-3">
+                            <i class="bi bi-mortarboard-fill fs-4"></i>
+                        </div>
+                        <span class="stat-label text-muted small fw-semibold">Workshops</span>
                     </div>
+                    <strong class="stat-number fs-4 fw-bold text-dark">@Model.UpcomingWorkshopsCount</strong>
+                    <span class="badge bg-warning-subtle text-warning-emphasis small mt-auto" style="font-size: 10px;">Enrolled</span>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-2">
+                <div class="dashboard-stat-card card border-0 shadow-sm h-100 p-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="p-2 bg-purple-subtle text-purple rounded-3" style="background-color: #f3e8ff; color: #7e22ce;">
+                            <i class="bi bi-patch-check-fill fs-4"></i>
+                        </div>
+                        <span class="stat-label text-muted small fw-semibold">Badges</span>
+                    </div>
+                    <strong class="stat-number fs-4 fw-bold text-dark">@Model.EarnedCertificatesCount</strong>
+                    <span class="text-muted small mt-auto" style="font-size: 10px;">Digital Passes</span>
                 </div>
             </div>
         </section>
@@ -213,38 +243,180 @@
                     </div>
                 </div>
 
-                <!-- RECOMMENDED CLUBS & COMMUNITIES -->
-                <div class="card shadow-sm border-0 dashboard-announcements-card">
-                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <!-- =====================================================
+                     PERSONALIZED EVENTS (RECOMMENDED FOR YOU)
+                     ===================================================== -->
+                @if (Model.RecommendedEventsForYou.Any())
+                {
+                    <div class="card shadow-sm border-0 mb-4 dashboard-main-card">
+                        <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <h2 class="h5 fw-bold mb-0 text-dark">
+                                    <i class="bi bi-stars me-2 text-primary"></i>Personalized Event Recommendations
+                                </h2>
+                                <small class="text-muted">Curated from your selected category interests & followed departments</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <a asp-controller="Account" asp-action="Preferences" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                    <i class="bi bi-sliders me-1"></i> Personalization Hub
+                                </a>
+                                <a asp-controller="Events" asp-action="Index" class="btn btn-sm btn-primary rounded-pill px-3">
+                                    Browse All &rarr;
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="row g-3">
+                                @foreach (var ev in Model.RecommendedEventsForYou)
+                                {
+                                    <div class="col-md-6">
+                                        <div class="card h-100 border rounded-3 p-3 shadow-none hover-shadow transition">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <span class="badge bg-primary-subtle text-primary small">
+                                                    @ev.CategoryName
+                                                </span>
+                                                <span class="badge bg-success-subtle text-success small" style="font-size: 10px;">
+                                                    @ev.Status
+                                                </span>
+                                            </div>
+                                            <h6 class="fw-bold text-dark mb-1">
+                                                <a asp-controller="Events" asp-action="Details" asp-route-id="@ev.Id" class="text-dark text-decoration-none hover-primary">
+                                                    @ev.Title
+                                                </a>
+                                            </h6>
+                                            <div class="small text-muted mb-3">
+                                                <div><i class="bi bi-calendar3 me-1 text-primary"></i>@ev.StartDate.ToString("MMM dd, yyyy &bull; hh:mm tt")</div>
+                                                <div><i class="bi bi-geo-alt me-1 text-danger"></i>@(ev.VenueName ?? "Main Campus")</div>
+                                            </div>
+                                            <div class="mt-auto d-flex justify-content-between align-items-center pt-2 border-top">
+                                                <small class="text-muted"><i class="bi bi-people me-1"></i>@ev.AttendeeCount Attendees</small>
+                                                <a asp-controller="Events" asp-action="Details" asp-route-id="@ev.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                                    View Details
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- =====================================================
+                     RECOMMENDED CLUBS (INTEREST-BASED)
+                     ===================================================== -->
+                <div class="card shadow-sm border-0 mb-4 dashboard-announcements-card">
+                    <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
                         <div>
                             <h2 class="h5 fw-bold mb-0 text-dark">
-                                <i class="bi bi-stars me-2 text-warning"></i>Explore Campus Clubs & Societies
+                                <i class="bi bi-compass-fill me-2 text-warning"></i>Recommended Clubs For You
                             </h2>
-                            <small class="text-muted">Connect with student organizations at Hawassa University</small>
+                            <small class="text-muted">Matched based on your personal academic & hobby interests</small>
                         </div>
-                        <a asp-controller="Events" asp-action="Index" class="btn btn-sm btn-outline-primary">Browse Events</a>
+                        <div class="d-flex align-items-center gap-2">
+                            <a asp-controller="Account" asp-action="Preferences" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                <i class="bi bi-sliders2 me-1"></i> Update Interests
+                            </a>
+                            <a asp-controller="Clubs" asp-action="Index" class="btn btn-sm btn-primary rounded-pill px-3">
+                                Explore All &rarr;
+                            </a>
+                        </div>
                     </div>
                     <div class="card-body p-3">
-                        <div class="d-flex flex-column gap-3">
-                            @foreach (var club in Model.RecommendedClubs)
-                            {
-                                <div class="p-3 bg-light rounded-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
-                                    <div>
-                                        <div class="d-flex align-items-center gap-2 mb-1">
-                                            <h6 class="fw-bold mb-0 text-dark">@club.Name</h6>
-                                            <span class="badge bg-info-subtle text-info-emphasis small">@club.Category</span>
-                                        </div>
-                                        <p class="small text-muted mb-0">@club.Description</p>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                                        <span class="small text-muted me-2"><i class="bi bi-people me-1"></i>@club.MemberCount students</span>
-                                        <a asp-controller="Events" asp-action="Index" class="btn btn-sm btn-outline-primary px-3">View Events</a>
-                                    </div>
+                        @if (!Model.HasSelectedInterests)
+                        {
+                            <div class="alert alert-warning bg-warning-subtle border-0 rounded-3 p-3 mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-lightbulb-fill text-warning-emphasis fs-5"></i>
+                                    <span class="small text-dark">Set your topic interests to unlock personalized event & club recommendations.</span>
                                 </div>
-                            }
-                        </div>
+                                <a asp-controller="Account" asp-action="Preferences" class="btn btn-sm btn-warning text-dark fw-semibold rounded-pill px-3">
+                                    Choose Interests
+                                </a>
+                            </div>
+                        }
+
+                        @if (Model.RecommendedClubs.Any())
+                        {
+                            <div class="d-flex flex-column gap-3">
+                                @foreach (var club in Model.RecommendedClubs)
+                                {
+                                    <div class="p-3 bg-light rounded-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                        <div style="max-width: 65%;">
+                                            @if (!string.IsNullOrEmpty(club.RecommendationReason))
+                                            {
+                                                <span class="badge bg-success-subtle text-success small mb-1" style="font-size: 11px;">
+                                                    <i class="bi bi-check2-circle me-1"></i>@club.RecommendationReason
+                                                </span>
+                                            }
+                                            <div class="d-flex align-items-center gap-2">
+                                                <h6 class="fw-bold mb-0 text-dark">
+                                                    <a asp-controller="Clubs" asp-action="Details" asp-route-id="@(!string.IsNullOrEmpty(club.Slug) ? club.Slug : club.Id.ToString())" class="text-dark text-decoration-none hover-primary">
+                                                        @club.Name
+                                                    </a>
+                                                </h6>
+                                                <span class="badge bg-info-subtle text-info-emphasis small">@club.Category</span>
+                                            </div>
+                                            <p class="small text-muted mb-0 text-truncate-2 mt-1">@club.Description</p>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                            <button type="button"
+                                                    class="btn btn-sm @(club.IsFollowing ? "btn-outline-secondary" : "btn-primary") px-3 rounded-pill fw-semibold"
+                                                    onclick="quickFollowClub(@club.Id, this)">
+                                                @(club.IsFollowing ? "Following" : "Follow")
+                                            </button>
+                                            <a asp-controller="Clubs" asp-action="Details" asp-route-id="@(!string.IsNullOrEmpty(club.Slug) ? club.Slug : club.Id.ToString())" class="btn btn-sm btn-outline-primary px-3 rounded-pill">
+                                                View
+                                            </a>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
                     </div>
                 </div>
+
+                <!-- =====================================================
+                     MY CLUBS & MEMBERSHIPS (FOLLOWED + JOINED)
+                     ===================================================== -->
+                @if (Model.MyClubs.Any())
+                {
+                    <div class="card shadow-sm border-0 mb-4">
+                        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h2 class="h5 fw-bold mb-0 text-dark">
+                                    <i class="bi bi-collection-fill me-2 text-primary"></i>My Campus Clubs
+                                </h2>
+                                <small class="text-muted">Communities you follow and official memberships</small>
+                            </div>
+                            <a asp-controller="Clubs" asp-action="MyClubs" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                My Hub &rarr;
+                            </a>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="row g-3">
+                                @foreach (var club in Model.MyClubs.Take(3))
+                                {
+                                    <div class="col-md-4">
+                                        <div class="p-3 border rounded-3 bg-white h-100 d-flex flex-column">
+                                            <h6 class="fw-bold mb-1">
+                                                <a asp-controller="Clubs" asp-action="Details" asp-route-id="@(!string.IsNullOrEmpty(club.Slug) ? club.Slug : club.Id.ToString())" class="text-dark text-decoration-none hover-primary">
+                                                    @club.Name
+                                                </a>
+                                            </h6>
+                                            <span class="badge @(club.MembershipStatus == "APPROVED" ? "bg-success-subtle text-success" : club.MembershipStatus == "PENDING" ? "bg-warning-subtle text-warning-emphasis" : "bg-light text-muted border") align-self-start small mb-2">
+                                                @(club.MembershipStatus == "APPROVED" ? "Official Member" : club.MembershipStatus == "PENDING" ? "Request Pending" : "Following Updates")
+                                            </span>
+                                            <a asp-controller="Clubs" asp-action="Details" asp-route-id="@(!string.IsNullOrEmpty(club.Slug) ? club.Slug : club.Id.ToString())" class="btn btn-sm btn-outline-primary rounded-pill mt-auto w-100">
+                                                Club Room
+                                            </a>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
 
             </div>
 
@@ -262,12 +434,20 @@
                     </div>
                     <div class="card-body p-3">
                         <div class="d-grid gap-2">
-                            <a asp-controller="Events" asp-action="Create" class="btn btn-primary text-start d-flex align-items-center justify-content-between p-2 px-3">
-                                <span><i class="bi bi-plus-circle me-2"></i>Propose a Student Event</span>
+                            <a asp-controller="Account" asp-action="Preferences" class="btn btn-outline-primary text-start d-flex align-items-center justify-content-between p-2 px-3 fw-semibold">
+                                <span><i class="bi bi-sliders2-vertical me-2 text-primary"></i>Personalization & Alerts Hub</span>
+                                <span class="badge bg-primary text-white rounded-pill" style="font-size: 10px;">@Model.SubscribedDepartmentsCount Depts</span>
+                            </a>
+                            <a asp-controller="Clubs" asp-action="Index" class="btn btn-primary text-start d-flex align-items-center justify-content-between p-2 px-3">
+                                <span><i class="bi bi-people-fill me-2"></i>Campus Clubs & Societies</span>
                                 <i class="bi bi-arrow-right"></i>
                             </a>
+                            <a asp-controller="Events" asp-action="Create" class="btn btn-light border text-start d-flex align-items-center justify-content-between p-2 px-3">
+                                <span><i class="bi bi-plus-circle me-2 text-success"></i>Propose a Student Event</span>
+                                <i class="bi bi-chevron-right text-muted"></i>
+                            </a>
                             <a asp-controller="Calendar" asp-action="Index" class="btn btn-light border text-start d-flex align-items-center justify-content-between p-2 px-3">
-                                <span><i class="bi bi-calendar2-week me-2 text-success"></i>Campus Calendar</span>
+                                <span><i class="bi bi-calendar2-week me-2 text-info"></i>Campus Calendar</span>
                                 <i class="bi bi-chevron-right text-muted"></i>
                             </a>
                             <a asp-controller="Announcements" asp-action="Index" class="btn btn-light border text-start d-flex align-items-center justify-content-between p-2 px-3">
@@ -332,4 +512,36 @@
 
 @section Scripts {
     <script src="~/js/dashboard.js" asp-append-version="true"></script>
+    <script>
+        async function quickFollowClub(clubId, btn) {
+            const isCurrentlyFollowing = btn.innerText.trim() === 'Following';
+            const endpoint = isCurrentlyFollowing ? `/Clubs/Unfollow/${clubId}` : `/Clubs/Follow/${clubId}`;
+
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.isFollowing) {
+                        btn.innerText = 'Following';
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-outline-secondary');
+                    } else {
+                        btn.innerText = 'Follow';
+                        btn.classList.remove('btn-outline-secondary');
+                        btn.classList.add('btn-primary');
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
 }

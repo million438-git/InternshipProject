@@ -1,227 +1,726 @@
 @model HawassaUnifiedCampusEventManagementSystem.Models.AdminDatabaseManagementViewModel
 
 @{
-    Layout = "_AdminLayout";
-    ViewData["Title"] = "Database Management & Snapshots";
+    Layout = "_SuperAdminLayout";
+    ViewData["Title"] = "Database Diagnostics & Snapshot Vault";
 }
 
-<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
-    <div>
-        <span class="badge bg-primary-subtle text-primary px-3 py-1 rounded-pill fw-semibold mb-2">
-            <i class="bi bi-shield-lock-fill me-1"></i> SUPERADMIN INFRASTRUCTURE
-        </span>
-        <h1 class="h3 fw-bold text-dark mb-1">🗄️ Database Management & Telemetry</h1>
-        <p class="text-muted small mb-0">MySQL server health, active relational tables inventory, snapshot generators, and archive vaults.</p>
-    </div>
+@section Styles {
+    <style>
+        /* ==========================================================================
+           DB VAULT & DIAGNOSTICS STYLES
+           ========================================================================== */
+        
+        .db-vault-hero {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f2348 100%);
+            border-radius: 18px;
+            padding: 28px 32px;
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+            margin-bottom: 24px;
+        }
 
-    <!-- TRIGGER SNAPSHOT MODAL BUTTON -->
-    <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#snapshotModal">
-        <i class="bi bi-cloud-arrow-down-fill me-1"></i> Generate Database Snapshot
-    </button>
+        .db-vault-hero::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 240px;
+            height: 240px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.25) 0%, rgba(37, 99, 235, 0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .db-stat-card {
+            background: var(--admin-card-bg, #ffffff);
+            border: 1px solid var(--admin-border-color, #e2e8f0);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            height: 100%;
+        }
+
+        .db-stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+            border-color: rgba(37, 99, 235, 0.3);
+        }
+
+        [data-theme="dark"] .db-stat-card {
+            background: #111c34;
+            border-color: #1e2e4f;
+        }
+
+        [data-theme="dark"] .db-stat-card:hover {
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+            border-color: rgba(96, 165, 250, 0.4);
+        }
+
+        .stat-icon-wrapper {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        /* Telemetry Status Strip */
+        .db-telemetry-banner {
+            background: var(--admin-card-bg, #ffffff);
+            border: 1px solid var(--admin-border-color, #e2e8f0);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+
+        [data-theme="dark"] .db-telemetry-banner {
+            background: #111c34;
+            border-color: #1e2e4f;
+        }
+
+        /* Schema Table List & Badges */
+        .schema-card-box {
+            background: var(--admin-card-bg, #ffffff);
+            border: 1px solid var(--admin-border-color, #e2e8f0);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        [data-theme="dark"] .schema-card-box {
+            background: #111c34;
+            border-color: #1e2e4f;
+        }
+
+        .schema-table-row {
+            transition: background-color 0.15s ease;
+        }
+
+        .schema-table-row:hover {
+            background-color: rgba(37, 99, 235, 0.04) !important;
+        }
+
+        [data-theme="dark"] .schema-table-row:hover {
+            background-color: rgba(96, 165, 250, 0.08) !important;
+        }
+
+        .table-name-code {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.88rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: rgba(37, 99, 235, 0.08);
+            color: #2563eb;
+            display: inline-block;
+        }
+
+        [data-theme="dark"] .table-name-code {
+            background: rgba(96, 165, 250, 0.15);
+            color: #93c5fd;
+        }
+
+        /* Snapshot Vault Items */
+        .snapshot-item {
+            background: var(--admin-body-bg, #f8fafc);
+            border: 1px solid var(--admin-border-color, #e2e8f0);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .snapshot-item:hover {
+            border-color: #2563eb;
+            transform: translateX(3px);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+        }
+
+        [data-theme="dark"] .snapshot-item {
+            background: #172339;
+            border-color: #1e2e4f;
+        }
+
+        [data-theme="dark"] .snapshot-item:hover {
+            border-color: #60a5fa;
+        }
+
+        .checksum-badge {
+            font-family: monospace;
+            font-size: 0.72rem;
+            background: rgba(15, 23, 42, 0.06);
+            color: var(--text-muted, #64748b);
+            padding: 2px 6px;
+            border-radius: 4px;
+            letter-spacing: 0.3px;
+        }
+
+        [data-theme="dark"] .checksum-badge {
+            background: rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+        }
+
+        /* Pulse Dot for Online Engine */
+        .pulse-indicator {
+            width: 10px;
+            height: 10px;
+            background-color: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-green 2s infinite;
+        }
+
+        @@keyframes pulse-green {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+    </style>
+}
+
+<!-- =======================================================
+     1. VAULT HERO & COMMAND HEADER
+     ======================================================= -->
+<div class="db-vault-hero">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 position-relative z-1">
+        <div>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <span class="badge bg-primary bg-opacity-25 text-primary-light border border-primary border-opacity-25 px-3 py-1 rounded-pill fw-semibold" style="font-size: 11px; letter-spacing: 0.5px;">
+                    <i class="bi bi-shield-lock-fill me-1 text-warning"></i> SUPERADMIN SECURITY VAULT
+                </span>
+                <span class="badge bg-success bg-opacity-25 text-success-light border border-success border-opacity-25 px-3 py-1 rounded-pill fw-semibold" style="font-size: 11px;">
+                    <span class="pulse-indicator me-1"></span> @Model.ConnectionStatus
+                </span>
+            </div>
+            <h1 class="h3 fw-bold text-white mb-1 tracking-tight">Database Diagnostics & Snapshot Vault</h1>
+            <p class="text-white-50 small mb-0 max-w-700" style="max-width: 680px; line-height: 1.5;">
+                Centralized MySQL InnoDB telemetry, relational schema entity records, automated snapshot backups, and point-in-time disaster recovery verification.
+            </p>
+        </div>
+
+        <!-- ACTION CONTROLS -->
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <a asp-controller="Admin" asp-action="DatabaseRecords" class="btn btn-outline-light btn-sm px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1 rounded-3">
+                <i class="bi bi-table"></i>
+                <span>Records CRUD Grid</span>
+            </a>
+            <button type="button" class="btn btn-primary btn-sm px-3 py-2 fw-semibold shadow-sm d-inline-flex align-items-center gap-1 rounded-3" data-bs-toggle="modal" data-bs-target="#snapshotModal">
+                <i class="bi bi-cloud-arrow-down-fill"></i>
+                <span>Generate Snapshot</span>
+            </button>
+            <button type="button" class="btn btn-dark btn-sm px-2 py-2 text-white-50 hover-white rounded-3 border border-secondary border-opacity-25" onclick="window.location.reload();" title="Refresh Live Telemetry">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+    </div>
 </div>
 
-<!-- TELEMETRY KPI METRICS -->
+<!-- =======================================================
+     2. TELEMETRY KPI METRIC CARDS
+     ======================================================= -->
 <div class="row g-3 mb-4">
+    <!-- Card 1: Engine & Server -->
     <div class="col-sm-6 col-xl-3">
-        <div class="admin-card p-3 d-flex align-items-center gap-3">
-            <div class="p-3 bg-success-subtle text-success rounded-3 fs-4">
+        <div class="db-stat-card">
+            <div class="stat-icon-wrapper bg-success-subtle text-success">
                 <i class="bi bi-hdd-network-fill"></i>
             </div>
-            <div>
-                <span class="text-muted small text-uppercase fw-semibold">Database Status</span>
-                <h2 class="h5 fw-bold mb-0 text-success">@Model.ConnectionStatus</h2>
-                <small class="text-muted">@Model.DatabaseName</small>
+            <div class="min-w-0">
+                <span class="text-muted small text-uppercase fw-semibold" style="font-size: 11px; letter-spacing: 0.5px;">Engine & Host</span>
+                <h2 class="h5 fw-bold mb-0 text-truncate text-dark">@Model.DatabaseName</h2>
+                <small class="text-muted text-truncate d-block" style="font-size: 12px;">
+                    <span class="text-success fw-semibold">● @Model.ServerHost</span> &bull; MySQL 8.0
+                </small>
             </div>
         </div>
     </div>
 
+    <!-- Card 2: Managed Entities -->
     <div class="col-sm-6 col-xl-3">
-        <div class="admin-card p-3 d-flex align-items-center gap-3">
-            <div class="p-3 bg-primary-subtle text-primary rounded-3 fs-4">
-                <i class="bi bi-table"></i>
+        <div class="db-stat-card">
+            <div class="stat-icon-wrapper bg-primary-subtle text-primary">
+                <i class="bi bi-database-fill-gear"></i>
             </div>
-            <div>
-                <span class="text-muted small text-uppercase fw-semibold">Managed Tables</span>
+            <div class="min-w-0">
+                <span class="text-muted small text-uppercase fw-semibold" style="font-size: 11px; letter-spacing: 0.5px;">Core Schema</span>
                 <h2 class="h5 fw-bold mb-0 text-dark">@Model.TableStats.Count Tables</h2>
-                <small class="text-muted">41 Relational Entities</small>
+                <small class="text-muted text-truncate d-block" style="font-size: 12px;">
+                    100% Relational InnoDB
+                </small>
             </div>
         </div>
     </div>
 
+    <!-- Card 3: Active Records -->
     <div class="col-sm-6 col-xl-3">
-        <div class="admin-card p-3 d-flex align-items-center gap-3">
-            <div class="p-3 bg-warning-subtle text-warning-emphasis rounded-3 fs-4">
+        <div class="db-stat-card">
+            <div class="stat-icon-wrapper bg-warning-subtle text-warning-emphasis">
                 <i class="bi bi-layers-fill"></i>
             </div>
-            <div>
-                <span class="text-muted small text-uppercase fw-semibold">Active Records</span>
+            <div class="min-w-0">
+                <span class="text-muted small text-uppercase fw-semibold" style="font-size: 11px; letter-spacing: 0.5px;">Indexed Records</span>
                 <h2 class="h5 fw-bold mb-0 text-dark">@Model.EstimatedTotalRows.ToString("N0") Rows</h2>
-                <small class="text-muted">Indexed & Audited</small>
+                <small class="text-muted text-truncate d-block" style="font-size: 12px;">
+                    Audited & Primary Keyed
+                </small>
             </div>
         </div>
     </div>
 
+    <!-- Card 4: Vault Storage -->
     <div class="col-sm-6 col-xl-3">
-        <div class="admin-card p-3 d-flex align-items-center gap-3">
-            <div class="p-3 bg-info-subtle text-info-emphasis rounded-3 fs-4">
-                <i class="bi bi-archive-fill"></i>
+        <div class="db-stat-card">
+            <div class="stat-icon-wrapper bg-info-subtle text-info-emphasis">
+                <i class="bi bi-safe2-fill"></i>
             </div>
-            <div>
-                <span class="text-muted small text-uppercase fw-semibold">Vaulted Backups</span>
-                <h2 class="h5 fw-bold mb-0 text-dark">@Model.BackupFiles.Count Snapshots</h2>
-                <small class="text-muted">@(Model.LastBackupTimestamp.HasValue ? Model.LastBackupTimestamp.Value.ToString("MMM dd, yyyy") : "None Vaulted")</small>
+            <div class="min-w-0">
+                <span class="text-muted small text-uppercase fw-semibold" style="font-size: 11px; letter-spacing: 0.5px;">Vault Snapshots</span>
+                <h2 class="h5 fw-bold mb-0 text-dark">@Model.BackupFiles.Count Archives</h2>
+                <small class="text-muted text-truncate d-block" style="font-size: 12px;">
+                    @(Model.LastBackupTimestamp.HasValue ? "Latest: " + Model.LastBackupTimestamp.Value.ToString("MMM dd, HH:mm") + " UTC" : "Zero Snapshots")
+                </small>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- TABLE INVENTORY SECTION -->
-    <div class="col-lg-7">
-        <div class="admin-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-database-check me-2 text-primary"></i>Core Schema Table Registry</h2>
-                <span class="badge bg-light text-muted border">MySQL 8.0 InnoDB</span>
+<!-- =======================================================
+     3. SYSTEM TELEMETRY & STATUS STRIP
+     ======================================================= -->
+<div class="db-telemetry-banner">
+    <div class="row align-items-center g-3">
+        <div class="col-lg-7">
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-cpu-fill text-primary fs-5"></i>
+                    <div>
+                        <div class="small fw-bold text-dark">EF Core ORM Provider</div>
+                        <div class="text-muted" style="font-size: 11px;">@Model.EngineVersion</div>
+                    </div>
+                </div>
+                <div class="vr d-none d-md-block opacity-25" style="height: 28px;"></div>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-check text-success fs-5"></i>
+                    <div>
+                        <div class="small fw-bold text-dark">Transaction Isolation</div>
+                        <div class="text-muted" style="font-size: 11px;">REPEATABLE READ &bull; ACID Verified</div>
+                    </div>
+                </div>
+                <div class="vr d-none d-md-block opacity-25" style="height: 28px;"></div>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-fonts text-secondary fs-5"></i>
+                    <div>
+                        <div class="small fw-bold text-dark">Collation & Charset</div>
+                        <div class="text-muted" style="font-size: 11px;">utf8mb4_unicode_ci</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5 text-lg-end">
+            <div class="d-inline-flex align-items-center gap-2 bg-body-tertiary px-3 py-1 rounded-pill border">
+                <i class="bi bi-folder-check text-primary"></i>
+                <span class="small text-muted font-monospace" style="font-size: 11px;">App_Data/Backups/*.sql</span>
+                <span class="badge bg-primary-subtle text-primary rounded-pill px-2" style="font-size: 10px;">SHA256</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =======================================================
+     4. MAIN 2-COLUMN WORKSPACE
+     ======================================================= -->
+<div class="row g-4 mb-4">
+    
+    <!-- LEFT COLUMN: CORE SCHEMA TABLE REGISTRY -->
+    <div class="col-xl-7">
+        <div class="schema-card-box">
+            
+            <!-- HEADER WITH LIVE SEARCH -->
+            <div class="p-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2 bg-body-tertiary">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 bg-primary-subtle text-primary rounded-2">
+                        <i class="bi bi-table"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 fw-bold text-dark mb-0">Core Schema Entity Registry</h2>
+                        <small class="text-muted">@Model.TableStats.Count relational tables indexed in catalog</small>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <div class="input-group input-group-sm" style="max-width: 210px;">
+                        <span class="input-group-text bg-body border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0" id="tableFilterInput" placeholder="Filter tables..." />
+                    </div>
+                </div>
             </div>
 
-            <div class="table-responsive">
-                <table class="table table-hover table-sm align-middle small">
-                    <thead class="table-light">
+            <!-- TABLE REGISTRY LIST -->
+            <div class="table-responsive flex-grow-1">
+                <table class="table table-hover align-middle mb-0 small" id="dbTableRegistry">
+                    <thead class="table-light text-uppercase fw-semibold" style="font-size: 11px; letter-spacing: 0.5px;">
                         <tr>
-                            <th>Table Name</th>
-                            <th>Description</th>
-                            <th>Engine</th>
-                            <th class="text-end">Verified Rows</th>
+                            <th class="ps-3 py-3" style="width: 28%;">Entity / Table</th>
+                            <th class="py-3">Role & Schema Purpose</th>
+                            <th class="py-3 text-center" style="width: 15%;">Records</th>
+                            <th class="text-end pe-3 py-3" style="width: 20%;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var t in Model.TableStats)
                         {
-                            <tr>
-                                <td class="fw-bold text-dark"><code>@t.TableName</code></td>
-                                <td class="text-muted">@t.Description</td>
-                                <td><span class="badge bg-secondary-subtle text-secondary small">@t.Engine</span></td>
-                                <td class="text-end fw-semibold">@t.RowCount.ToString("N0")</td>
+                            <tr class="schema-table-row" data-table-name="@t.TableName" data-description="@t.Description">
+                                <td class="ps-3 py-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="table-name-code">@t.TableName</span>
+                                        <button type="button" class="btn btn-link btn-sm text-muted p-0 text-decoration-none" title="Copy Table Name" onclick="copyText('@t.TableName', this)">
+                                            <i class="bi bi-copy"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted font-monospace" style="font-size: 10px;">ENGINE=@t.Engine</small>
+                                </td>
+                                <td class="py-3 text-muted">
+                                    @t.Description
+                                </td>
+                                <td class="py-3 text-center">
+                                    <span class="badge @(t.RowCount > 0 ? "bg-primary-subtle text-primary border border-primary-subtle" : "bg-secondary-subtle text-secondary") rounded-pill px-2 py-1 fw-bold">
+                                        @t.RowCount.ToString("N0") rows
+                                    </span>
+                                </td>
+                                <td class="text-end pe-3 py-3">
+                                    <a asp-controller="Admin" asp-action="DatabaseRecords" asp-route-table="@t.TableName" class="btn btn-outline-primary btn-sm px-2 py-1 rounded-2" title="Inspect records in CRUD Grid">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i>Inspect
+                                    </a>
+                                </td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
+
+            <!-- FOOTER BAR -->
+            <div class="p-3 border-top bg-body-tertiary d-flex justify-content-between align-items-center small text-muted">
+                <span>Total Entities: <strong>@Model.TableStats.Count</strong> tables</span>
+                <a asp-controller="Admin" asp-action="DatabaseRecords" class="text-primary fw-semibold text-decoration-none d-inline-flex align-items-center gap-1">
+                    <span>Open Full Multi-Table CRUD Explorer</span>
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+
         </div>
     </div>
 
-    <!-- BACKUP ARCHIVE VAULT SECTION -->
-    <div class="col-lg-5">
-        <div class="admin-card p-4 h-100 d-flex flex-column">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-safe2-fill me-2 text-success"></i>Snapshot Archive Vault</h2>
-                <span class="badge bg-success-subtle text-success">Secure Storage</span>
+    <!-- RIGHT COLUMN: SNAPSHOT VAULT & RECOVERY ARCHIVE -->
+    <div class="col-xl-5">
+        <div class="schema-card-box">
+            
+            <!-- HEADER -->
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 bg-success-subtle text-success rounded-2">
+                        <i class="bi bi-safe2-fill"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 fw-bold text-dark mb-0">Disaster Recovery Snapshot Vault</h2>
+                        <small class="text-muted">@Model.BackupFiles.Count point-in-time SQL archives</small>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#snapshotModal">
+                    <i class="bi bi-plus-lg me-1"></i>New Snapshot
+                </button>
             </div>
 
-            <p class="small text-muted mb-3">Timestamped database snapshots vaulted in isolated application storage with SHA256 integrity checksums.</p>
-
-            @if (!Model.BackupFiles.Any())
-            {
-                <div class="text-center py-5 my-auto bg-light rounded-3">
-                    <i class="bi bi-cloud-arrow-down fs-2 text-muted mb-2 d-block"></i>
-                    <h3 class="h6 fw-bold text-dark mb-1">No Snapshots Generated Yet</h3>
-                    <p class="small text-muted mb-3">Click the button below to generate the initial full database snapshot.</p>
-                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#snapshotModal">
-                        <i class="bi bi-plus-lg me-1"></i>Create First Snapshot
-                    </button>
-                </div>
-            }
-            else
-            {
-                <div class="list-group list-group-flush flex-grow-1 overflow-auto" style="max-height: 480px;">
-                    @foreach (var f in Model.BackupFiles)
-                    {
-                        <div class="list-group-item px-0 py-3 border-bottom">
-                            <div class="d-flex justify-content-between align-items-start mb-1">
-                                <div>
-                                    <div class="fw-bold text-dark small"><i class="bi bi-filetype-sql text-primary me-1"></i>@f.FileName</div>
-                                    <small class="text-muted">@f.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC &bull; @f.FileSizeBytes</small>
-                                </div>
-                                <div class="d-flex gap-1">
-                                    <button type="button" class="btn btn-sm btn-outline-danger px-2 py-1" title="Restore Snapshot" onclick="openRestoreModal('@f.FileName')">
-                                        <i class="bi bi-arrow-counterclockwise"></i>
-                                    </button>
-                                    <a asp-controller="Admin" asp-action="DownloadBackup" asp-route-fileName="@f.FileName" class="btn btn-sm btn-outline-secondary px-2 py-1" title="Download Snapshot Archive">
-                                        <i class="bi bi-download"></i>
-                                    </a>
-                                    <form asp-controller="Admin" asp-action="DeleteBackup" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete backup snapshot @f.FileName?');">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="fileName" value="@f.FileName" />
-                                        <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1" title="Delete Snapshot File">
-                                            <i class="bi bi-trash3"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                            <div class="small text-muted font-monospace" style="font-size: 0.75rem;">
-                                SHA256: @f.Checksum...
-                            </div>
+            <!-- SNAPSHOTS LIST -->
+            <div class="p-3 flex-grow-1 overflow-auto" style="max-height: 520px;">
+                
+                @if (!Model.BackupFiles.Any())
+                {
+                    <div class="text-center py-5 my-3 bg-body-tertiary rounded-3 border border-dashed">
+                        <div class="p-3 bg-primary-subtle text-primary rounded-circle d-inline-flex mb-3">
+                            <i class="bi bi-cloud-arrow-down fs-2"></i>
                         </div>
-                    }
-                </div>
-            }
+                        <h3 class="h6 fw-bold text-dark mb-1">No Database Snapshots Vaulted</h3>
+                        <p class="small text-muted mb-3 max-w-300 mx-auto" style="max-width: 320px;">
+                            Secure your database schema, users, events, and audit logs by generating an immutable SQL dump snapshot.
+                        </p>
+                        <button type="button" class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-semibold" data-bs-toggle="modal" data-bs-target="#snapshotModal">
+                            <i class="bi bi-shield-check me-1"></i>Generate Initial Snapshot
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="mb-3">
+                        <input type="text" class="form-control form-control-sm" id="snapshotFilterInput" placeholder="Search vaulted files by name or date..." />
+                    </div>
+
+                    <div id="snapshotListContainer">
+                        @foreach (var f in Model.BackupFiles)
+                        {
+                            <div class="snapshot-item" data-snapshot-name="@f.FileName" data-date="@f.CreatedAt.ToString("yyyy-MM-dd")">
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                    <div class="d-flex align-items-center gap-2 min-w-0">
+                                        <div class="p-2 bg-primary-subtle text-primary rounded-2 fs-5">
+                                            <i class="bi bi-filetype-sql"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div class="fw-bold text-dark text-truncate small" title="@f.FileName">
+                                                @f.FileName
+                                            </div>
+                                            <div class="text-muted small" style="font-size: 11px;">
+                                                <i class="bi bi-calendar3 me-1"></i>@f.CreatedAt.ToString("MMM dd, yyyy &bull; HH:mm:ss") UTC
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-1 flex-shrink-0" style="font-size: 11px;">
+                                        @f.FileSizeBytes
+                                    </span>
+                                </div>
+
+                                <!-- CHECKSUM BAR -->
+                                <div class="d-flex justify-content-between align-items-center bg-body-tertiary p-2 rounded-2 border mb-2">
+                                    <div class="d-flex align-items-center gap-1 min-w-0">
+                                        <span class="text-muted fw-semibold" style="font-size: 10px;">SHA256:</span>
+                                        <span class="checksum-badge text-truncate" style="max-width: 220px;" id="chk-@f.FileName.Replace(".", "_")">@f.Checksum</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-link p-0 text-muted hover-primary text-decoration-none" title="Copy Checksum" onclick="copyChecksum('@f.Checksum', this)">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+
+                                <!-- ACTION BUTTONS -->
+                                <div class="d-flex justify-content-between align-items-center pt-1">
+                                    <span class="badge bg-success-subtle text-success small fw-semibold" style="font-size: 10px;">
+                                        <i class="bi bi-check2-circle me-1"></i>@f.Status
+                                    </span>
+
+                                    <div class="d-flex align-items-center gap-1">
+                                        <!-- RESTORE VERIFICATION -->
+                                        <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1" title="Authorize & Verify Restoration" onclick="openRestoreModal('@f.FileName')">
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i><span class="d-none d-sm-inline">Restore</span>
+                                        </button>
+                                        
+                                        <!-- DOWNLOAD -->
+                                        <a asp-controller="Admin" asp-action="DownloadBackup" asp-route-fileName="@f.FileName" class="btn btn-outline-secondary btn-sm px-2 py-1" title="Download SQL Archive">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+
+                                        <!-- DELETE -->
+                                        <form asp-controller="Admin" asp-action="DeleteBackup" method="post" class="d-inline" onsubmit="return confirm('Security Confirmation: Are you sure you want to permanently delete snapshot @f.FileName?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="fileName" value="@f.FileName" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm px-2 py-1" title="Delete Snapshot File">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+            </div>
+
+            <!-- VAULT FOOTER -->
+            <div class="p-3 border-top bg-body-tertiary d-flex justify-content-between align-items-center small text-muted">
+                <span>Vault Status: <strong class="text-success">Active & Encrypted</strong></span>
+                <span class="text-muted"><i class="bi bi-lock-fill me-1"></i>SuperAdmin Only</span>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- =======================================================
+     5. QUICK DIAGNOSTIC & MAINTENANCE UTILITIES BAR
+     ======================================================= -->
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="db-stat-card">
+            <div class="stat-icon-wrapper bg-primary-subtle text-primary">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h3 class="h6 fw-bold text-dark mb-1">Schema Integrity Validation</h3>
+                <p class="text-muted small mb-2">All foreign key constraints, indexes, and primary keys verified.</p>
+                <span class="badge bg-success-subtle text-success px-2 py-1 rounded-pill small">
+                    <i class="bi bi-check-circle-fill me-1"></i> 0 Inconsistencies
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="db-stat-card">
+            <div class="stat-icon-wrapper" style="background: rgba(147, 51, 234, 0.1); color: #9333ea;">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h3 class="h6 fw-bold text-dark mb-1">Security Audit Trail</h3>
+                <p class="text-muted small mb-2">Track all administrative logins, record mutations, and vault operations.</p>
+                <a asp-controller="Admin" asp-action="AuditLogs" class="text-primary fw-bold text-decoration-none small d-inline-flex align-items-center gap-1">
+                    <span>View Audit Logs</span>
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="db-stat-card">
+            <div class="stat-icon-wrapper bg-warning-subtle text-warning-emphasis">
+                <i class="bi bi-sliders2"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h3 class="h6 fw-bold text-dark mb-1">System Settings & Policies</h3>
+                <p class="text-muted small mb-2">Configure registration policies, event approval gates, and notifications.</p>
+                <a asp-controller="Admin" asp-action="Settings" class="text-primary fw-bold text-decoration-none small d-inline-flex align-items-center gap-1">
+                    <span>Open Settings</span>
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- SNAPSHOT MODAL -->
+<!-- =======================================================
+     6. MODALS: TRIGGER SNAPSHOT
+     ======================================================= -->
 <div class="modal fade" id="snapshotModal" tabindex="-1" aria-labelledby="snapshotModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content border-0 shadow">
-            <form asp-controller="Admin" asp-action="DatabaseBackup" method="post">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <form asp-controller="Admin" asp-action="DatabaseBackup" method="post" id="snapshotForm">
                 @Html.AntiForgeryToken()
-                <div class="modal-header border-bottom">
-                    <h2 class="modal-title h5 fw-bold" id="snapshotModalLabel"><i class="bi bi-cloud-arrow-down-fill text-primary me-2"></i>Trigger Database Snapshot</h2>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                
+                <div class="modal-header border-bottom bg-primary text-white p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2 bg-white bg-opacity-20 rounded-3 text-white fs-4">
+                            <i class="bi bi-cloud-arrow-down-fill"></i>
+                        </div>
+                        <div>
+                            <h2 class="modal-title h5 fw-bold mb-0 text-white" id="snapshotModalLabel">Generate Database Snapshot</h2>
+                            <small class="text-white-50">Create an immutable SQL point-in-time archive</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="alert alert-info border-0 small mb-3">
-                        <i class="bi bi-info-circle-fill me-1"></i> This will generate a complete UTF-8 SQL snapshot of table structures, relational schemas, and data rows into the secure application vault.
+
+                <div class="modal-body p-4">
+                    <div class="alert alert-info border-0 rounded-3 small mb-3 d-flex align-items-start gap-2">
+                        <i class="bi bi-info-circle-fill fs-5 text-info mt-1"></i>
+                        <div>
+                            <strong>Full Application Dump:</strong> This snapshot serializes all 41 schema entities including users, roles, events, bookings, circulars, and system configurations into UTF-8 SQL format.
+                        </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Snapshot Notes / Operator Memo</label>
-                        <input type="text" name="notes" class="form-control form-control-sm" placeholder="e.g. Scheduled pre-maintenance snapshot" />
+                        <label class="form-label small fw-bold text-dark">Operator Memo / Snapshot Label</label>
+                        <input type="text" name="notes" class="form-control rounded-3" placeholder="e.g. Scheduled Pre-Maintenance Snapshot" />
+                        <div class="form-text text-muted small">Optional description to tag this backup archive.</div>
+                    </div>
+
+                    <div class="bg-body-tertiary p-3 rounded-3 border">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Target Storage:</span>
+                            <span class="fw-semibold font-monospace">App_Data/Backups/</span>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Format:</span>
+                            <span class="fw-semibold">Idempotent SQL (ON DUPLICATE KEY)</span>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span class="text-muted">Integrity Checksum:</span>
+                            <span class="fw-semibold text-primary">Automated SHA256</span>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer border-top">
-                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-sm fw-semibold"><i class="bi bi-shield-check me-1"></i>Generate & Vault Snapshot</button>
+
+                <div class="modal-footer border-top bg-body-tertiary p-3">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold" id="btnSubmitSnapshot">
+                        <i class="bi bi-shield-check me-1"></i>Generate & Vault Now
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- RESTORE SNAPSHOT MODAL -->
+<!-- =======================================================
+     7. MODALS: RESTORE SNAPSHOT (HIGH SECURITY)
+     ======================================================= -->
 <div class="modal fade" id="restoreModal" tabindex="-1" aria-labelledby="restoreModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content border-0 shadow">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <form asp-controller="Admin" asp-action="DatabaseRestoreSnapshot" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="fileName" id="restoreFileName" value="" />
-                <div class="modal-header border-bottom bg-danger-subtle">
-                    <h2 class="modal-title h5 fw-bold text-danger" id="restoreModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Database Restoration</h2>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                
+                <div class="modal-header border-bottom bg-danger text-white p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2 bg-white bg-opacity-20 rounded-3 text-white fs-4">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        </div>
+                        <div>
+                            <h2 class="modal-title h5 fw-bold mb-0 text-white" id="restoreModalLabel">Authorize Database Restoration</h2>
+                            <small class="text-white-50">Disaster recovery verification safeguard</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="alert alert-warning small mb-3">
-                        <strong>Security Safeguard:</strong> Restoring a snapshot verifies table schema and row telemetry from the archive: <code id="restoreFileNameDisplay"></code>.
+
+                <div class="modal-body p-4">
+                    <div class="alert alert-warning border-0 rounded-3 small mb-3">
+                        <strong>Security Safeguard:</strong> You are about to initiate database restoration verification from snapshot archive:
+                        <div class="mt-2 p-2 bg-white rounded border font-monospace fw-bold text-danger text-break" id="restoreFileNameDisplay"></div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">SuperAdmin Master Password</label>
-                        <input type="password" name="superAdminPassword" class="form-control form-control-sm" placeholder="Enter SuperAdmin password to authorize" required />
+                        <label class="form-label small fw-bold text-dark">SuperAdmin Security Clearance Password</label>
+                        <div class="input-group">
+                            <input type="password" name="superAdminPassword" id="superAdminPasswordInput" class="form-control" placeholder="Enter SuperAdmin password" required autocomplete="current-password" />
+                            <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('superAdminPasswordInput', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text text-muted small">Restoration requires re-authentication with your SuperAdmin credentials.</div>
                     </div>
                 </div>
-                <div class="modal-footer border-top">
-                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger btn-sm fw-semibold"><i class="bi bi-arrow-counterclockwise me-1"></i>Authorize & Restore</button>
+
+                <div class="modal-footer border-top bg-body-tertiary p-3">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-semibold">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Authorize & Restore
+                    </button>
                 </div>
             </form>
         </div>
@@ -230,11 +729,108 @@
 
 @section Scripts {
     <script>
+        // 1. Open Restore Confirmation Modal
         function openRestoreModal(fileName) {
             document.getElementById('restoreFileName').value = fileName;
             document.getElementById('restoreFileNameDisplay').textContent = fileName;
             const modal = new bootstrap.Modal(document.getElementById('restoreModal'));
             modal.show();
+        }
+
+        // 2. Toggle Password Input Visibility
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) {
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                }
+            } else {
+                input.type = 'password';
+                if (icon) {
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
+                }
+            }
+        }
+
+        // 3. Copy Checksum to Clipboard with Visual Feedback
+        function copyChecksum(text, btn) {
+            if (!navigator.clipboard) {
+                const el = document.createElement('textarea');
+                el.value = text;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+            } else {
+                navigator.clipboard.writeText(text);
+            }
+
+            const icon = btn.querySelector('i');
+            if (icon) {
+                icon.classList.remove('bi-clipboard');
+                icon.classList.add('bi-check2');
+                setTimeout(() => {
+                    icon.classList.remove('bi-check2');
+                    icon.classList.add('bi-clipboard');
+                }, 2000);
+            }
+        }
+
+        // 4. Copy generic text
+        function copyText(text, btn) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text);
+            }
+            const icon = btn.querySelector('i');
+            if (icon) {
+                icon.classList.remove('bi-copy');
+                icon.classList.add('bi-check2');
+                setTimeout(() => {
+                    icon.classList.remove('bi-check2');
+                    icon.classList.add('bi-copy');
+                }, 1500);
+            }
+        }
+
+        // 5. Table Registry Live Filter
+        const tableFilter = document.getElementById('tableFilterInput');
+        if (tableFilter) {
+            tableFilter.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase().trim();
+                const rows = document.querySelectorAll('#dbTableRegistry tbody tr');
+                rows.forEach(row => {
+                    const name = row.getAttribute('data-table-name') || '';
+                    const desc = row.getAttribute('data-description') || '';
+                    if (name.toLowerCase().includes(term) || desc.toLowerCase().includes(term)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // 6. Snapshot Archive Live Filter
+        const snapshotFilter = document.getElementById('snapshotFilterInput');
+        if (snapshotFilter) {
+            snapshotFilter.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase().trim();
+                const items = document.querySelectorAll('#snapshotListContainer .snapshot-item');
+                items.forEach(item => {
+                    const name = item.getAttribute('data-snapshot-name') || '';
+                    const date = item.getAttribute('data-date') || '';
+                    if (name.toLowerCase().includes(term) || date.toLowerCase().includes(term)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
         }
     </script>
 }

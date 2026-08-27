@@ -7,10 +7,25 @@
 
 <div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h3 fw-bold text-dark mb-1">👥 User Management</h1>
-        <p class="text-muted small mb-0">Manage campus accounts, permissions, roles, and status controls.</p>
+        <h1 class="h3 fw-bold text-dark mb-1">User Directory & Access Control</h1>
+        <p class="text-muted small mb-0">Manage user accounts, SuperAdmin approvals, role assignments, and platform status.</p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
+        @if (Model.IsSuperAdmin)
+        {
+            <a asp-controller="Admin" asp-action="UserApprovals" class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3 fw-semibold text-dark">
+                <i class="bi bi-clock-history"></i>
+                <span>Approvals Queue (@Model.PendingApprovalCount)</span>
+            </a>
+        }
+        <a asp-controller="Admin" asp-action="RegisterUser" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3">
+            <i class="bi bi-person-plus-fill"></i>
+            <span>Register New User</span>
+        </a>
+        <button type="button" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#registerUserModal">
+            <i class="bi bi-lightning-charge"></i>
+            <span>Quick Register</span>
+        </button>
         <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportTableToCSV('usersTable', 'hawassa_campus_users.csv')">
             <i class="bi bi-download me-1"></i>Export CSV
         </button>
@@ -49,25 +64,77 @@
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
-        <div class="admin-stat-card">
-            <div class="stat-icon-box bg-warning-subtle text-warning"><i class="bi bi-clock-history"></i></div>
-            <div>
-                <div class="stat-num">@Model.PendingCount</div>
-                <div class="stat-desc">Pending Verification</div>
+        <a asp-controller="Admin" asp-action="Users" asp-route-status="PENDING" class="text-decoration-none">
+            <div class="admin-stat-card border border-warning @(Model.PendingApprovalCount > 0 ? "shadow-sm bg-warning-subtle bg-opacity-25" : "")">
+                <div class="stat-icon-box bg-warning-subtle text-warning"><i class="bi bi-clock-history"></i></div>
+                <div>
+                    <div class="stat-num text-warning-emphasis">
+                        @Model.PendingApprovalCount
+                        @if (Model.PendingApprovalCount > 0 && Model.IsSuperAdmin)
+                        {
+                            <span class="badge bg-danger text-white fs-6 py-0 px-2 align-middle ms-1">Review</span>
+                        }
+                    </div>
+                    <div class="stat-desc fw-semibold text-warning-emphasis">Pending SuperAdmin Approval</div>
+                </div>
             </div>
-        </div>
-    </div>
+        </a>
 </div>
 
+@if (Model.PendingApprovalCount > 0)
+{
+    <div class="alert alert-warning border-warning-subtle d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 rounded-3 shadow-sm mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-warning text-dark rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                <i class="bi bi-hourglass-split fs-5"></i>
+            </div>
+            <div>
+                <h6 class="fw-bold text-dark mb-0">@Model.PendingApprovalCount User Accounts Pending SuperAdmin Clearance</h6>
+                <span class="text-muted small">Registered by Campus Administrators. SuperAdmin activation is required before users can log in.</span>
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-controller="Admin" asp-action="UserApprovals" class="btn btn-warning btn-sm fw-semibold shadow-sm px-3">
+                <i class="bi bi-shield-check me-1"></i>Dedicated Approvals Hub
+            </a>
+            @if (Model.IsSuperAdmin)
+            {
+                <form asp-controller="Admin" asp-action="ApproveAllPending" method="post" class="d-inline" onsubmit="return confirm('Approve and activate ALL @Model.PendingApprovalCount pending accounts at once?');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                    <button type="submit" class="btn btn-success btn-sm fw-semibold shadow-sm px-3">
+                        <i class="bi bi-check-all me-1"></i>Approve All Pending
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+}
+
 <!-- =======================================================
-     FILTERS & SEARCH BAR
+     FILTERS & QUICK TABS
      ======================================================= -->
 <div class="admin-card p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2 mb-3 pb-2 border-bottom">
+        <a asp-controller="Admin" asp-action="Users" class="btn btn-sm @(string.IsNullOrEmpty(Model.StatusFilter) || Model.StatusFilter == "ALL" ? "btn-dark" : "btn-light border")">
+            All Users (@Model.TotalCount)
+        </a>
+        <a asp-controller="Admin" asp-action="Users" asp-route-status="ACTIVE" class="btn btn-sm @(Model.StatusFilter == "ACTIVE" ? "btn-success" : "btn-light border")">
+            <i class="bi bi-check-circle me-1"></i>Active (@Model.ActiveCount)
+        </a>
+        <a asp-controller="Admin" asp-action="Users" asp-route-status="PENDING" class="btn btn-sm @(Model.StatusFilter == "PENDING" ? "btn-warning text-dark fw-bold" : "btn-light border")">
+            <i class="bi bi-hourglass-split me-1"></i>Pending Approvals (@Model.PendingApprovalCount)
+        </a>
+        <a asp-controller="Admin" asp-action="Users" asp-route-status="SUSPENDED" class="btn btn-sm @(Model.StatusFilter == "SUSPENDED" ? "btn-danger" : "btn-light border")">
+            <i class="bi bi-slash-circle me-1"></i>Suspended (@Model.SuspendedCount)
+        </a>
+    </div>
+
     <form method="get" class="row g-2 align-items-center">
         <div class="col-md-5">
             <div class="input-group input-group-sm">
                 <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                <input type="search" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search by name, email, username..." data-table-filter="usersTable" />
+                <input type="search" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search by name, email, username, student ID..." />
             </div>
         </div>
         <div class="col-md-3">
@@ -76,6 +143,7 @@
                 <option value="STUDENT" selected="@(Model.RoleFilter == "STUDENT")">Students</option>
                 <option value="FACULTY" selected="@(Model.RoleFilter == "FACULTY")">Faculty</option>
                 <option value="STAFF" selected="@(Model.RoleFilter == "STAFF")">Staff</option>
+                <option value="ORGANIZATION" selected="@(Model.RoleFilter == "ORGANIZATION")">Organizations / Clubs</option>
                 <option value="ADMIN" selected="@(Model.RoleFilter == "ADMIN")">Administrators</option>
             </select>
         </div>
@@ -83,8 +151,9 @@
             <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="ALL" selected="@(Model.StatusFilter == null || Model.StatusFilter == "ALL")">All Statuses</option>
                 <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">Active</option>
+                <option value="PENDING" selected="@(Model.StatusFilter == "PENDING")">Pending SuperAdmin Approval</option>
                 <option value="SUSPENDED" selected="@(Model.StatusFilter == "SUSPENDED")">Suspended</option>
-                <option value="PENDING" selected="@(Model.StatusFilter == "PENDING")">Pending</option>
+                <option value="INACTIVE" selected="@(Model.StatusFilter == "INACTIVE")">Inactive / Rejected</option>
             </select>
         </div>
         <div class="col-md-1">
@@ -98,123 +167,235 @@
      ======================================================= -->
 <div class="admin-card overflow-hidden">
     <div class="table-responsive">
-        <table class="table admin-table" id="usersTable">
+        <table class="table admin-table align-middle" id="usersTable">
             <thead>
                 <tr>
-                    <th>User</th>
-                    <th>Email / Contact</th>
+                    <th>User & Identity</th>
+                    <th>Email / Phone</th>
                     <th>Department</th>
-                    <th>Account Type</th>
+                    <th>Account Role</th>
                     <th>Status</th>
-                    <th>Activity</th>
                     <th>Registered</th>
                     <th class="text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var user in Model.Users)
+                @if (!Model.Users.Any())
                 {
                     <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-people fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            <p class="mb-2">No user accounts found matching the current criteria.</p>
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#registerUserModal">
+                                <i class="bi bi-person-plus me-1"></i>Register New User
+                            </button>
+                        </td>
+                    </tr>
+                }
+                @foreach (var user in Model.Users)
+                {
+                    var isPending = user.Status == "PENDING" || user.Status == "PENDING_APPROVAL";
+                    <tr class="@(isPending ? "table-warning bg-opacity-25" : "")">
                         <td>
                             <div class="d-flex align-items-center gap-2">
-                                <div class="admin-avatar" style="width: 32px; height: 32px; font-size: 12px;">
+                                <div class="admin-avatar @(isPending ? "bg-warning text-dark fw-bold" : "")" style="width: 36px; height: 36px; font-size: 13px;">
                                     @(string.IsNullOrEmpty(user.FullName) ? "U" : user.FullName.Substring(0, 1).ToUpper())
                                 </div>
                                 <div>
-                                    <div class="fw-semibold text-dark">@user.FullName</div>
-                                    <small class="text-muted">@@@user.Username</small>
+                                    <div class="fw-semibold text-dark">
+                                        @user.FullName
+                                        @if (isPending)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1" style="font-size: 10px;">Pending Approval</span>
+                                        }
+                                    </div>
+                                    <div class="small text-muted d-flex align-items-center flex-wrap gap-2">
+                                        <span>@@@user.Username</span>
+                                        @if (!string.IsNullOrEmpty(user.StudentId))
+                                        {
+                                            <span class="badge bg-light text-secondary border">ID: @user.StudentId</span>
+                                        }
+                                        else if (!string.IsNullOrEmpty(user.EmployeeId))
+                                        {
+                                            <span class="badge bg-light text-secondary border">EMP: @user.EmployeeId</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(user.RegisteredByAdminName))
+                                        {
+                                            <span class="text-primary small" style="font-size: 11px;"><i class="bi bi-person-gear me-1"></i>Reg. by: @user.RegisteredByAdminName</span>
+                                        }
+                                    </div>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <div>@user.Email</div>
+                            <div class="small fw-semibold text-dark">@user.Email</div>
                             <small class="text-muted">@(user.Phone ?? "No phone")</small>
                         </td>
                         <td>
                             <span class="badge bg-light text-dark border">@user.DepartmentName</span>
                         </td>
                         <td>
-                            <span class="badge bg-primary-subtle text-primary border">@user.AccountType</span>
+                            <span class="badge bg-primary-subtle text-primary border fw-semibold">@user.AccountType</span>
                         </td>
                         <td>
                             @if (user.Status == "ACTIVE")
                             {
-                                <span class="badge-status badge-active">Active</span>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2 rounded-pill">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Active
+                                </span>
+                            }
+                            else if (isPending)
+                            {
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning py-1 px-2 rounded-pill">
+                                    <i class="bi bi-hourglass-split me-1"></i>Pending SuperAdmin
+                                </span>
                             }
                             else if (user.Status == "SUSPENDED")
                             {
-                                <span class="badge-status badge-suspended">Suspended</span>
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-1 px-2 rounded-pill">
+                                    <i class="bi bi-slash-circle me-1"></i>Suspended
+                                </span>
                             }
                             else
                             {
-                                <span class="badge-status badge-pending">@user.Status</span>
+                                <span class="badge bg-secondary-subtle text-secondary py-1 px-2 rounded-pill">
+                                    @user.Status
+                                </span>
                             }
-                        </td>
-                        <td>
-                            <small class="d-block text-muted"><i class="bi bi-calendar-event me-1"></i>@user.EventCount events</small>
-                            <small class="d-block text-muted"><i class="bi bi-ticket-perforated me-1"></i>@user.RegistrationCount registrations</small>
                         </td>
                         <td class="small text-muted">
                             @user.CreatedAt.ToString("MMM dd, yyyy")
                         </td>
                         <td class="text-end">
-                            <div class="dropdown d-inline-block">
-                                <button class="btn btn-sm btn-light border dropdown-toggle py-1 px-2" type="button" data-bs-toggle="dropdown">
-                                    Manage
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                    <li class="dropdown-header">Change Status</li>
-                                    <li>
-                                        <form asp-controller="Admin" asp-action="UserToggleStatus" method="post">
+                            <div class="d-inline-flex align-items-center gap-1">
+                                @if (isPending)
+                                {
+                                    @if (Model.IsSuperAdmin)
+                                    {
+                                        <!-- SUPERADMIN QUICK APPROVE -->
+                                        <form asp-controller="Admin" asp-action="UserApprove" method="post" class="d-inline">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@user.Id" />
-                                            <input type="hidden" name="status" value="ACTIVE" />
-                                            <button type="submit" class="dropdown-item text-success"><i class="bi bi-check-circle me-2"></i>Activate</button>
+                                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                            <button type="submit" class="btn btn-sm btn-success py-1 px-2 fw-semibold d-inline-flex align-items-center gap-1 shadow-sm" title="Approve & Activate User">
+                                                <i class="bi bi-check-lg"></i>
+                                                <span class="d-none d-md-inline">Approve</span>
+                                            </button>
                                         </form>
-                                    </li>
-                                    <li>
-                                        <form asp-controller="Admin" asp-action="UserToggleStatus" method="post">
+
+                                        <!-- SUPERADMIN QUICK REJECT -->
+                                        <form asp-controller="Admin" asp-action="UserReject" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to reject this registration?');">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@user.Id" />
-                                            <input type="hidden" name="status" value="SUSPENDED" />
-                                            <button type="submit" class="dropdown-item text-warning"><i class="bi bi-pause-circle me-2"></i>Suspend</button>
+                                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" title="Reject Registration">
+                                                <i class="bi bi-x-lg"></i>
+                                                <span class="d-none d-md-inline">Reject</span>
+                                            </button>
                                         </form>
-                                    </li>
-                                    <li><hr class="dropdown-divider" /></li>
-                                    <li class="dropdown-header">Assign Role</li>
-                                    <li>
-                                        <form asp-controller="Admin" asp-action="UserChangeRole" method="post">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@user.Id" />
-                                            <input type="hidden" name="role" value="ADMIN" />
-                                            <button type="submit" class="dropdown-item"><i class="bi bi-shield-lock me-2"></i>Make Admin</button>
-                                        </form>
-                                    </li>
-                                    <li>
-                                        <form asp-controller="Admin" asp-action="UserChangeRole" method="post">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@user.Id" />
-                                            <input type="hidden" name="role" value="FACULTY" />
-                                            <button type="submit" class="dropdown-item"><i class="bi bi-person-badge me-2"></i>Make Faculty</button>
-                                        </form>
-                                    </li>
-                                    <li>
-                                        <form asp-controller="Admin" asp-action="UserChangeRole" method="post">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@user.Id" />
-                                            <input type="hidden" name="role" value="STUDENT" />
-                                            <button type="submit" class="dropdown-item"><i class="bi bi-mortarboard me-2"></i>Make Student</button>
-                                        </form>
-                                    </li>
-                                    <li><hr class="dropdown-divider" /></li>
-                                    <li>
-                                        <form asp-controller="Admin" asp-action="UserDelete" method="post" onsubmit="return confirm('Are you sure you want to permanently delete this user?');">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@user.Id" />
-                                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Delete User</button>
-                                        </form>
-                                    </li>
-                                </ul>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary small py-1 px-2" title="Requires SuperAdmin clearance to activate">
+                                            <i class="bi bi-lock-fill me-1"></i>Awaiting SuperAdmin
+                                        </span>
+                                    }
+                                }
+
+                                <!-- MANAGE DROPDOWN -->
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-sm btn-light border dropdown-toggle py-1 px-2" type="button" data-bs-toggle="dropdown">
+                                        Manage
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                        @if (isPending && Model.IsSuperAdmin)
+                                        {
+                                            <li class="dropdown-header text-warning">SuperAdmin Actions</li>
+                                            <li>
+                                                <form asp-controller="Admin" asp-action="UserApprove" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@user.Id" />
+                                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                                    <button type="submit" class="dropdown-item text-success fw-semibold"><i class="bi bi-check-circle me-2"></i>Approve & Activate</button>
+                                                </form>
+                                            </li>
+                                            <li>
+                                                <form asp-controller="Admin" asp-action="UserReject" method="post" onsubmit="return confirm('Reject this registration?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@user.Id" />
+                                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-x-circle me-2"></i>Reject Registration</button>
+                                                </form>
+                                            </li>
+                                            <li><hr class="dropdown-divider" /></li>
+                                        }
+
+                                        <li class="dropdown-header">Change Status</li>
+                                        <li>
+                                            <form asp-controller="Admin" asp-action="UserToggleStatus" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@user.Id" />
+                                                <input type="hidden" name="status" value="ACTIVE" />
+                                                <button type="submit" class="dropdown-item text-success"><i class="bi bi-check-circle me-2"></i>Set Active</button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form asp-controller="Admin" asp-action="UserToggleStatus" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@user.Id" />
+                                                <input type="hidden" name="status" value="SUSPENDED" />
+                                                <button type="submit" class="dropdown-item text-warning"><i class="bi bi-pause-circle me-2"></i>Suspend</button>
+                                            </form>
+                                        </li>
+
+                                        @if (Model.IsSuperAdmin)
+                                        {
+                                            <li><hr class="dropdown-divider" /></li>
+                                            <li class="dropdown-header">Assign Role (SuperAdmin)</li>
+                                            <li>
+                                                <form asp-controller="Admin" asp-action="UserChangeRole" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@user.Id" />
+                                                    <input type="hidden" name="role" value="ADMIN" />
+                                                    <button type="submit" class="dropdown-item"><i class="bi bi-shield-lock me-2"></i>Make Admin</button>
+                                                </form>
+                                            </li>
+                                            <li>
+                                                <form asp-controller="Admin" asp-action="UserChangeRole" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@user.Id" />
+                                                    <input type="hidden" name="role" value="FACULTY" />
+                                                    <button type="submit" class="dropdown-item"><i class="bi bi-person-badge me-2"></i>Make Faculty</button>
+                                                </form>
+                                            </li>
+                                            <li>
+                                                <form asp-controller="Admin" asp-action="UserChangeRole" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@user.Id" />
+                                                    <input type="hidden" name="role" value="STAFF" />
+                                                    <button type="submit" class="dropdown-item"><i class="bi bi-briefcase me-2"></i>Make Staff</button>
+                                                </form>
+                                            </li>
+                                            <li>
+                                                <form asp-controller="Admin" asp-action="UserChangeRole" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@user.Id" />
+                                                    <input type="hidden" name="role" value="STUDENT" />
+                                                    <button type="submit" class="dropdown-item"><i class="bi bi-mortarboard me-2"></i>Make Student</button>
+                                                </form>
+                                            </li>
+                                        }
+
+                                        <li><hr class="dropdown-divider" /></li>
+                                        <li>
+                                            <form asp-controller="Admin" asp-action="UserDelete" method="post" onsubmit="return confirm('Are you sure you want to permanently delete this user?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@user.Id" />
+                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Delete User</button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -223,3 +404,201 @@
         </table>
     </div>
 </div>
+
+<!-- =======================================================
+     REGISTER USER MODAL (ADMIN & SUPERADMIN)
+     ======================================================= -->
+<div class="modal fade" id="registerUserModal" tabindex="-1" aria-labelledby="registerUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-plus-fill fs-5"></i>
+                    <h5 class="modal-title fw-bold mb-0" id="registerUserModalLabel">Register New Campus User Account</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form asp-controller="Admin" asp-action="UserCreate" method="post" id="adminRegisterForm">
+                @Html.AntiForgeryToken()
+
+                <div class="modal-body p-4">
+                    <!-- ROLE POLICY NOTICE -->
+                    <div class="alert @(Model.IsSuperAdmin ? "alert-info" : "alert-warning") d-flex align-items-center gap-2 py-2 px-3 mb-4 rounded-3 small">
+                        <i class="bi @(Model.IsSuperAdmin ? "bi-shield-check" : "bi-exclamation-triangle-fill") fs-5 flex-shrink-0"></i>
+                        <div>
+                            @if (Model.IsSuperAdmin)
+                            {
+                                <span><strong>SuperAdmin Provisioning:</strong> As a SuperAdmin, accounts you create can be activated immediately or placed in pending status.</span>
+                            }
+                            else
+                            {
+                                <span><strong>Admin Registration Policy:</strong> User accounts created by Campus Administrators are created in <strong>PENDING</strong> status and require SuperAdmin approval before the user can log in.</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- FULL NAME -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Full Legal Name *</label>
+                            <input type="text" name="fullName" class="form-control form-control-sm" required placeholder="e.g. Abebe Kebede" />
+                        </div>
+
+                        <!-- USERNAME -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Username *</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">@@</span>
+                                <input type="text" name="username" class="form-control" required placeholder="e.g. abebe_k" />
+                            </div>
+                        </div>
+
+                        <!-- EMAIL -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">University / Contact Email *</label>
+                            <input type="email" name="email" class="form-control form-control-sm" required placeholder="e.g. abebe@hawassa.edu.et" />
+                        </div>
+
+                        <!-- PHONE NUMBER -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Phone Number</label>
+                            <input type="tel" name="phone" class="form-control form-control-sm" placeholder="e.g. +251 911 234567" />
+                        </div>
+
+                        <!-- INITIAL PASSWORD -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Temporary Password *</label>
+                            <input type="text" name="password" class="form-control form-control-sm font-monospace" required value="Hawassa@2026!" />
+                            <small class="text-muted" style="font-size: 11px;">User will use this password on first login.</small>
+                        </div>
+
+                        <!-- ACCOUNT ROLE / TYPE -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Account Type & Role *</label>
+                            <select name="accountType" id="modalAccountType" class="form-select form-select-sm" required onchange="handleAccountTypeChange(this.value)">
+                                <option value="STUDENT" selected>Student Account</option>
+                                <option value="FACULTY">Faculty / Academic Staff</option>
+                                <option value="STAFF">Administrative Staff</option>
+                                <option value="ORGANIZATION">Student Club / Organization</option>
+                                @if (Model.IsSuperAdmin)
+                                {
+                                    <option value="ADMIN">Campus Administrator</option>
+                                }
+                                else
+                                {
+                                    <option value="ADMIN" disabled>Campus Administrator (SuperAdmin Only)</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- DEPARTMENT -->
+                        <div class="col-md-12">
+                            <label class="form-label small fw-semibold text-dark">Academic Department / Faculty</label>
+                            <select name="departmentId" class="form-select form-select-sm">
+                                <option value="">-- Select Campus Department (Optional) --</option>
+                                @foreach (var dept in Model.Departments)
+                                {
+                                    <option value="@dept.id">@dept.name (@(dept.code ?? "DEPT"))</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- DYNAMIC FIELD: STUDENT ID -->
+                        <div class="col-md-6" id="studentIdContainer">
+                            <label class="form-label small fw-semibold text-dark">Student ID Number</label>
+                            <input type="text" name="studentId" class="form-control form-control-sm" placeholder="e.g. UGR/1234/16 or HU/45821/15" />
+                        </div>
+
+                        <!-- DYNAMIC FIELD: EMPLOYEE ID -->
+                        <div class="col-md-6 d-none" id="employeeIdContainer">
+                            <label class="form-label small fw-semibold text-dark">Staff / Faculty Employee ID</label>
+                            <input type="text" name="employeeId" class="form-control form-control-sm" placeholder="e.g. EMP-HU-1042 or FAC-HU-8091" />
+                        </div>
+
+                        <!-- DYNAMIC FIELD: ORGANIZATION NAME -->
+                        <div class="col-md-6 d-none" id="organizationNameContainer">
+                            <label class="form-label small fw-semibold text-dark">Club / Society Name</label>
+                            <input type="text" name="organizationName" class="form-control form-control-sm" placeholder="e.g. Hawassa Computing Society" />
+                        </div>
+
+                        <!-- DYNAMIC FIELD: ORGANIZATION TYPE -->
+                        <div class="col-md-6 d-none" id="organizationTypeContainer">
+                            <label class="form-label small fw-semibold text-dark">Organization Category</label>
+                            <select name="organizationType" class="form-select form-select-sm">
+                                <option value="CLUB">Academic / Interest Club</option>
+                                <option value="SOCIETY">Student Society</option>
+                                <option value="UNION">Student Union Body</option>
+                                <option value="SPORTS">Sports Association</option>
+                            </select>
+                        </div>
+
+                        @if (Model.IsSuperAdmin)
+                        {
+                            <!-- SUPERADMIN STATUS CHOICE -->
+                            <div class="col-md-12 pt-2 border-top">
+                                <label class="form-label small fw-semibold text-dark">Initial Account Status</label>
+                                <div class="d-flex gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="initialStatus" id="statusActive" value="ACTIVE" checked />
+                                        <label class="form-check-label small fw-semibold text-success" for="statusActive">
+                                            <i class="bi bi-check-circle me-1"></i>Active (Immediate Login Access)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="initialStatus" id="statusPending" value="PENDING" />
+                                        <label class="form-check-label small fw-semibold text-warning-emphasis" for="statusPending">
+                                            <i class="bi bi-clock-history me-1"></i>Pending (Approval Queue)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light px-4 py-3">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-primary px-4 fw-semibold shadow-sm">
+                        <i class="bi bi-person-check-fill me-1"></i>Register User Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function handleAccountTypeChange(role) {
+        var studentCont = document.getElementById('studentIdContainer');
+        var empCont = document.getElementById('employeeIdContainer');
+        var orgNameCont = document.getElementById('organizationNameContainer');
+        var orgTypeCont = document.getElementById('organizationTypeContainer');
+
+        // Reset visibility
+        if (studentCont) studentCont.classList.add('d-none');
+        if (empCont) empCont.classList.add('d-none');
+        if (orgNameCont) orgNameCont.classList.add('d-none');
+        if (orgTypeCont) orgTypeCont.classList.add('d-none');
+
+        if (role === 'STUDENT') {
+            if (studentCont) studentCont.classList.remove('d-none');
+        } else if (role === 'STAFF' || role === 'FACULTY' || role === 'ADMIN') {
+            if (empCont) empCont.classList.remove('d-none');
+        } else if (role === 'ORGANIZATION') {
+            if (orgNameCont) orgNameCont.classList.remove('d-none');
+            if (orgTypeCont) orgTypeCont.classList.remove('d-none');
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('openModal') === 'true') {
+            var modalEl = document.getElementById('registerUserModal');
+            if (modalEl) {
+                var modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+        }
+    });
+</script>
