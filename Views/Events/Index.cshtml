@@ -92,60 +92,85 @@
         <div class="row g-4">
             @foreach (var item in Model)
             {
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column transition-all" style="border: 1px solid #e2e8f0 !important;">
-                        <!-- EVENT IMAGE & DATE BADGE -->
-                        <div class="position-relative" style="height: 180px; background: #f1f5f9; overflow: hidden;">
+                var catClass = "general";
+                var catIcon = "bi-calendar-event";
+                if (!string.IsNullOrEmpty(item.Category))
+                {
+                    var catLower = item.Category.ToLower();
+                    if (catLower.Contains("tech")) { catClass = "tech"; catIcon = "bi-laptop"; }
+                    else if (catLower.Contains("cult") || catLower.Contains("art")) { catClass = "culture"; catIcon = "bi-palette"; }
+                    else if (catLower.Contains("sport") || catLower.Contains("athlet")) { catClass = "sports"; catIcon = "bi-trophy"; }
+                    else if (catLower.Contains("work") || catLower.Contains("train")) { catClass = "workshop"; catIcon = "bi-journal-text"; }
+                    else if (catLower.Contains("acad") || catLower.Contains("conf")) { catClass = "academic"; catIcon = "bi-mortarboard"; }
+                }
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="event-card-modern">
+                        <!-- EVENT IMAGE & FLOATING BADGES -->
+                        <div class="event-card-img-wrapper">
                             @if (!string.IsNullOrEmpty(item.ImageUrl))
                             {
-                                <img src="@item.ImageUrl" alt="@item.Title" class="w-100 h-100 object-fit-cover" />
+                                <img src="@item.ImageUrl" alt="@item.Title" loading="lazy" />
                             }
                             else
                             {
-                                <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80" alt="@item.Title" class="w-100 h-100 object-fit-cover" />
+                                <div class="event-fallback-thumbnail @catClass">
+                                    <i class="bi @catIcon fs-1 mb-1"></i>
+                                    <span class="small fw-semibold text-white text-opacity-90">@(item.Category ?? "Campus Event")</span>
+                                </div>
                             }
-                            <div class="position-absolute top-0 start-0 m-3 bg-white text-dark rounded-3 px-2 py-1 text-center shadow-sm" style="min-width: 50px;">
-                                <strong class="d-block text-primary fs-5 lh-1">@item.EventDate.Day</strong>
-                                <small class="text-uppercase fw-bold text-muted" style="font-size: 10px;">@item.EventDate.ToString("MMM")</small>
+
+                            <!-- Date Pill (Top Left) -->
+                            <div class="event-date-pill">
+                                <span class="day">@item.EventDate.Day</span>
+                                <span class="month">@item.EventDate.ToString("MMM")</span>
                             </div>
+
+                            <!-- Category Pill (Top Right) -->
                             @if (!string.IsNullOrEmpty(item.Category))
                             {
-                                <span class="position-absolute top-0 end-0 m-3 badge bg-dark bg-opacity-75 text-white">
+                                <div class="event-category-pill">
                                     @item.Category
-                                </span>
+                                </div>
                             }
                         </div>
 
                         <!-- EVENT BODY -->
-                        <div class="card-body p-4 d-flex flex-column flex-grow-1">
-                            <h5 class="card-title fw-bold text-dark mb-2 line-clamp-2">
-                                <a asp-controller="Events" asp-action="Details" asp-route-id="@item.Id" class="text-dark text-decoration-none hover-primary">
+                        <div class="event-card-body">
+                            <h5 class="event-card-title">
+                                <a asp-controller="Events" asp-action="Details" asp-route-id="@item.Id">
                                     @item.Title
                                 </a>
                             </h5>
 
-                            <p class="card-text text-muted small mb-3 flex-grow-1" style="line-height: 1.5;">
+                            <p class="event-card-desc">
                                 @(string.IsNullOrEmpty(item.ShortDescription) ? (item.Description != null && item.Description.Length > 110 ? item.Description.Substring(0, 110) + "..." : item.Description) : item.ShortDescription)
                             </p>
 
-                            <div class="small text-secondary mb-3">
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <i class="bi bi-geo-alt text-danger"></i>
+                            <!-- METADATA SPECS -->
+                            <div class="event-specs-list">
+                                <div class="event-spec-row">
+                                    <i class="bi bi-geo-alt-fill text-danger flex-shrink-0"></i>
                                     <span class="text-truncate">@(string.IsNullOrEmpty(item.Venue) ? "Main Campus Hall" : item.Venue)</span>
                                 </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <i class="bi bi-clock text-primary"></i>
+                                <div class="event-spec-row">
+                                    <i class="bi bi-clock-fill text-primary flex-shrink-0"></i>
                                     <span>@item.StartTime.ToString(@"hh\:mm") @(item.EndTime.HasValue ? "- " + item.EndTime.Value.ToString(@"hh\:mm") : "")</span>
                                 </div>
                             </div>
 
-                            <!-- EVENT FOOTER / RSVP -->
-                            <div class="pt-3 border-top d-flex align-items-center justify-content-between">
-                                <span class="small text-muted">
-                                    <i class="bi bi-people me-1"></i> @item.RegisteredCount / @(item.Capacity.HasValue ? item.Capacity.Value.ToString() : "Open")
-                                </span>
-                                <a asp-controller="Events" asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-primary px-3 fw-semibold">
-                                    View & RSVP &rarr;
+                            <!-- EVENT FOOTER & CTA -->
+                            <div class="event-card-footer">
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 11px;">
+                                        <i class="bi bi-tag me-1"></i>Free
+                                    </span>
+                                    <span class="small text-muted" style="font-size: 11px;">
+                                        &bull; @item.RegisteredCount / @(item.Capacity.HasValue ? item.Capacity.Value.ToString() : "Open")
+                                    </span>
+                                </div>
+                                <a asp-controller="Events" asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold">
+                                    View Details &rarr;
                                 </a>
                             </div>
                         </div>
@@ -162,8 +187,8 @@
             <p class="text-muted small mx-auto" style="max-width: 420px;">
                 No scheduled activities match your search criteria. Try selecting a different category or clearing filters.
             </p>
-            <a asp-controller="Events" asp-action="Index" class="btn btn-outline-primary btn-sm mt-2">
-                Show All Events
+            <a asp-controller="Events" asp-action="Index" class="btn btn-outline-primary btn-sm mt-2 rounded-pill px-4">
+                Reset Filter Criteria
             </a>
         </div>
     }

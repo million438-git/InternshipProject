@@ -1024,3 +1024,253 @@
     color: var(--text-secondary, #cbd5e1) !important;
 }
 
+/* =========================================================
+   MODERN PRODUCTION EVENT CARD
+   ========================================================= */
+.event-card-modern {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: var(--card-shadow, 0 2px 8px -2px rgba(0, 0, 0, 0.05));
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.event-card-modern:hover {
+    border-color: var(--primary, #2563eb);
+    transform: translateY(-4px);
+    box-shadow: var(--card-shadow-hover, 0 12px 24px -4px rgba(0, 0, 0, 0.12));
+}
+
+.event-card-img-wrapper {
+    position: relative;
+    width: 100%;
+    height: 190px;
+    background-color: var(--bg-elevated, #f1f5f9);
+    overflow: hidden;
+}
+
+.event-card-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.event-card-modern:hover .event-card-img-wrapper img {
+    transform: scale(1.04);
+}
+
+/* Fallback category placeholder */
+.event-fallback-thumbnail {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #091e42 0%, #1e3a8a 60%, #2563eb 100%);
+    color: #ffffff;
+    text-align: center;
+    padding: 16px;
+}
+
+.event-fallback-thumbnail.tech {
+    background: linear-gradient(135deg, #0f172a 0%, #0369a1 100%);
+}
+
+.event-fallback-thumbnail.culture {
+    background: linear-gradient(135deg, #3b0764 0%, #7e22ce 100%);
+}
+
+.event-fallback-thumbnail.sports {
+    background: linear-gradient(135deg, #064e3b 0%, #059669 100%);
+}
+
+.event-fallback-thumbnail.workshop {
+    background: linear-gradient(135deg, #7c2d12 0%, #d97706 100%);
+}
+
+.event-date-pill {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-radius: 10px;
+    padding: 6px 12px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    line-height: 1;
+    z-index: 2;
+}
+
+.event-date-pill .day {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #1e40af;
+    display: block;
+}
+
+.event-date-pill .month {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-top: 2px;
+    display: block;
+}
+
+.event-category-pill {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(8px);
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 50px;
+    z-index: 2;
+    letter-spacing: 0.3px;
+}
+
+.event-card-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.event-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-main, #0f172a);
+    margin-bottom: 8px;
+    line-height: 1.35;
+}
+
+.event-card-title a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.event-card-title a:hover {
+    color: var(--primary, #2563eb);
+}
+
+.event-card-desc {
+    color: var(--text-muted, #64748b);
+    font-size: 0.875rem;
+    line-height: 1.55;
+    margin-bottom: 16px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.event-specs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #475569);
+    margin-bottom: 16px;
+    margin-top: auto;
+}
+
+.event-spec-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.event-card-footer {
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color, #f1f5f9);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+/* =========================================================
+   IMAGE UPLOAD INTERACTIVE WIDGET
+   ========================================================= */
+.image-upload-zone {
+    border: 2px dashed var(--border-color, #cbd5e1);
+    background: var(--bg-elevated, #f8fafc);
+    border-radius: 12px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.image-upload-zone:hover,
+.image-upload-zone.dragover {
+    border-color: var(--primary, #2563eb);
+    background: rgba(37, 99, 235, 0.04);
+}
+
+.image-preview-container {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    max-height: 240px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    background: #f1f5f9;
+}
+
+.image-preview-container img {
+    width: 100%;
+    max-height: 240px;
+    object-fit: cover;
+    display: block;
+}
+
+/* DARK MODE OVERRIDES */
+[data-theme="dark"] .event-card-modern {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .event-card-title {
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .event-specs-list {
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .event-date-pill {
+    background: rgba(15, 23, 42, 0.9);
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .event-date-pill .day {
+    color: #60a5fa;
+}
+
+[data-theme="dark"] .event-card-footer {
+    border-top-color: #334155;
+}
+
+[data-theme="dark"] .image-upload-zone {
+    background: #1e293b;
+    border-color: #475569;
+}
+
+[data-theme="dark"] .image-preview-container {
+    background: #0f172a;
+    border-color: #334155;
+}
+

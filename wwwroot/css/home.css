@@ -5,10 +5,12 @@
 
 /* HERO SECTION */
 .hero-section {
-    background: linear-gradient(135deg, #091e42 0%, #0f2d59 50%, #1e3a8a 100%);
+    background: linear-gradient(135deg, rgba(9, 30, 66, 0.88) 0%, rgba(15, 45, 89, 0.82) 50%, rgba(30, 58, 138, 0.78) 100%),
+                url('/images/university-event.png') center center / cover no-repeat;
     color: #ffffff;
-    padding: 70px 0 60px 0;
+    padding: 85px 0 75px 0;
     position: relative;
+    background-attachment: scroll;
 }
 
 .hero-badge {
@@ -287,8 +289,78 @@
 
 /* CTA STRIP */
 .portal-cta-banner {
-    background: #0f2d59;
+    background: linear-gradient(135deg, #091e42 0%, #0f2d59 100%);
     color: #ffffff;
     border-radius: 16px;
-    padding: 48px 36px;
+    padding: 40px 32px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* RESPONSIVE ENHANCEMENTS */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 48px 0 40px 0;
+    }
+    .hero-title {
+        font-size: 1.85rem;
+    }
+    .hero-lead {
+        font-size: 1rem;
+    }
+    .stats-banner {
+        margin-top: -15px;
+        padding: 16px 12px;
+    }
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    .stat-label {
+        font-size: 0.75rem;
+    }
+    .section-title {
+        font-size: 1.5rem;
+    }
+    .portal-cta-banner {
+        padding: 28px 20px;
+        text-align: center;
+    }
+}
+
+/* DARK THEME ADAPTATIONS */
+[data-theme="dark"] .stats-banner {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .category-card {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .category-card:hover {
+    border-color: #3b82f6;
+}
+
+[data-theme="dark"] .category-title {
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .event-item-card {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .event-title {
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .event-date-badge {
+    background: #0f172a;
+    border-color: #334155;
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .event-footer {
+    border-top-color: #334155;
 }

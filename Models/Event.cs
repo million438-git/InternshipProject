@@ -28,6 +28,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         // Additional common properties used in details/list views
         public string? ShortDescription { get; set; }
         public string? ImageUrl { get; set; }
+        public Microsoft.AspNetCore.Http.IFormFile? ImageFile { get; set; }
+        public bool RemoveImage { get; set; }
         public string? Slug { get; set; }
         public DateTime? CreatedAt { get; set; }
 

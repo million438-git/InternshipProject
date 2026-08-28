@@ -20,8 +20,26 @@
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="border: 1px solid #e2e8f0 !important;">
                 @if (!string.IsNullOrEmpty(Model.ImageUrl))
                 {
-                    <div style="max-height: 380px; overflow: hidden; background: #f1f5f9;">
-                        <img src="@Model.ImageUrl" alt="@Model.Title" class="w-100 h-100 object-fit-cover" />
+                    <div style="max-height: 420px; overflow: hidden; background: #0f172a; position: relative;">
+                        <img src="@Model.ImageUrl" alt="@Model.Title" class="w-100 h-100 object-fit-cover" style="max-height: 420px;" />
+                    </div>
+                }
+                else
+                {
+                    var catClass = "general";
+                    var catIcon = "bi-calendar-event";
+                    if (!string.IsNullOrEmpty(Model.Category))
+                    {
+                        var catLower = Model.Category.ToLower();
+                        if (catLower.Contains("tech")) { catClass = "tech"; catIcon = "bi-laptop"; }
+                        else if (catLower.Contains("cult") || catLower.Contains("art")) { catClass = "culture"; catIcon = "bi-palette"; }
+                        else if (catLower.Contains("sport") || catLower.Contains("athlet")) { catClass = "sports"; catIcon = "bi-trophy"; }
+                        else if (catLower.Contains("work") || catLower.Contains("train")) { catClass = "workshop"; catIcon = "bi-journal-text"; }
+                        else if (catLower.Contains("acad") || catLower.Contains("conf")) { catClass = "academic"; catIcon = "bi-mortarboard"; }
+                    }
+                    <div class="event-fallback-thumbnail @catClass py-5 text-center" style="min-height: 220px;">
+                        <i class="bi @catIcon display-3 text-white mb-2"></i>
+                        <span class="fs-5 fw-bold text-white">@(Model.Category ?? "Campus Event")</span>
                     </div>
                 }
 
@@ -32,6 +50,9 @@
                         </span>
                         <span class="badge bg-light text-muted border">
                             <i class="bi bi-geo-alt me-1 text-danger"></i> @(string.IsNullOrEmpty(Model.Venue) ? "Main Campus Hall" : Model.Venue)
+                        </span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
+                            <i class="bi bi-tag me-1"></i> Free Admission
                         </span>
                     </div>
 

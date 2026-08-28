@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Security.Claims;
 using HawassaUnifiedCampusEventManagementSystem.Data;
 using HawassaUnifiedCampusEventManagementSystem.Models;
 
@@ -16,11 +19,95 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly ILogger<EventsController> _logger;
+        private readonly IWebHostEnvironment _env;
 
-        public EventsController(ApplicationDbContext db, ILogger<EventsController> logger)
+        public EventsController(ApplicationDbContext db, ILogger<EventsController> logger, IWebHostEnvironment env)
         {
             _db = db;
             _logger = logger;
+            _env = env;
+        }
+
+        private async Task<string?> ProcessEventImageUploadAsync(IFormFile? imageFile, string? existingImageUrl = null, bool removeImage = false)
+        {
+            if (removeImage && !string.IsNullOrEmpty(existingImageUrl))
+            {
+                DeleteLocalImageFile(existingImageUrl);
+                existingImageUrl = null;
+            }
+
+            if (imageFile == null || imageFile.Length == 0)
+            {
+                return removeImage ? null : existingImageUrl;
+            }
+
+            // 1. Validate file size (max 5MB)
+            const long maxFileSize = 5 * 1024 * 1024;
+            if (imageFile.Length > maxFileSize)
+            {
+                throw new InvalidOperationException("Event image file size cannot exceed 5 MB.");
+            }
+
+            // 2. Validate file extension
+            var ext = Path.GetExtension(imageFile.FileName)?.ToLowerInvariant();
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            if (string.IsNullOrEmpty(ext) || !allowedExtensions.Contains(ext))
+            {
+                throw new InvalidOperationException("Invalid image format. Allowed formats: JPG, PNG, and WebP.");
+            }
+
+            // 3. Validate MIME type
+            var allowedMimeTypes = new[] { "image/jpeg", "image/png", "image/webp", "image/pjpeg" };
+            if (!allowedMimeTypes.Contains(imageFile.ContentType.ToLowerInvariant()))
+            {
+                throw new InvalidOperationException("Invalid file content type. Please upload a valid image.");
+            }
+
+            // 4. Clean up previous physical image if replacing
+            if (!string.IsNullOrEmpty(existingImageUrl))
+            {
+                DeleteLocalImageFile(existingImageUrl);
+            }
+
+            // 5. Generate secure unique filename and ensure directory exists
+            var uniqueFileName = $"event-{Guid.NewGuid():N}{ext}";
+            var webRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var uploadsFolder = Path.Combine(webRoot, "uploads", "events");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await imageFile.CopyToAsync(stream);
+            }
+
+            return $"/uploads/events/{uniqueFileName}";
+        }
+
+        private void DeleteLocalImageFile(string? relativeUrl)
+        {
+            if (string.IsNullOrWhiteSpace(relativeUrl) || !relativeUrl.StartsWith("/uploads/events/", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            try
+            {
+                var fileName = Path.GetFileName(relativeUrl);
+                var webRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                var physicalPath = Path.Combine(webRoot, "uploads", "events", fileName);
+                if (System.IO.File.Exists(physicalPath))
+                {
+                    System.IO.File.Delete(physicalPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete old event image file: {Url}", relativeUrl);
+            }
         }
 
         private ulong? GetCurrentUserId()
@@ -298,6 +385,23 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 : (!string.IsNullOrWhiteSpace(model.Title) ? model.Title.Trim().ToLower().Replace(' ', '-') : "campus-event");
             var uniqueSlug = $"{baseSlug}-{Guid.NewGuid().ToString("N")[..6]}";
 
+            // Process Event Image Upload (if provided)
+            string? uploadedImageUrl = model.ImageUrl;
+            try
+            {
+                if (model.ImageFile != null && model.ImageFile.Length > 0)
+                {
+                    uploadedImageUrl = await ProcessEventImageUploadAsync(model.ImageFile);
+                }
+            }
+            catch (Exception imgEx)
+            {
+                ModelState.AddModelError("ImageFile", imgEx.Message);
+                ViewBag.Categories = await _db.event_categories.Where(c => c.is_active == true).ToListAsync();
+                ViewBag.Venues = await _db.venues.Where(v => v.status == "AVAILABLE").ToListAsync();
+                return View(model);
+            }
+
             // Lifecycle status: Admin/SuperAdmin are auto-approved; Faculty/Staff/Clubs go to PENDING approval
             string approvalStatus = isAdmin ? "APPROVED" : "PENDING";
             string eventStatus = isAdmin ? "PUBLISHED" : "DRAFT";
@@ -313,7 +417,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 end_at = endAt,
                 capacity = model.Capacity.HasValue ? (uint?)model.Capacity.Value : null,
                 is_public = isPublic,
-                image_url = model.ImageUrl,
+                image_url = uploadedImageUrl,
                 organizer_id = organizerId.Value,
                 category_id = categoryId,
                 venue_id = venueId,
@@ -465,6 +569,19 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 }
             }
 
+            // Process Event Image Upload / Replacement / Removal
+            try
+            {
+                e.image_url = await ProcessEventImageUploadAsync(model.ImageFile, e.image_url, model.RemoveImage);
+            }
+            catch (Exception imgEx)
+            {
+                ModelState.AddModelError("ImageFile", imgEx.Message);
+                ViewBag.Categories = await _db.event_categories.Where(c => c.is_active == true).ToListAsync();
+                ViewBag.Venues = await _db.venues.Where(v => v.status == "AVAILABLE").ToListAsync();
+                return View(model);
+            }
+
             // update fields
             e.title = model.Title ?? e.title;
             e.description = model.Description;
@@ -476,7 +593,6 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             {
                 e.is_public = model.IsPublished;
             }
-            e.image_url = model.ImageUrl;
             e.updated_at = DateTime.UtcNow;
 
             _db.events.Update(e);

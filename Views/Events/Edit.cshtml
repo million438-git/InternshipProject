@@ -37,13 +37,13 @@
               asp-action="Edit"
               asp-route-id="@Model.Id"
               method="post"
+              enctype="multipart/form-data"
               class="event-form">
 
             @Html.AntiForgeryToken()
 
             <input asp-for="Id"
                    type="hidden" />
-
 
             <div asp-validation-summary="ModelOnly"
                  class="text-danger">
@@ -79,6 +79,14 @@
 
                     </div>
 
+                    <div class="event-form-field full">
+                        <label asp-for="ShortDescription">
+                            Short Summary (Displayed on event cards)
+                        </label>
+                        <input asp-for="ShortDescription"
+                               placeholder="Brief 1-2 sentence overview of the event..." />
+                        <span asp-validation-for="ShortDescription" class="text-danger"></span>
+                    </div>
 
                     <div class="event-form-field">
                         <label asp-for="Category">
@@ -133,6 +141,54 @@
 
             </div>
 
+            <!-- EVENT COVER IMAGE MANAGEMENT -->
+            <div class="event-form-section">
+                <h2>
+                    <i class="bi bi-image"></i>
+                    Event Cover Image
+                </h2>
+                <p class="text-muted small mb-3">Update or replace the cover banner for this event card and details page. (Supported: JPG, PNG, WebP up to 5 MB)</p>
+
+                @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                {
+                    <div id="currentImageContainer" class="mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="small fw-bold text-dark"><i class="bi bi-image-fill text-primary me-1"></i> Current Banner Image</span>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" asp-for="RemoveImage" id="removeImageCheckbox" />
+                                <label class="form-check-label small text-danger fw-semibold" for="removeImageCheckbox">
+                                    Remove Current Image
+                                </label>
+                            </div>
+                        </div>
+                        <div class="image-preview-container" id="currentImagePreviewBox">
+                            <img src="@Model.ImageUrl" alt="@Model.Title" />
+                        </div>
+                    </div>
+                }
+
+                <div class="image-upload-zone mt-2" id="imageUploadZone" onclick="document.getElementById('eventImageFileInput').click();">
+                    <input type="file" asp-for="ImageFile" id="eventImageFileInput" class="d-none" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                    <div id="uploadPrompt" class="d-flex flex-column align-items-center justify-content-center py-2">
+                        <i class="bi bi-cloud-arrow-up fs-1 text-primary mb-2"></i>
+                        <span class="fw-bold text-dark fs-6">@(string.IsNullOrEmpty(Model.ImageUrl) ? "Click or drag & drop event banner image here" : "Click to select a new replacement banner image")</span>
+                        <small class="text-muted mt-1">Recommended resolution: 1200 x 675 (16:9 ratio)</small>
+                    </div>
+                </div>
+
+                <div id="imagePreviewWrapper" class="mt-3 d-none">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="small fw-bold text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i> New Replacement Image Preview</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="clearImageBtn">
+                            <i class="bi bi-trash me-1"></i> Cancel Replacement
+                        </button>
+                    </div>
+                    <div class="image-preview-container">
+                        <img id="imagePreviewElement" src="#" alt="New Event Preview" />
+                    </div>
+                </div>
+                <span asp-validation-for="ImageFile" class="text-danger small mt-1 d-block"></span>
+            </div>
 
             <!-- DATE -->
 
@@ -317,5 +373,87 @@
 @section Scripts {
 
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const fileInput = document.getElementById("eventImageFileInput");
+            const zone = document.getElementById("imageUploadZone");
+            const previewWrapper = document.getElementById("imagePreviewWrapper");
+            const previewImg = document.getElementById("imagePreviewElement");
+            const clearBtn = document.getElementById("clearImageBtn");
+            const removeCheckbox = document.getElementById("removeImageCheckbox");
+            const currentPreviewBox = document.getElementById("currentImagePreviewBox");
+
+            if (removeCheckbox && currentPreviewBox) {
+                removeCheckbox.addEventListener("change", function () {
+                    if (this.checked) {
+                        currentPreviewBox.style.opacity = "0.3";
+                    } else {
+                        currentPreviewBox.style.opacity = "1";
+                    }
+                });
+            }
+
+            if (!fileInput || !zone) return;
+
+            // Drag & drop support
+            ['dragenter', 'dragover'].forEach(eventName => {
+                zone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    zone.classList.add('dragover');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                zone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    zone.classList.remove('dragover');
+                }, false);
+            });
+
+            zone.addEventListener('drop', (e) => {
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileSelect(fileInput.files[0]);
+                }
+            });
+
+            fileInput.addEventListener("change", function () {
+                if (this.files && this.files[0]) {
+                    handleFileSelect(this.files[0]);
+                }
+            });
+
+            function handleFileSelect(file) {
+                if (!file.type.match('image.*')) {
+                    alert("Please select a valid image file (JPG, PNG, WebP).");
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    alert("File is too large. Maximum size is 5 MB.");
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    previewImg.src = e.target.result;
+                    previewWrapper.classList.remove("d-none");
+                    if (removeCheckbox) removeCheckbox.checked = false;
+                    if (currentPreviewBox) currentPreviewBox.style.opacity = "1";
+                };
+                reader.readAsDataURL(file);
+            }
+
+            if (clearBtn) {
+                clearBtn.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    fileInput.value = "";
+                    previewImg.src = "#";
+                    previewWrapper.classList.add("d-none");
+                });
+            }
+        });
+    </script>
 
 }
