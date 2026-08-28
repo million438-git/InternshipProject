@@ -2,51 +2,160 @@
 
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Venue Management";
+    ViewData["Title"] = "Campus Venues & Facilities Management";
 }
 
-<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
+<!-- =======================================================
+     PAGE HEADER & TOP ACTION TOOLBAR
+     ======================================================= -->
+<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
-        <h1 class="h3 fw-bold text-dark mb-1">Venue & Facility Management</h1>
-        <p class="text-muted small mb-0">Manage campus auditoriums, lecture halls, conference facilities, and outdoor event spaces.</p>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+                <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Index" class="text-decoration-none">Admin Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Venues & Facilities</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold text-dark mb-1">🏟️ Campus Venues & Facilities Management</h1>
+        <p class="text-muted small mb-0">Oversee university auditoriums, conference halls, sports facilities, computer labs, and outdoor event grounds.</p>
     </div>
-    <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#newVenueModal">
-        <i class="bi bi-plus-lg"></i>
-        <span>Add Venue</span>
-    </button>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#newVenueModal">
+            <i class="bi bi-plus-lg"></i>
+            <span>Add Venue</span>
+        </button>
+        <a asp-controller="Admin" asp-action="ExportVenuesCsv" 
+           asp-route-search="@Model.SearchTerm"
+           asp-route-type="@Model.TypeFilter"
+           asp-route-status="@Model.StatusFilter"
+           class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3"
+           title="Export venues catalog to CSV spreadsheet">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+            <span>Export CSV</span>
+        </a>
+        <a asp-controller="Admin" asp-action="Calendar" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
+            <i class="bi bi-calendar3 me-1"></i>Master Calendar
+        </a>
+    </div>
 </div>
 
 <!-- =======================================================
-     METRICS
+     METRICS CARDS
      ======================================================= -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="admin-stat-card">
-            <div class="stat-icon-box bg-primary-subtle text-primary"><i class="bi bi-geo-alt"></i></div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-primary-subtle text-primary"><i class="bi bi-geo-alt-fill"></i></div>
             <div>
                 <div class="stat-num">@Model.TotalCount</div>
                 <div class="stat-desc">Total Campus Venues</div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="admin-stat-card">
-            <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-check-circle"></i></div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-check2-circle"></i></div>
             <div>
                 <div class="stat-num">@Model.AvailableCount</div>
                 <div class="stat-desc">Available for Booking</div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="admin-stat-card">
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card border border-warning h-100 @(Model.MaintenanceCount > 0 ? "shadow-sm bg-warning-subtle bg-opacity-25" : "")">
             <div class="stat-icon-box bg-warning-subtle text-warning"><i class="bi bi-tools"></i></div>
             <div>
-                <div class="stat-num">@Model.MaintenanceCount</div>
-                <div class="stat-desc">Under Maintenance</div>
+                <div class="stat-num text-warning-emphasis">
+                    @Model.MaintenanceCount
+                    @if (Model.MaintenanceCount > 0)
+                    {
+                        <span class="badge bg-warning text-dark fs-6 py-0 px-2 align-middle ms-1">Repair</span>
+                    }
+                </div>
+                <div class="stat-desc fw-semibold text-warning-emphasis">Under Maintenance</div>
             </div>
         </div>
     </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-info-subtle text-info"><i class="bi bi-person-workspace"></i></div>
+            <div>
+                <div class="stat-num">@Model.TotalCampusSeatingCapacity.ToString("N0")</div>
+                <div class="stat-desc">Total Seating Capacity</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =======================================================
+     FILTERS & ADVANCED SEARCH BAR
+     ======================================================= -->
+<div class="admin-card p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2 mb-3 pb-2 border-bottom">
+        <a asp-controller="Admin" asp-action="Venues" class="btn btn-sm @(string.IsNullOrEmpty(Model.StatusFilter) || Model.StatusFilter == "ALL" ? "btn-dark" : "btn-light border")">
+            All Venues (@Model.TotalCount)
+        </a>
+        <a asp-controller="Admin" asp-action="Venues" asp-route-status="AVAILABLE" class="btn btn-sm @(Model.StatusFilter == "AVAILABLE" ? "btn-success" : "btn-light border")">
+            <i class="bi bi-check-circle me-1"></i>Available (@Model.AvailableCount)
+        </a>
+        <a asp-controller="Admin" asp-action="Venues" asp-route-status="MAINTENANCE" class="btn btn-sm @(Model.StatusFilter == "MAINTENANCE" ? "btn-warning text-dark fw-bold" : "btn-light border")">
+            <i class="bi bi-tools me-1"></i>In Maintenance (@Model.MaintenanceCount)
+        </a>
+        <a asp-controller="Admin" asp-action="Venues" asp-route-type="AUDITORIUM" class="btn btn-sm @(Model.TypeFilter == "AUDITORIUM" ? "btn-primary" : "btn-light border")">
+            <i class="bi bi-building me-1"></i>Auditoriums
+        </a>
+        <a asp-controller="Admin" asp-action="Venues" asp-route-type="SPORTS_FIELD" class="btn btn-sm @(Model.TypeFilter == "SPORTS_FIELD" ? "btn-info text-white" : "btn-light border")">
+            <i class="bi bi-trophy me-1"></i>Sports & Stadiums
+        </a>
+    </div>
+
+    <form method="get" class="row g-2 align-items-center">
+        <input type="hidden" name="status" value="@Model.StatusFilter" />
+
+        <div class="col-12 col-md-3">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input type="search" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search venue, building, amenities..." />
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="ALL" selected="@(Model.TypeFilter == null || Model.TypeFilter == "ALL")">All Venue Classifications</option>
+                <option value="AUDITORIUM" selected="@(Model.TypeFilter == "AUDITORIUM")">🏛️ Auditorium / Main Hall</option>
+                <option value="LECTURE_HALL" selected="@(Model.TypeFilter == "LECTURE_HALL")">🎓 Lecture Hall</option>
+                <option value="CLASSROOM" selected="@(Model.TypeFilter == "CLASSROOM")">📖 Classroom</option>
+                <option value="LAB" selected="@(Model.TypeFilter == "LAB")">💻 Computer / Science Lab</option>
+                <option value="SPORTS_FIELD" selected="@(Model.TypeFilter == "SPORTS_FIELD")">⚽ Sports Field / Stadium</option>
+                <option value="MEETING_ROOM" selected="@(Model.TypeFilter == "MEETING_ROOM")">💼 Conference & Meeting Room</option>
+                <option value="OUTDOOR" selected="@(Model.TypeFilter == "OUTDOOR")">🌳 Outdoor Campus Ground</option>
+                <option value="OTHER" selected="@(Model.TypeFilter == "OTHER")">📍 Other Space</option>
+            </select>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <select name="sortBy" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="capacity_desc" selected="@(Model.SortBy == "capacity_desc" || string.IsNullOrEmpty(Model.SortBy))">Capacity: Largest First</option>
+                <option value="capacity_asc" selected="@(Model.SortBy == "capacity_asc")">Capacity: Smallest First</option>
+                <option value="bookings_desc" selected="@(Model.SortBy == "bookings_desc")">Most Booked / Events</option>
+                <option value="name_asc" selected="@(Model.SortBy == "name_asc")">Venue Name (A-Z)</option>
+                <option value="type" selected="@(Model.SortBy == "type")">Group by Type</option>
+            </select>
+        </div>
+
+        <div class="col-6 col-md-1">
+            <select name="pageSize" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="10" selected="@(Model.PageSize == 10)">10</option>
+                <option value="20" selected="@(Model.PageSize == 20)">20</option>
+                <option value="50" selected="@(Model.PageSize == 50)">50</option>
+            </select>
+        </div>
+
+        <div class="col-6 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Filter</button>
+            <a asp-controller="Admin" asp-action="Venues" class="btn btn-sm btn-light border" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
 </div>
 
 <!-- =======================================================
@@ -54,129 +163,142 @@
      ======================================================= -->
 <div class="admin-card overflow-hidden">
     <div class="table-responsive">
-        <table class="table admin-table" id="venuesTable">
+        <table class="table admin-table align-middle mb-0" id="venuesTable">
             <thead>
                 <tr>
-                    <th>Venue Name</th>
-                    <th>Location / Building</th>
-                    <th>Type</th>
-                    <th>Capacity</th>
-                    <th>Bookings</th>
-                    <th>Status</th>
+                    <th>Venue Name & Location</th>
+                    <th>Classification Type</th>
+                    <th>Seating Capacity</th>
+                    <th>Equipped Amenities</th>
+                    <th>Scheduled Events</th>
+                    <th>Operational Status</th>
                     <th class="text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var v in Model.Venues)
+                @if (!Model.Venues.Any())
                 {
                     <tr>
-                        <td class="fw-bold text-dark">@v.Name</td>
-                        <td>
-                            <div>@(v.BuildingName ?? "Main Campus")</div>
-                            <small class="text-muted">Room: @(v.RoomNumber ?? "Main Hall")</small>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-geo-alt-slash fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            <h5 class="fw-bold text-dark mb-1">No Venues Found</h5>
+                            <p class="small text-muted mb-3">No campus venues or facilities match your filter query.</p>
+                            <a asp-controller="Admin" asp-action="Venues" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
+                            </a>
                         </td>
-                        <td><span class="badge bg-secondary-subtle text-secondary">@v.VenueType</span></td>
+                    </tr>
+                }
+                @foreach (var v in Model.Venues)
+                {
+                    var isMaint = v.Status == "MAINTENANCE";
+                    <tr class="@(isMaint ? "table-warning bg-opacity-25" : "")">
                         <td>
-                            <span class="badge bg-info-subtle text-info border">@v.Capacity seats</span>
+                            <div class="fw-bold text-dark fs-6">@v.Name</div>
+                            <div class="small text-muted">
+                                <i class="bi bi-geo-alt me-1 text-danger"></i>@(v.BuildingName ?? "Main Campus")
+                                @if (!string.IsNullOrEmpty(v.RoomNumber))
+                                {
+                                    <span class="badge bg-light text-secondary border ms-1 font-monospace">Rm @v.RoomNumber</span>
+                                }
+                            </div>
                         </td>
                         <td>
-                            <small class="text-muted"><i class="bi bi-calendar-check me-1"></i>@v.ScheduledEventsCount events</small>
+                            <span class="badge @(v.VenueType == "AUDITORIUM" ? "bg-primary-subtle text-primary" : v.VenueType == "SPORTS_FIELD" ? "bg-success-subtle text-success" : v.VenueType == "LAB" ? "bg-info-subtle text-info" : "bg-secondary-subtle text-secondary") border px-2 py-1 fw-semibold">
+                                @v.VenueType
+                            </span>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark fs-6">
+                                <i class="bi bi-people me-1 text-primary"></i>@v.Capacity.ToString("N0") <small class="text-muted fw-normal">Seats</small>
+                            </div>
+                            <span class="badge bg-light text-secondary border font-monospace" style="font-size: 10px;">@v.CapacityTier</span>
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(v.Amenities))
+                            {
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var amen in v.Amenities.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+                                    {
+                                        <span class="badge bg-light text-dark border" style="font-size: 10px;">
+                                            <i class="bi bi-check2 text-success me-1"></i>@amen.Trim()
+                                        </span>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Standard amenities</span>
+                            }
+                        </td>
+                        <td>
+                            <a asp-controller="Admin" asp-action="Events" asp-route-venueId="@v.Id" class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none py-1 px-2" title="View Scheduled Events">
+                                <i class="bi bi-calendar-event me-1"></i>@v.ScheduledEventsCount Events
+                            </a>
                         </td>
                         <td>
                             @if (v.Status == "AVAILABLE")
                             {
-                                <span class="badge-status badge-active">Available</span>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2 rounded-pill">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Available
+                                </span>
                             }
                             else if (v.Status == "MAINTENANCE")
                             {
-                                <span class="badge-status badge-pending">Maintenance</span>
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning py-1 px-2 rounded-pill">
+                                    <i class="bi bi-tools me-1"></i>Maintenance
+                                </span>
                             }
                             else
                             {
-                                <span class="badge-status badge-suspended">Inactive</span>
+                                <span class="badge bg-secondary-subtle text-secondary border py-1 px-2 rounded-pill">
+                                    Inactive
+                                </span>
                             }
                         </td>
                         <td class="text-end">
-                            <button type="button" 
-                                    class="btn btn-sm btn-light border text-primary py-1 px-2 me-1" 
-                                    data-bs-toggle="modal" 
-                                    data-bs-target="#editVenueModal_@v.Id" 
-                                    title="Edit Venue">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <form asp-controller="Admin" asp-action="VenueDelete" asp-route-id="@v.Id" method="post" class="d-inline" onsubmit="return confirm('Delete venue \'@v.Name\'? Associated events will be safely unlinked.');">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-light border text-danger py-1 px-2" title="Delete">
-                                    <i class="bi bi-trash"></i>
+                            <div class="dropdown d-inline-block">
+                                <button class="btn btn-sm btn-light border dropdown-toggle py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Manage
                                 </button>
-                            </form>
-
-                            <!-- EDIT VENUE MODAL -->
-                            <div class="modal fade text-start" id="editVenueModal_@v.Id" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content border-0 shadow">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title fw-bold"><i class="bi bi-pencil me-1 text-primary"></i>Edit Venue / Facility</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <form asp-controller="Admin" asp-action="VenueEdit" method="post">
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                    <li>
+                                        <a asp-controller="Admin" asp-action="Events" asp-route-venueId="@v.Id" class="dropdown-item">
+                                            <i class="bi bi-calendar3 me-2 text-primary"></i>View Scheduled Events
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <button type="button" class="dropdown-item" onclick="openEditVenueModal('@v.Id', '@v.Name', '@v.BuildingName', '@v.RoomNumber', '@v.Capacity', '@v.VenueType', '@v.Status', '@v.Amenities', '@v.Description')">
+                                            <i class="bi bi-pencil me-2 text-info"></i>Edit Venue
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li class="dropdown-header">Operational Status</li>
+                                    <li>
+                                        <form asp-controller="Admin" asp-action="VenueToggleStatus" method="post">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@v.Id" />
-                                            <div class="modal-body">
-                                                <div class="mb-3">
-                                                    <label class="form-label small fw-semibold">Venue Name</label>
-                                                    <input type="text" name="name" class="form-control form-control-sm" required value="@v.Name" />
-                                                </div>
-                                                <div class="row g-2 mb-3">
-                                                    <div class="col-6">
-                                                        <label class="form-label small fw-semibold">Building Name</label>
-                                                        <input type="text" name="buildingName" class="form-control form-control-sm" value="@v.BuildingName" />
-                                                    </div>
-                                                    <div class="col-6">
-                                                        <label class="form-label small fw-semibold">Room Number</label>
-                                                        <input type="text" name="roomNumber" class="form-control form-control-sm" value="@v.RoomNumber" />
-                                                    </div>
-                                                </div>
-                                                <div class="row g-2 mb-3">
-                                                    <div class="col-6">
-                                                        <label class="form-label small fw-semibold">Max Capacity</label>
-                                                        <input type="number" name="capacity" class="form-control form-control-sm" required min="1" value="@v.Capacity" />
-                                                    </div>
-                                                    <div class="col-6">
-                                                        <label class="form-label small fw-semibold">Venue Type</label>
-                                                        <select name="venueType" class="form-select form-select-sm">
-                                                            <option value="AUDITORIUM" selected="@(v.VenueType == "AUDITORIUM")">Auditorium</option>
-                                                            <option value="HALL" selected="@(v.VenueType == "HALL")">Lecture Hall</option>
-                                                            <option value="LAB" selected="@(v.VenueType == "LAB")">Computer Lab</option>
-                                                            <option value="OUTDOOR" selected="@(v.VenueType == "OUTDOOR")">Outdoor Stadium</option>
-                                                            <option value="CONFERENCE" selected="@(v.VenueType == "CONFERENCE")">Conference Room</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label small fw-semibold">Operational Status</label>
-                                                    <select name="status" class="form-select form-select-sm">
-                                                        <option value="AVAILABLE" selected="@(v.Status == "AVAILABLE")">Available</option>
-                                                        <option value="MAINTENANCE" selected="@(v.Status == "MAINTENANCE")">Under Maintenance</option>
-                                                        <option value="INACTIVE" selected="@(v.Status == "INACTIVE")">Inactive</option>
-                                                    </select>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label small fw-semibold">Amenities & Equipment</label>
-                                                    <input type="text" name="amenities" class="form-control form-control-sm" value="@v.Amenities" placeholder="e.g. Projector, Sound System, Wi-Fi" />
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label small fw-semibold">Description</label>
-                                                    <textarea name="description" class="form-control form-control-sm" rows="2">@v.Description</textarea>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
-                                                <button type="submit" class="btn btn-sm btn-primary px-3">Save Changes</button>
-                                            </div>
+                                            <input type="hidden" name="status" value="AVAILABLE" />
+                                            <button type="submit" class="dropdown-item text-success"><i class="bi bi-check-circle me-2"></i>Set Available</button>
                                         </form>
-                                    </div>
-                                </div>
+                                    </li>
+                                    <li>
+                                        <form asp-controller="Admin" asp-action="VenueToggleStatus" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@v.Id" />
+                                            <input type="hidden" name="status" value="MAINTENANCE" />
+                                            <button type="submit" class="dropdown-item text-warning"><i class="bi bi-tools me-2"></i>Set Under Maintenance</button>
+                                        </form>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <form asp-controller="Admin" asp-action="VenueDelete" method="post" onsubmit="return confirm('Permanently delete venue: @v.Name? Linked events will be safely unlinked.');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@v.Id" />
+                                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Delete Venue</button>
+                                        </form>
+                                    </li>
+                                </ul>
                             </div>
                         </td>
                     </tr>
@@ -184,67 +306,223 @@
             </tbody>
         </table>
     </div>
+
+    <!-- =======================================================
+         PAGINATION & RANGE SUMMARY
+         ======================================================= -->
+    @if (Model.TotalFilteredCount > 0)
+    {
+        <div class="p-3 bg-light border-top d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="small text-muted">
+                Showing <strong>@(((Model.CurrentPage - 1) * Model.PageSize) + 1)</strong> to <strong>@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalFilteredCount))</strong> of <strong>@Model.TotalFilteredCount</strong> venues
+            </div>
+            
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Venues Page navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                            <a class="page-link" asp-action="Venues" 
+                               asp-route-page="@(Model.CurrentPage - 1)" 
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-search="@Model.SearchTerm" 
+                               asp-route-type="@Model.TypeFilter"
+                               asp-route-status="@Model.StatusFilter"
+                               asp-route-sortBy="@Model.SortBy">Previous</a>
+                        </li>
+
+                        @for (int p = 1; p <= Model.TotalPages; p++)
+                        {
+                            if (p == 1 || p == Model.TotalPages || (p >= Model.CurrentPage - 2 && p <= Model.CurrentPage + 2))
+                            {
+                                <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                    <a class="page-link" asp-action="Venues" 
+                                       asp-route-page="@p" 
+                                       asp-route-pageSize="@Model.PageSize"
+                                       asp-route-search="@Model.SearchTerm" 
+                                       asp-route-type="@Model.TypeFilter"
+                                       asp-route-status="@Model.StatusFilter"
+                                       asp-route-sortBy="@Model.SortBy">@p</a>
+                                </li>
+                            }
+                            else if (p == Model.CurrentPage - 3 || p == Model.CurrentPage + 3)
+                            {
+                                <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                            }
+                        }
+
+                        <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                            <a class="page-link" asp-action="Venues" 
+                               asp-route-page="@(Model.CurrentPage + 1)" 
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-search="@Model.SearchTerm" 
+                               asp-route-type="@Model.TypeFilter"
+                               asp-route-status="@Model.StatusFilter"
+                               asp-route-sortBy="@Model.SortBy">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    }
 </div>
 
 <!-- =======================================================
      ADD VENUE MODAL
      ======================================================= -->
-<div class="modal fade" id="newVenueModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold"><i class="bi bi-geo-alt me-1 text-primary"></i>Add Campus Venue</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div class="modal fade" id="newVenueModal" tabindex="-1" aria-labelledby="newVenueModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="newVenueModalLabel"><i class="bi bi-geo-alt-fill me-2"></i>Add Campus Venue / Facility</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form asp-controller="Admin" asp-action="VenueCreate" method="post">
                 @Html.AntiForgeryToken()
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold">Venue Name</label>
-                        <input type="text" name="name" class="form-control form-control-sm" required placeholder="e.g. Main African Hall Auditorium" />
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold">Building Name</label>
-                            <input type="text" name="buildingName" class="form-control form-control-sm" placeholder="e.g. Administration Complex" />
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold text-dark">Venue Name *</label>
+                            <input type="text" name="name" class="form-control form-control-sm" required placeholder="e.g. Africa Union Conference Hall" />
                         </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold">Room / Number</label>
-                            <input type="text" name="roomNumber" class="form-control form-control-sm" placeholder="e.g. Hall A-101" />
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold">Capacity (Seats)</label>
-                            <input type="number" name="capacity" class="form-control form-control-sm" required value="250" min="1" />
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold">Venue Type</label>
-                            <select name="venueType" class="form-select form-select-sm">
-                                <option value="AUDITORIUM">Auditorium</option>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-dark">Classification Type *</label>
+                            <select name="venueType" class="form-select form-select-sm" required>
+                                <option value="AUDITORIUM">Auditorium / Grand Hall</option>
                                 <option value="LECTURE_HALL">Lecture Hall</option>
                                 <option value="CLASSROOM">Classroom</option>
-                                <option value="LAB">Computer Lab</option>
-                                <option value="SPORTS_FIELD">Sports Field</option>
-                                <option value="OUTDOOR">Outdoor Ground</option>
-                                <option value="MEETING_ROOM">Meeting Room</option>
+                                <option value="LAB">Computer / Science Lab</option>
+                                <option value="SPORTS_FIELD">Sports Field / Stadium</option>
+                                <option value="MEETING_ROOM">Meeting / Board Room</option>
+                                <option value="OUTDOOR">Outdoor Campus Ground</option>
+                                <option value="OTHER">Other Space</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold">Initial Status</label>
-                        <select name="status" class="form-select form-select-sm">
-                            <option value="AVAILABLE">Available</option>
-                            <option value="MAINTENANCE">Maintenance</option>
-                            <option value="INACTIVE">Inactive</option>
-                        </select>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-dark">Building / Complex</label>
+                            <input type="text" name="buildingName" class="form-control form-control-sm" placeholder="e.g. Main Administration Building" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold text-dark">Room Number</label>
+                            <input type="text" name="roomNumber" class="form-control form-control-sm font-monospace" placeholder="e.g. AUD-101" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Seating Capacity *</label>
+                            <input type="number" name="capacity" class="form-control form-control-sm" required min="1" placeholder="e.g. 500" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Initial Status</label>
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="AVAILABLE">Available for Booking</option>
+                                <option value="MAINTENANCE">Under Maintenance</option>
+                                <option value="INACTIVE">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Amenities (Comma-separated)</label>
+                            <input type="text" name="amenities" class="form-control form-control-sm" placeholder="e.g. Projector, Sound System, WiFi, Stage Lighting" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold text-dark">Description & Access Notes</label>
+                            <textarea name="description" class="form-control form-control-sm" rows="2" placeholder="Facility guidelines, entrance directions, AV equipment notes..."></textarea>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-primary px-3">Save Venue</button>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3 fw-semibold">Save Venue</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- =======================================================
+     EDIT VENUE MODAL
+     ======================================================= -->
+<div class="modal fade" id="editVenueModal" tabindex="-1" aria-labelledby="editVenueModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="editVenueModalLabel"><i class="bi bi-pencil-square me-2"></i>Edit Venue Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-controller="Admin" asp-action="VenueEdit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editVenueId" />
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold text-dark">Venue Name *</label>
+                            <input type="text" name="name" id="editVenueName" class="form-control form-control-sm" required />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-dark">Classification Type *</label>
+                            <select name="venueType" id="editVenueType" class="form-select form-select-sm" required>
+                                <option value="AUDITORIUM">Auditorium / Grand Hall</option>
+                                <option value="LECTURE_HALL">Lecture Hall</option>
+                                <option value="CLASSROOM">Classroom</option>
+                                <option value="LAB">Computer / Science Lab</option>
+                                <option value="SPORTS_FIELD">Sports Field / Stadium</option>
+                                <option value="MEETING_ROOM">Meeting / Board Room</option>
+                                <option value="OUTDOOR">Outdoor Campus Ground</option>
+                                <option value="OTHER">Other Space</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-dark">Building / Complex</label>
+                            <input type="text" name="buildingName" id="editVenueBuilding" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold text-dark">Room Number</label>
+                            <input type="text" name="roomNumber" id="editVenueRoom" class="form-control form-control-sm font-monospace" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Seating Capacity *</label>
+                            <input type="number" name="capacity" id="editVenueCapacity" class="form-control form-control-sm" required min="1" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Operational Status</label>
+                            <select name="status" id="editVenueStatus" class="form-select form-select-sm">
+                                <option value="AVAILABLE">Available for Booking</option>
+                                <option value="MAINTENANCE">Under Maintenance</option>
+                                <option value="INACTIVE">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Amenities</label>
+                            <input type="text" name="amenities" id="editVenueAmenities" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold text-dark">Description</label>
+                            <textarea name="description" id="editVenueDescription" class="form-control form-control-sm" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3 fw-semibold">Update Venue</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openEditVenueModal(id, name, building, room, capacity, type, status, amenities, description) {
+            document.getElementById('editVenueId').value = id;
+            document.getElementById('editVenueName').value = name;
+            document.getElementById('editVenueBuilding').value = building || '';
+            document.getElementById('editVenueRoom').value = room || '';
+            document.getElementById('editVenueCapacity').value = capacity;
+            document.getElementById('editVenueType').value = type;
+            document.getElementById('editVenueStatus').value = status;
+            document.getElementById('editVenueAmenities').value = amenities || '';
+            document.getElementById('editVenueDescription').value = description || '';
+
+            var modal = new bootstrap.Modal(document.getElementById('editVenueModal'));
+            modal.show();
+        }
+    </script>
+}

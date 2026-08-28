@@ -1,7 +1,9 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using HawassaUnifiedCampusEventManagementSystem.Data;
 using HawassaUnifiedCampusEventManagementSystem.Models;
@@ -24,9 +26,63 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // URL: / or /Home or /Home/Index
         // =====================================================
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            var vm = new HomeIndexViewModel();
+
+            try
+            {
+                vm.TotalActiveEvents = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(_db.events, e => e.status == "PUBLISHED" || e.approval_status == "APPROVED");
+                vm.TotalDepartments = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(_db.departments);
+                vm.TotalClubs = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(_db.clubs, c => c.status == "ACTIVE");
+                vm.TotalVenues = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(_db.venues);
+
+                var events = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+                    _db.events
+                        .Include(e => e.category)
+                        .Include(e => e.venue)
+                        .Where(e => (e.status == "PUBLISHED" || e.approval_status == "APPROVED") && e.start_at >= DateTime.UtcNow)
+                        .OrderBy(e => e.start_at)
+                        .Take(3)
+                );
+
+                vm.UpcomingEvents = events.Select(e => new HomeEventItemViewModel
+                {
+                    Id = e.id,
+                    Title = e.title,
+                    ShortDescription = e.short_description ?? (e.description != null && e.description.Length > 110 ? e.description.Substring(0, 110) + "..." : e.description),
+                    ImageUrl = e.image_url,
+                    CategoryName = e.category?.name ?? "Academic",
+                    VenueName = e.venue?.name ?? "Main Campus",
+                    StartDate = e.start_at,
+                    FormattedTime = e.start_at.ToString("hh:mm tt"),
+                    Slug = e.slug
+                }).ToList();
+
+                var announcements = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+                    _db.announcements
+                        .Include(a => a.department)
+                        .Where(a => a.status == "PUBLISHED")
+                        .OrderByDescending(a => a.created_at)
+                        .Take(2)
+                );
+
+                vm.LatestAnnouncements = announcements.Select(a => new HomeAnnouncementItemViewModel
+                {
+                    Id = a.id,
+                    Title = a.title,
+                    Content = a.content != null && a.content.Length > 160 ? a.content.Substring(0, 160) + "..." : a.content,
+                    Priority = a.priority ?? "NORMAL",
+                    DepartmentName = a.department?.name ?? "Office of the Registrar",
+                    CreatedAt = a.created_at
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load dynamic data for home page.");
+            }
+
+            return View(vm);
         }
 
         // =====================================================

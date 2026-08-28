@@ -130,6 +130,14 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public string? SearchTerm { get; set; }
         public string? RoleFilter { get; set; }
         public string? StatusFilter { get; set; }
+        public ulong? DepartmentFilter { get; set; }
+        public string? SortBy { get; set; }
+        public int CurrentPage { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
+        public int TotalFilteredCount { get; set; }
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalFilteredCount / PageSize) : 1;
+        public bool HasPreviousPage => CurrentPage > 1;
+        public bool HasNextPage => CurrentPage < TotalPages;
         public int TotalCount { get; set; }
         public int ActiveCount { get; set; }
         public int SuspendedCount { get; set; }
@@ -166,6 +174,14 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public List<Department> Departments { get; set; } = new();
         public string? SearchTerm { get; set; }
         public string? RoleFilter { get; set; }
+        public ulong? DepartmentFilter { get; set; }
+        public string? SortBy { get; set; }
+        public int CurrentPage { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
+        public int TotalFilteredCount { get; set; }
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalFilteredCount / PageSize) : 1;
+        public bool HasPreviousPage => CurrentPage > 1;
+        public bool HasNextPage => CurrentPage < TotalPages;
         public int TotalPendingCount { get; set; }
         public int StudentPendingCount { get; set; }
         public int FacultyPendingCount { get; set; }
@@ -183,6 +199,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public string? Phone { get; set; }
         public string AccountType { get; set; } = "STUDENT";
         public string Status { get; set; } = "PENDING";
+        public ulong? DepartmentId { get; set; }
         public string? DepartmentName { get; set; }
         public string? FacultyName { get; set; }
         public string? StudentId { get; set; }
@@ -192,6 +209,16 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public string? RegisteredByAdminName { get; set; }
         public ulong? RegisteredByAdminId { get; set; }
         public DateTime RegisteredAt { get; set; }
+        public string TimeWaitingFormatted
+        {
+            get
+            {
+                var span = DateTime.UtcNow - RegisteredAt;
+                if (span.TotalMinutes < 60) return $"{(int)Math.Max(1, span.TotalMinutes)}m waiting";
+                if (span.TotalHours < 24) return $"{(int)span.TotalHours}h waiting";
+                return $"{(int)span.TotalDays}d waiting";
+            }
+        }
     }
 
     public class AdminCreateUserInputModel
@@ -241,20 +268,36 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     public class AdminEventsViewModel
     {
         public List<AdminEventRow> Events { get; set; } = new();
+        public List<event_category> Categories { get; set; } = new();
+        public List<Venue> Venues { get; set; } = new();
         public string? SearchTerm { get; set; }
         public string? StatusFilter { get; set; }
         public string? CategoryFilter { get; set; }
+        public ulong? CategoryId { get; set; }
+        public ulong? VenueId { get; set; }
+        public string? Timeframe { get; set; }
+        public string? SortBy { get; set; }
+        public int CurrentPage { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
+        public int TotalFilteredCount { get; set; }
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalFilteredCount / PageSize) : 1;
+        public bool HasPreviousPage => CurrentPage > 1;
+        public bool HasNextPage => CurrentPage < TotalPages;
         public int TotalEvents { get; set; }
         public int PendingApprovalCount { get; set; }
         public int PublishedCount { get; set; }
         public int CancelledCount { get; set; }
+        public int UpcomingCount { get; set; }
+        public int TodayCount { get; set; }
     }
 
     public class AdminEventRow
     {
         public ulong Id { get; set; }
         public string Title { get; set; } = string.Empty;
+        public ulong? CategoryId { get; set; }
         public string? CategoryName { get; set; }
+        public ulong? VenueId { get; set; }
         public string? VenueName { get; set; }
         public string OrganizerName { get; set; } = string.Empty;
         public string? OrganizationName { get; set; }
@@ -267,6 +310,22 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public bool IsPublic { get; set; }
         public bool IsFeatured { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string TimeStatus
+        {
+            get
+            {
+                var now = DateTime.UtcNow;
+                if (StartAt > now)
+                {
+                    if (StartAt.Date == now.Date) return "Today";
+                    var days = (int)Math.Ceiling((StartAt - now).TotalDays);
+                    return days == 1 ? "Tomorrow" : $"In {days}d";
+                }
+                if (EndAt < now) return "Past";
+                return "Live Now";
+            }
+        }
+        public int CapacityPercentage => Capacity.HasValue && Capacity.Value > 0 ? (int)Math.Min(100.0, (double)RegistrationCount / Capacity.Value * 100.0) : 0;
     }
 
     // =========================================================
@@ -277,9 +336,20 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public List<AdminAnnouncementRow> Announcements { get; set; } = new();
         public List<Department> Departments { get; set; } = new();
         public string? SearchTerm { get; set; }
+        public string? TypeFilter { get; set; }
+        public string? PriorityFilter { get; set; }
+        public string? StatusFilter { get; set; }
+        public ulong? DepartmentFilter { get; set; }
+        public int CurrentPage { get; set; } = 1;
+        public int PageSize { get; set; } = 15;
+        public int TotalFilteredCount { get; set; }
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalFilteredCount / PageSize) : 1;
+        public bool HasPreviousPage => CurrentPage > 1;
+        public bool HasNextPage => CurrentPage < TotalPages;
         public int TotalCount { get; set; }
         public int PinnedCount { get; set; }
         public int PublishedCount { get; set; }
+        public int DraftCount { get; set; }
     }
 
     public class AdminAnnouncementRow
@@ -287,12 +357,16 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public ulong Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
+        public string? Summary { get; set; }
         public string AuthorName { get; set; } = string.Empty;
+        public ulong? DepartmentId { get; set; }
         public string? DepartmentName { get; set; }
+        public string AnnouncementType { get; set; } = "GENERAL";
         public string Priority { get; set; } = "NORMAL";
         public string Status { get; set; } = "PUBLISHED";
-        public bool IsPinned { get; set; }
+        public bool IsPinned => Priority == "URGENT" || Priority == "HIGH";
         public DateTime CreatedAt { get; set; }
+        public DateTime? PublishedAt { get; set; }
     }
 
     // =========================================================
@@ -301,10 +375,22 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     public class AdminOrganizationsViewModel
     {
         public List<AdminOrganizationRow> Organizations { get; set; } = new();
+        public List<Department> Departments { get; set; } = new();
         public string? SearchTerm { get; set; }
+        public string? TypeFilter { get; set; }
+        public string? StatusFilter { get; set; }
+        public ulong? DepartmentFilter { get; set; }
+        public string? SortBy { get; set; }
+        public int CurrentPage { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
+        public int TotalFilteredCount { get; set; }
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalFilteredCount / PageSize) : 1;
+        public bool HasPreviousPage => CurrentPage > 1;
+        public bool HasNextPage => CurrentPage < TotalPages;
         public int TotalCount { get; set; }
         public int ActiveCount { get; set; }
         public int PendingCount { get; set; }
+        public int TotalMembersCount { get; set; }
     }
 
     public class AdminOrganizationRow
@@ -313,8 +399,13 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public string Name { get; set; } = string.Empty;
         public string? ShortName { get; set; }
         public string OrganizationType { get; set; } = "CLUB";
+        public ulong? DepartmentId { get; set; }
         public string? DepartmentName { get; set; }
+        public string? LeaderName { get; set; }
+        public string? LeaderEmail { get; set; }
         public string? Email { get; set; }
+        public string? WebsiteUrl { get; set; }
+        public string? LogoUrl { get; set; }
         public string Status { get; set; } = "ACTIVE";
         public int MemberCount { get; set; }
         public int EventCount { get; set; }
@@ -327,7 +418,18 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     public class AdminFacultiesViewModel
     {
         public List<AdminFacultyRow> Faculties { get; set; } = new();
+        public string? SearchTerm { get; set; }
+        public string? SortBy { get; set; }
+        public int CurrentPage { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
+        public int TotalFilteredCount { get; set; }
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalFilteredCount / PageSize) : 1;
+        public bool HasPreviousPage => CurrentPage > 1;
+        public bool HasNextPage => CurrentPage < TotalPages;
         public int TotalCount { get; set; }
+        public int ActiveCount { get; set; }
+        public int TotalDepartmentsCount { get; set; }
+        public int TotalStudentsCount { get; set; }
     }
 
     public class AdminFacultyRow
@@ -339,13 +441,26 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public string? Email { get; set; }
         public bool IsActive { get; set; }
         public int DepartmentCount { get; set; }
+        public int EnrolledUsersCount { get; set; }
     }
 
     public class AdminDepartmentsViewModel
     {
         public List<AdminDepartmentRow> Departments { get; set; } = new();
         public List<Faculty> Faculties { get; set; } = new();
+        public string? SearchTerm { get; set; }
+        public ulong? FacultyId { get; set; }
+        public string? StatusFilter { get; set; }
+        public string? SortBy { get; set; }
+        public int CurrentPage { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
+        public int TotalFilteredCount { get; set; }
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalFilteredCount / PageSize) : 1;
+        public bool HasPreviousPage => CurrentPage > 1;
+        public bool HasNextPage => CurrentPage < TotalPages;
         public int TotalCount { get; set; }
+        public int ActiveCount { get; set; }
+        public int TotalStudentsCount { get; set; }
     }
 
     public class AdminDepartmentRow
@@ -367,9 +482,21 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     public class AdminVenuesViewModel
     {
         public List<AdminVenueRow> Venues { get; set; } = new();
+        public string? SearchTerm { get; set; }
+        public string? TypeFilter { get; set; }
+        public string? StatusFilter { get; set; }
+        public string? SortBy { get; set; }
+        public int CurrentPage { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
+        public int TotalFilteredCount { get; set; }
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalFilteredCount / PageSize) : 1;
+        public bool HasPreviousPage => CurrentPage > 1;
+        public bool HasNextPage => CurrentPage < TotalPages;
         public int TotalCount { get; set; }
         public int AvailableCount { get; set; }
         public int MaintenanceCount { get; set; }
+        public int InactiveCount { get; set; }
+        public long TotalCampusSeatingCapacity { get; set; }
     }
 
     public class AdminVenueRow
@@ -384,6 +511,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public string? Amenities { get; set; }
         public string? Description { get; set; }
         public int ScheduledEventsCount { get; set; }
+        public string CapacityTier => Capacity >= 1000 ? "Mega Venue" : Capacity >= 300 ? "Large Hall" : Capacity >= 100 ? "Medium Hall" : "Intimate / Seminar";
     }
 
     // =========================================================
@@ -421,30 +549,48 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     {
         public List<AdminCommentRow> Comments { get; set; } = new();
         public List<AdminFeedbackRow> Feedbacks { get; set; } = new();
+        public string? SearchTerm { get; set; }
+        public string? Tab { get; set; } = "COMMENTS";
+        public string? RatingFilter { get; set; }
+        public int CurrentPage { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
+        public int TotalFilteredCount { get; set; }
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalFilteredCount / PageSize) : 1;
+        public bool HasPreviousPage => CurrentPage > 1;
+        public bool HasNextPage => CurrentPage < TotalPages;
         public int TotalComments { get; set; }
         public int TotalFeedbacks { get; set; }
         public double AverageRating { get; set; }
+        public int CriticalFeedbackCount { get; set; }
     }
 
     public class AdminCommentRow
     {
         public ulong Id { get; set; }
-        public string EventTitle { get; set; } = string.Empty;
         public ulong EventId { get; set; }
+        public string EventTitle { get; set; } = string.Empty;
+        public ulong UserId { get; set; }
         public string UserName { get; set; } = string.Empty;
+        public string? UserEmail { get; set; }
         public string CommentText { get; set; } = string.Empty;
-        public bool IsFlagged { get; set; }
+        public bool IsDeleted { get; set; }
+        public bool IsEdited { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 
     public class AdminFeedbackRow
     {
         public ulong Id { get; set; }
+        public ulong EventId { get; set; }
         public string EventTitle { get; set; } = string.Empty;
+        public ulong UserId { get; set; }
         public string UserName { get; set; } = string.Empty;
+        public string? UserEmail { get; set; }
         public int Rating { get; set; }
         public string? FeedbackText { get; set; }
+        public bool IsAnonymous { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string RatingBadgeClass => Rating >= 4 ? "bg-success-subtle text-success border-success-subtle" : Rating == 3 ? "bg-warning-subtle text-warning-emphasis border-warning" : "bg-danger-subtle text-danger border-danger-subtle";
     }
 
     // =========================================================
@@ -508,6 +654,10 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     {
         public List<AdminRoleRow> Roles { get; set; } = new();
         public List<Permission> AllPermissions { get; set; } = new();
+        public int TotalRolesCount { get; set; }
+        public int TotalPermissionsCount { get; set; }
+        public int TotalRoleBindingsCount { get; set; }
+        public int TotalAdminAccountsCount { get; set; }
     }
 
     public class AdminRoleRow
@@ -515,7 +665,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public ulong Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
+        public bool IsSystemRole { get; set; }
         public int UserCount { get; set; }
+        public List<ulong> AssignedPermissionIds { get; set; } = new();
         public List<string> AssignedPermissions { get; set; } = new();
     }
 
@@ -526,6 +678,12 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     {
         public List<event_category> Categories { get; set; } = new();
         public List<event_tag> Tags { get; set; } = new();
+        public string? SearchTerm { get; set; }
+        public string? StatusFilter { get; set; }
+        public int TotalCategoriesCount { get; set; }
+        public int ActiveCategoriesCount { get; set; }
+        public int TotalTagsCount { get; set; }
+        public int TotalCategorizedEventsCount { get; set; }
     }
 
     // =========================================================
@@ -535,7 +693,18 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     {
         public List<AdminAuditLogRow> Logs { get; set; } = new();
         public string? SearchTerm { get; set; }
+        public string? EntityFilter { get; set; }
+        public string? Timeframe { get; set; }
+        public int CurrentPage { get; set; } = 1;
+        public int PageSize { get; set; } = 25;
+        public int TotalFilteredCount { get; set; }
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalFilteredCount / PageSize) : 1;
+        public bool HasPreviousPage => CurrentPage > 1;
+        public bool HasNextPage => CurrentPage < TotalPages;
         public int TotalCount { get; set; }
+        public int TodayLogsCount { get; set; }
+        public int SecurityActionsCount { get; set; }
+        public int UniqueActorsCount { get; set; }
     }
 
     public class AdminAuditLogRow
@@ -544,10 +713,34 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public string Action { get; set; } = string.Empty;
         public string? EntityType { get; set; }
         public ulong? EntityId { get; set; }
+        public ulong? UserId { get; set; }
         public string UserName { get; set; } = string.Empty;
+        public string? UserEmail { get; set; }
+        public string? UserRole { get; set; }
         public string? IpAddress { get; set; }
+        public string? UserAgent { get; set; }
+        public string? OldValues { get; set; }
+        public string? NewValues { get; set; }
         public string? Description { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string BadgeClass => Action.Contains("DELETE") || Action.Contains("REJECT") || Action.Contains("SUSPEND") 
+            ? "bg-danger-subtle text-danger border-danger-subtle" 
+            : Action.Contains("APPROVE") || Action.Contains("CREATE") || Action.Contains("ACTIVATE") 
+            ? "bg-success-subtle text-success border-success-subtle" 
+            : Action.Contains("UPDATE") || Action.Contains("RESET") 
+            ? "bg-warning-subtle text-warning-emphasis border-warning" 
+            : "bg-primary-subtle text-primary border-primary-subtle";
+        public string TimeAgoFormatted
+        {
+            get
+            {
+                var diff = DateTime.UtcNow - CreatedAt;
+                if (diff.TotalMinutes < 1) return "Just now";
+                if (diff.TotalHours < 1) return $"{(int)diff.TotalMinutes}m ago";
+                if (diff.TotalDays < 1) return $"{(int)diff.TotalHours}h ago";
+                return $"{(int)diff.TotalDays}d ago";
+            }
+        }
     }
 
     // =========================================================

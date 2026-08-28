@@ -104,10 +104,10 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 UserRole = "Student",
                 UserDepartment = userDept,
                 UserId = formattedId,
-                StudentId = !string.IsNullOrWhiteSpace(studentId) ? studentId : "HU/2026/CS-883",
+                StudentId = !string.IsNullOrWhiteSpace(studentId) ? studentId : (string.IsNullOrWhiteSpace(formattedId) ? "Pending Assignment" : formattedId),
                 RegisteredEventsCount = realRegisteredCount,
-                AttendedEventsCount = realRegisteredCount > 0 ? (int)Math.Ceiling(realRegisteredCount * 0.7) : 0,
-                EarnedCertificatesCount = realRegisteredCount > 0 ? (int)Math.Ceiling(realRegisteredCount * 0.5) : 0,
+                AttendedEventsCount = userId.HasValue ? await _db.registrations.CountAsync(r => r.user_id == userId.Value && r.status == "ATTENDED") : 0,
+                EarnedCertificatesCount = 0,
                 UpcomingWorkshopsCount = studentRegisteredEvents.Count(e => e.StartDate >= DateTime.Now)
             };
 
@@ -225,7 +225,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     vm.FollowedClubsCount = clubItems.Count(x => x.IsFollowed);
                 }
 
-                // Personalized Events Feed (Matching Category Interests & Subscribed Departments)
+                // Personalized Events Feed
                 var activeEvents = await _db.events
                     .Include(e => e.category)
                     .Include(e => e.venue)
@@ -294,6 +294,21 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         {
             var (userId, userName, userEmail, userRole, userDept, formattedId, studentId, empId, bio) = await GetUserInfoAsync();
 
+            int deptEvents = 0;
+            int venueCount = 0;
+            int noticesCount = 0;
+
+            try
+            {
+                deptEvents = await _db.events.CountAsync(e => e.organizer_id == userId || (e.organizer.department != null && e.organizer.department.name == userDept));
+                venueCount = await _db.venues.CountAsync();
+                noticesCount = await _db.announcements.CountAsync(a => a.status == "PUBLISHED");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load staff counts.");
+            }
+
             var vm = new StaffDashboardViewModel
             {
                 UserName = userName,
@@ -301,12 +316,12 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 UserRole = "Staff",
                 UserDepartment = userDept,
                 UserId = formattedId,
-                EmployeeId = empId ?? "EMP-STAFF-409",
-                DepartmentEventsCount = 6,
-                VenueReservationsCount = 4,
-                PendingTasksCount = 5,
-                StaffNoticesCount = 8,
-                ManagedEquipmentsCount = 34
+                EmployeeId = !string.IsNullOrWhiteSpace(empId) ? empId : (string.IsNullOrWhiteSpace(formattedId) ? "Pending Assignment" : formattedId),
+                DepartmentEventsCount = deptEvents,
+                VenueReservationsCount = venueCount,
+                PendingTasksCount = 0,
+                StaffNoticesCount = noticesCount,
+                ManagedEquipmentsCount = venueCount * 5
             };
 
             await PopulateSharedStatsAsync(vm);
@@ -316,25 +331,47 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
             vm.DepartmentEvents = vm.UpcomingEvents.Where(e => e.CategoryName == "Academic" || e.CategoryName == "Career").Take(4).ToList();
 
-            vm.UpcomingVenueBookings = new List<DashboardVenueBookingItem>
+            try
             {
-                new() { Id = 1, VenueName = "Main Auditorium Hall A", Purpose = "Quarterly Department All-Hands Meeting", ScheduledDate = DateTime.Today.AddDays(1), TimeSlot = "09:00 AM - 12:00 PM", Status = "Confirmed" },
-                new() { Id = 2, VenueName = "Conference Room B2", Purpose = "Inter-College Logistics Sync", ScheduledDate = DateTime.Today.AddDays(3), TimeSlot = "02:00 PM - 04:30 PM", Status = "Pending Approval" },
-                new() { Id = 3, VenueName = "ICT Training Center", Purpose = "New Staff System Onboarding", ScheduledDate = DateTime.Today.AddDays(5), TimeSlot = "10:00 AM - 01:00 PM", Status = "Confirmed" }
-            };
+                var upcomingDbBookings = await _db.events
+                    .Include(e => e.venue)
+                    .Where(e => e.start_at >= DateTime.UtcNow && e.venue_id != null)
+                    .OrderBy(e => e.start_at)
+                    .Take(5)
+                    .ToListAsync();
 
-            vm.OperationalTasks = new List<DashboardTaskItem>
-            {
-                new() { Id = 1, Title = "Verify projector & audio setup for Tech Expo in Main Auditorium", Priority = "High", DueDate = DateTime.Today.AddDays(2), IsCompleted = false },
-                new() { Id = 2, Title = "Review volunteer badge print requests for Cultural Gala", Priority = "Medium", DueDate = DateTime.Today.AddDays(3), IsCompleted = false },
-                new() { Id = 3, Title = "Submit departmental quarterly event inventory report", Priority = "Low", DueDate = DateTime.Today.AddDays(7), IsCompleted = true }
-            };
+                vm.UpcomingVenueBookings = upcomingDbBookings.Select(e => new DashboardVenueBookingItem
+                {
+                    Id = e.id,
+                    VenueName = e.venue?.name ?? "Main Campus Hall",
+                    Purpose = e.title,
+                    ScheduledDate = e.start_at,
+                    TimeSlot = e.start_at.ToString("hh:mm tt"),
+                    Status = e.approval_status ?? "Confirmed"
+                }).ToList();
 
-            vm.StaffAnnouncements = new List<DashboardAnnouncementItem>
+                var staffNotices = await _db.announcements
+                    .Include(a => a.department)
+                    .Where(a => a.status == "PUBLISHED")
+                    .OrderByDescending(a => a.created_at)
+                    .Take(4)
+                    .ToListAsync();
+
+                vm.StaffAnnouncements = staffNotices.Select(a => new DashboardAnnouncementItem
+                {
+                    Id = a.id,
+                    Title = a.title,
+                    Content = a.content,
+                    AuthorName = a.department?.name ?? "Campus Administration",
+                    DepartmentName = a.department?.name ?? "General",
+                    Priority = a.priority ?? "Normal",
+                    CreatedAt = a.created_at
+                }).ToList();
+            }
+            catch (Exception ex)
             {
-                new() { Id = 1, Title = "Campus Emergency Drill Scheduled This Thursday", Content = "All staff coordinators must brief floor monitors on evacuation procedures by Wednesday afternoon.", AuthorName = "Safety & Security Office", DepartmentName = "Campus Security", Priority = "High", CreatedAt = DateTime.Now.AddHours(-4) },
-                new() { Id = 2, Title = "Staff Portal Maintenance Notice", Content = "Scheduled system update on Saturday 11:00 PM to Sunday 03:00 AM. Access may be temporarily intermittent.", AuthorName = "IT Directorate", DepartmentName = "ICT Support", Priority = "Normal", CreatedAt = DateTime.Now.AddDays(-1) }
-            };
+                _logger.LogWarning(ex, "Failed to load staff events and bookings.");
+            }
 
             return View("Staff", vm);
         }
@@ -347,6 +384,19 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         {
             var (userId, userName, userEmail, userRole, userDept, formattedId, studentId, empId, bio) = await GetUserInfoAsync();
 
+            int confCount = 0;
+            int seminarCount = 0;
+
+            try
+            {
+                confCount = await _db.events.CountAsync(e => e.category.name == "Academic");
+                seminarCount = await _db.events.CountAsync(e => e.approval_status == "PENDING");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load faculty counts.");
+            }
+
             var vm = new FacultyDashboardViewModel
             {
                 UserName = userName,
@@ -354,12 +404,12 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 UserRole = "Faculty",
                 UserDepartment = userDept,
                 UserId = formattedId,
-                EmployeeId = empId ?? "FAC-PROF-102",
-                AcademicConferencesCount = 3,
-                ScheduledLecturesCount = 8,
-                SeminarApprovalsCount = 4,
-                ResearchPresentationsCount = 2,
-                DepartmentStudentsCount = 340
+                EmployeeId = !string.IsNullOrWhiteSpace(empId) ? empId : (string.IsNullOrWhiteSpace(formattedId) ? "Pending Assignment" : formattedId),
+                AcademicConferencesCount = confCount,
+                ScheduledLecturesCount = 0,
+                SeminarApprovalsCount = seminarCount,
+                ResearchPresentationsCount = confCount,
+                DepartmentStudentsCount = 0
             };
 
             await PopulateSharedStatsAsync(vm);
@@ -369,24 +419,52 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
             vm.AcademicSeminars = vm.UpcomingEvents.Where(e => e.CategoryName == "Academic" || e.CategoryName == "Technology").Take(4).ToList();
 
-            vm.PendingStudentProposals = new List<DashboardApprovalItem>
+            try
             {
-                new() { Id = 1, EventTitle = "AI & IoT Senior Thesis Project Showcase", SubmitterName = "Daniel Tadesse (Student Lead)", SubmitterRole = "Student", Venue = "Engineering Hall 1", EventDate = DateTime.Today.AddDays(8), SubmittedAt = DateTime.Now.AddDays(-1), Status = "PENDING" },
-                new() { Id = 2, EventTitle = "Guest Lecture: Dr. Marcus Vance on Cloud Architecture", SubmitterName = "CS Department Committee", SubmitterRole = "Faculty", Venue = "Main Auditorium Hall B", EventDate = DateTime.Today.AddDays(11), SubmittedAt = DateTime.Now.AddHours(-18), Status = "PENDING" }
-            };
+                var pendingProposals = await _db.events
+                    .Include(e => e.venue)
+                    .Include(e => e.organizer)
+                    .Where(e => e.approval_status == "PENDING")
+                    .OrderByDescending(e => e.created_at)
+                    .Take(4)
+                    .ToListAsync();
 
-            vm.WeeklyClassSchedule = new List<DashboardScheduleItem>
-            {
-                new() { Day = "Monday", CourseCode = "CS-412", CourseTitle = "Network Security & Digital Defense", Time = "08:30 AM - 10:30 AM", Room = "IT Lab 3" },
-                new() { Day = "Tuesday", CourseCode = "CS-501", CourseTitle = "Advanced Applied Cryptography Seminar", Time = "02:00 PM - 04:30 PM", Room = "Graduate Seminar Room A" },
-                new() { Day = "Thursday", CourseCode = "CS-412", CourseTitle = "Security Lab Practicals & Code Review", Time = "10:30 AM - 12:30 PM", Room = "Cyber Defense Lab" },
-                new() { Day = "Friday", CourseCode = "RES-600", CourseTitle = "Faculty Research Colloquium", Time = "03:00 PM - 05:00 PM", Room = "Senate Hall" }
-            };
+                vm.PendingStudentProposals = pendingProposals.Select(e => new DashboardApprovalItem
+                {
+                    Id = e.id,
+                    EventTitle = e.title,
+                    SubmitterName = e.organizer != null ? $"{e.organizer.first_name} {e.organizer.last_name}".Trim() : "Campus Submitter",
+                    SubmitterRole = e.organizer?.account_type ?? "Student",
+                    Venue = e.venue?.name ?? "Main Campus",
+                    EventDate = e.start_at,
+                    SubmittedAt = e.created_at,
+                    Status = e.approval_status ?? "PENDING"
+                }).ToList();
 
-            vm.ResearchSymposiums = new List<DashboardEventItem>
+                var symposiums = await _db.events
+                    .Include(e => e.venue)
+                    .Include(e => e.category)
+                    .Include(e => e.organizer)
+                    .Where(e => e.category.name == "Academic" && e.start_at >= DateTime.UtcNow)
+                    .OrderBy(e => e.start_at)
+                    .Take(3)
+                    .ToListAsync();
+
+                vm.ResearchSymposiums = symposiums.Select(e => new DashboardEventItem
+                {
+                    Id = e.id,
+                    Title = e.title,
+                    StartDate = e.start_at,
+                    VenueName = e.venue?.name ?? "Campus Hall",
+                    CategoryName = e.category?.name ?? "Academic",
+                    OrganizerName = e.organizer != null ? $"{e.organizer.first_name} {e.organizer.last_name}".Trim() : "Faculty Board",
+                    ShortDescription = e.short_description ?? e.description
+                }).ToList();
+            }
+            catch (Exception ex)
             {
-                new() { Id = 101, Title = "7th Annual East Africa Cyber Defense Symposium", StartDate = DateTime.Today.AddDays(14), VenueName = "Senate Hall", CategoryName = "Research Conference", OrganizerName = "College of Informatics", ShortDescription = "Keynote presentations on national critical infrastructure protection and AI-driven threat response." }
-            };
+                _logger.LogWarning(ex, "Failed to load faculty proposals.");
+            }
 
             return View("Faculty", vm);
         }
@@ -399,6 +477,24 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         {
             var (userId, userName, userEmail, userRole, userDept, formattedId, studentId, empId, bio) = await GetUserInfoAsync();
 
+            int hostedCount = 0;
+            int totalRsvps = 0;
+            int membersCount = 0;
+
+            try
+            {
+                if (userId.HasValue)
+                {
+                    hostedCount = await _db.events.CountAsync(e => e.organizer_id == userId.Value);
+                    totalRsvps = await _db.registrations.CountAsync(r => r._event.organizer_id == userId.Value);
+                    membersCount = await _db.club_members.CountAsync(cm => cm.club.president_id == userId.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load organization counts.");
+            }
+
             var vm = new OrganizationDashboardViewModel
             {
                 UserName = userName,
@@ -406,12 +502,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 UserRole = "Organization",
                 UserDepartment = userDept,
                 UserId = formattedId,
-                OrganizationName = bio ?? "Hawassa University Tech & Innovation Society",
-                HostedEventsCount = 5,
-                TotalAttendeesCount = 420,
-                ActiveMembersCount = 48,
-                BoothReservationsCount = 2,
-                
+                OrganizationName = bio ?? userName,
+                HostedEventsCount = hostedCount,
+                TotalAttendeesCount = totalRsvps,
+                ActiveMembersCount = membersCount,
+                BoothReservationsCount = 0
             };
 
             await PopulateSharedStatsAsync(vm);
@@ -419,24 +514,58 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             await PopulateAnnouncementsAsync(vm);
             await PopulateNotificationsAsync(vm, userId, "Organization");
 
-            vm.HostedEvents = vm.UpcomingEvents.Take(3).ToList();
-
-            vm.OrganizationMembers = new List<DashboardMemberItem>
+            try
             {
-                new() { Id = 1, FullName = "Kidus Solomon", RoleInOrg = "President / Lead Organizer", Email = "kidus.lead@hawassauniversity.edu.et", JoinedAt = DateTime.Today.AddMonths(-8) },
-                new() { Id = 2, FullName = "Selamawit Desta", RoleInOrg = "Logistics Coordinator", Email = "selam.desta@hawassauniversity.edu.et", JoinedAt = DateTime.Today.AddMonths(-6) },
-                new() { Id = 3, FullName = "Bruk Yohannes", RoleInOrg = "Marketing & Public Relations", Email = "bruk.pr@hawassauniversity.edu.et", JoinedAt = DateTime.Today.AddMonths(-4) },
-                new() { Id = 4, FullName = "Hanna Mesfin", RoleInOrg = "Finance & Sponsorship Lead", Email = "hanna.m@hawassauniversity.edu.et", JoinedAt = DateTime.Today.AddMonths(-3) }
-            };
+                if (userId.HasValue)
+                {
+                    var myEvents = await _db.events
+                        .Include(e => e.category)
+                        .Include(e => e.venue)
+                        .Include(e => e.registrations)
+                        .Where(e => e.organizer_id == userId.Value)
+                        .OrderByDescending(e => e.start_at)
+                        .Take(5)
+                        .ToListAsync();
 
-            
+                    vm.HostedEvents = myEvents.Select(e => new DashboardEventItem
+                    {
+                        Id = e.id,
+                        Title = e.title,
+                        StartDate = e.start_at,
+                        VenueName = e.venue?.name ?? "Main Campus",
+                        CategoryName = e.category?.name ?? "General",
+                        AttendeeCount = e.registrations.Count,
+                        Capacity = (int)(e.capacity ?? 100)
+                    }).ToList();
 
-            vm.AttendanceAnalytics = new List<DashboardRegistrationStatItem>
+                    vm.AttendanceAnalytics = myEvents.Select(e => new DashboardRegistrationStatItem
+                    {
+                        EventTitle = e.title,
+                        ConfirmedCount = e.registrations.Count,
+                        AttendedCount = e.registrations.Count(r => r.status == "ATTENDED"),
+                        MaxCapacity = (int)(e.capacity ?? 100)
+                    }).ToList();
+
+                    var members = await _db.club_members
+                        .Include(m => m.user)
+                        .Where(m => m.club.president_id == userId.Value)
+                        .Take(6)
+                        .ToListAsync();
+
+                    vm.OrganizationMembers = members.Select(m => new DashboardMemberItem
+                    {
+                        Id = m.id,
+                        FullName = m.user != null ? $"{m.user.first_name} {m.user.last_name}".Trim() : "Club Member",
+                        RoleInOrg = m.membership_role ?? "Member",
+                        Email = m.user?.email ?? "N/A",
+                        JoinedAt = m.applied_at
+                    }).ToList();
+                }
+            }
+            catch (Exception ex)
             {
-                new() { EventTitle = "Campus Hackathon 2026", ConfirmedCount = 185, AttendedCount = 160, MaxCapacity = 200 },
-                new() { EventTitle = "Tech Career Fair & Networking", ConfirmedCount = 140, AttendedCount = 125, MaxCapacity = 150 },
-                new() { EventTitle = "AI Workshop Series Pt. 1", ConfirmedCount = 95, AttendedCount = 92, MaxCapacity = 100 }
-            };
+                _logger.LogWarning(ex, "Failed to load organization events.");
+            }
 
             return View("Organization", vm);
         }
@@ -462,12 +591,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 UserEmail = userEmail,
                 UserRole = userRole,
                 UserDepartment = userDept,
-                UserId = formattedId,
-                TotalUsersCount = 1240,
-                PendingEventApprovalsCount = 4,
-                ActiveVenuesCount = 14,
-                ReportedContentCount = 2,
-                ActiveOrganizationsCount = 28
+                UserId = formattedId
             };
 
             try
@@ -479,53 +603,82 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Admin dashboard stats query fallback.");
+                _logger.LogWarning(ex, "Admin dashboard stats query error.");
             }
-
-            if (vm.TotalUsersCount == 0) vm.TotalUsersCount = 1240;
-            if (vm.PendingEventApprovalsCount == 0) vm.PendingEventApprovalsCount = 4;
-            if (vm.ActiveVenuesCount == 0) vm.ActiveVenuesCount = 14;
 
             await PopulateSharedStatsAsync(vm);
             await PopulateUpcomingEventsAsync(vm);
             await PopulateAnnouncementsAsync(vm);
             await PopulateNotificationsAsync(vm, userId, "Admin");
 
-            vm.PendingEventApprovals = new List<DashboardApprovalItem>
+            try
             {
-                new() { Id = 10, EventTitle = "Inter-College Robotics Expo & Drone Race", SubmitterName = "Samuel Girma (Robotics Club)", SubmitterRole = "Organization", Venue = "Engineering Quadrangle", EventDate = DateTime.Today.AddDays(5), SubmittedAt = DateTime.Now.AddHours(-6), Status = "PENDING" },
-                new() { Id = 11, EventTitle = "University Cultural Night & Food Festival", SubmitterName = "Meron Haile (Student Council)", SubmitterRole = "Student", Venue = "Main Stadium Field", EventDate = DateTime.Today.AddDays(9), SubmittedAt = DateTime.Now.AddHours(-14), Status = "PENDING" },
-                new() { Id = 12, EventTitle = "Graduate Research & Innovation Showcase", SubmitterName = "Dr. Kassahun (Faculty)", SubmitterRole = "Faculty", Venue = "Senate Hall", EventDate = DateTime.Today.AddDays(15), SubmittedAt = DateTime.Now.AddDays(-1), Status = "PENDING" }
-            };
+                var pendingEvents = await _db.events
+                    .Include(e => e.venue)
+                    .Include(e => e.organizer)
+                    .Where(e => e.approval_status == "PENDING")
+                    .OrderBy(e => e.start_at)
+                    .Take(5)
+                    .ToListAsync();
 
-            vm.RecentRegisteredUsers = new List<DashboardRecentUserItem>
-            {
-                new() { Id = 101, FullName = "Haimanot Worku", Email = "haimanot.w@hawassauniversity.edu.et", AccountType = "STUDENT", Status = "ACTIVE", JoinedAt = DateTime.Now.AddMinutes(-35) },
-                new() { Id = 102, FullName = "Dr. Solomon Tadesse", Email = "solomon.t@hawassauniversity.edu.et", AccountType = "FACULTY", Status = "ACTIVE", JoinedAt = DateTime.Now.AddHours(-2) },
-                new() { Id = 103, FullName = "Campus Journalism Guild", Email = "journalism@hawassauniversity.edu.et", AccountType = "ORGANIZATION", Status = "ACTIVE", JoinedAt = DateTime.Now.AddHours(-5) }
-            };
+                vm.PendingEventApprovals = pendingEvents.Select(e => new DashboardApprovalItem
+                {
+                    Id = e.id,
+                    EventTitle = e.title,
+                    SubmitterName = e.organizer != null ? $"{e.organizer.first_name} {e.organizer.last_name}".Trim() : "Campus Submitter",
+                    SubmitterRole = e.organizer?.account_type ?? "Coordinator",
+                    Venue = e.venue?.name ?? "Main Campus",
+                    EventDate = e.start_at,
+                    SubmittedAt = e.created_at,
+                    Status = e.approval_status ?? "PENDING"
+                }).ToList();
 
-            vm.CampusVenuesStatus = new List<DashboardVenueItem>
-            {
-                new() { Id = 1, Name = "Main Auditorium Hall A", Capacity = 1200, Building = "Administration Complex", Status = "Occupied (Tech Expo)", ScheduledEventsCount = 8 },
-                new() { Id = 2, Name = "IT Complex Lab 3", Capacity = 80, Building = "College of Informatics", Status = "Available", ScheduledEventsCount = 4 },
-                new() { Id = 3, Name = "Main University Stadium", Capacity = 5000, Building = "Sports Complex", Status = "Maintenance", ScheduledEventsCount = 2 },
-                new() { Id = 4, Name = "Senate Hall", Capacity = 350, Building = "Central Campus Tower", Status = "Available", ScheduledEventsCount = 6 }
-            };
+                var recentUsers = await _db.users
+                    .OrderByDescending(u => u.created_at)
+                    .Take(5)
+                    .ToListAsync();
 
-            vm.RecentFlaggedContent = new List<DashboardReportItem>
-            {
-                new() { Id = 1, ContentType = "Event Comment", Reason = "Inappropriate / Promotional spam", ReportedBy = "Dawit Y.", CreatedAt = DateTime.Now.AddHours(-3), Status = "PENDING" },
-                new() { Id = 2, ContentType = "Event Poster Image", Reason = "Copyright review requested", ReportedBy = "Arts Directorate", CreatedAt = DateTime.Now.AddDays(-1), Status = "REVIEWED" }
-            };
+                vm.RecentRegisteredUsers = recentUsers.Select(u => new DashboardRecentUserItem
+                {
+                    Id = u.id,
+                    FullName = $"{u.first_name} {u.last_name}".Trim(),
+                    Email = u.email,
+                    AccountType = u.account_type ?? "STUDENT",
+                    Status = u.account_status ?? "ACTIVE",
+                    JoinedAt = u.created_at
+                }).ToList();
 
-            vm.CategoryBreakdown = new List<DashboardCategoryStatItem>
+                var venues = await _db.venues
+                    .Include(v => v._events)
+                    .Take(6)
+                    .ToListAsync();
+
+                vm.CampusVenuesStatus = venues.Select(v => new DashboardVenueItem
+                {
+                    Id = v.id,
+                    Name = v.name,
+                    Capacity = (int)v.capacity,
+                    Building = v.building_name ?? "Main Campus",
+                    Status = v.status == "AVAILABLE" ? "Available" : "Maintenance",
+                    ScheduledEventsCount = v._events.Count(e => e.start_at >= DateTime.UtcNow)
+                }).ToList();
+
+                var categories = await _db.event_categories
+                    .Include(c => c._events)
+                    .Take(5)
+                    .ToListAsync();
+
+                vm.CategoryBreakdown = categories.Select(c => new DashboardCategoryStatItem
+                {
+                    CategoryName = c.name,
+                    EventCount = c._events.Count,
+                    ColorHex = "#2563eb"
+                }).ToList();
+            }
+            catch (Exception ex)
             {
-                new() { CategoryName = "Technology & Coding", EventCount = 14, ColorHex = "#2563eb" },
-                new() { CategoryName = "Academic & Research", EventCount = 11, ColorHex = "#7c3aed" },
-                new() { CategoryName = "Sports & Fitness", EventCount = 8, ColorHex = "#059669" },
-                new() { CategoryName = "Arts & Culture", EventCount = 6, ColorHex = "#d97706" }
-            };
+                _logger.LogWarning(ex, "Failed to load admin approval lists.");
+            }
 
             return View("Admin", vm);
         }
@@ -552,14 +705,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 UserRole = "SuperAdmin",
                 UserDepartment = "University Central Administration",
                 UserId = formattedId,
-                TotalSystemUsersCount = 14850,
-                TotalPlatformEventsCount = 384,
-                TotalSystemRolesCount = 6,
                 SecurityAlertsCount = 0,
                 SystemHealthPercent = 100,
-                ServerUptime = "99.99% (42 days continuous)",
-                DatabaseEngine = "MySQL 8.0 Enterprise / AWS Cloud RDS",
-                ActiveEnvironment = "Main Campus Production Cluster"
+                ServerUptime = "Operational",
+                DatabaseEngine = "MySQL 8.0 Enterprise / EF Core 10.0",
+                ActiveEnvironment = "Production Campus Network"
             };
 
             try
@@ -595,49 +745,42 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         RegisteredAt = u.created_at
                     };
                 }).ToList();
+
+                var auditLogs = await _db.audit_logs
+                    .OrderByDescending(a => a.created_at)
+                    .Take(6)
+                    .ToListAsync();
+
+                vm.RealtimeAuditLogs = auditLogs.Select(a => new DashboardAuditItem
+                {
+                    Id = a.id,
+                    Action = $"{a.action} [{a.entity_type}]",
+                    UserEmail = a.user_id.HasValue ? $"User #{a.user_id.Value}" : "System / Visitor",
+                    IpAddress = a.ip_address ?? "127.0.0.1",
+                    Timestamp = a.created_at,
+                    Severity = a.action.Contains("DELETE", StringComparison.OrdinalIgnoreCase) ? "Warning" : "Info"
+                }).ToList();
+
+                var roles = await _db.roles
+                    .Include(r => r.user_roles)
+                    .ToListAsync();
+
+                vm.RolesDistribution = roles.Select(r => new DashboardRoleSummaryItem
+                {
+                    RoleName = r.name,
+                    UserCount = r.user_roles.Count,
+                    BadgeClass = "bg-primary"
+                }).ToList();
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "SuperAdmin stats query fallback.");
+                _logger.LogWarning(ex, "SuperAdmin stats query error.");
             }
 
             await PopulateSharedStatsAsync(vm);
             await PopulateUpcomingEventsAsync(vm);
             await PopulateAnnouncementsAsync(vm);
             await PopulateNotificationsAsync(vm, userId, "SuperAdmin");
-
-            vm.RealtimeAuditLogs = new List<DashboardAuditItem>
-            {
-                new() { Id = 1, Action = "User Role Promoted [Staff -> Admin]", UserEmail = "superadmin@hawassauniversity.edu.et", IpAddress = "10.14.0.1 (VPN Gateway)", Timestamp = DateTime.Now.AddMinutes(-8), Severity = "Warning" },
-                new() { Id = 2, Action = "Platform Security Policy Synced", UserEmail = "superadmin@hawassauniversity.edu.et", IpAddress = "10.14.0.1", Timestamp = DateTime.Now.AddHours(-1), Severity = "Info" },
-                new() { Id = 3, Action = "Database Snapshot & Automated Backup Completed", UserEmail = "System Daemon (Cron)", IpAddress = "localhost", Timestamp = DateTime.Now.AddHours(-4), Severity = "Success" },
-                new() { Id = 4, Action = "Batch 120 Student Accounts Synchronized from SIS", UserEmail = "registrar@hawassauniversity.edu.et", IpAddress = "10.12.4.22", Timestamp = DateTime.Now.AddHours(-7), Severity = "Info" }
-            };
-
-            vm.RolesDistribution = new List<DashboardRoleSummaryItem>
-            {
-                new() { RoleName = "Students", UserCount = 13800, BadgeClass = "bg-primary" },
-                new() { RoleName = "Faculty Members", UserCount = 620, BadgeClass = "bg-purple text-white" },
-                new() { RoleName = "Staff Coordinators", UserCount = 350, BadgeClass = "bg-success" },
-                new() { RoleName = "Clubs & Organizations", UserCount = 68, BadgeClass = "bg-warning text-dark" },
-                new() { RoleName = "Campus Administrators", UserCount = 10, BadgeClass = "bg-danger" },
-                new() { RoleName = "Super Administrators", UserCount = 2, BadgeClass = "bg-dark" }
-            };
-
-            vm.SystemServicesStatus = new List<DashboardSystemHealthItem>
-            {
-                new() { ServiceName = "Web Application Core (ASP.NET Core)", Status = "Healthy (100%)", Latency = "8ms", HealthClass = "text-success" },
-                new() { ServiceName = "MySQL Database Cluster", Status = "Healthy (Connections: 24/500)", Latency = "2ms", HealthClass = "text-success" },
-                new() { ServiceName = "Campus Notification Dispatcher", Status = "Active (Queue: 0)", Latency = "15ms", HealthClass = "text-success" },
-                new() { ServiceName = "QR Code & Ticket Verification API", Status = "Operational", Latency = "12ms", HealthClass = "text-success" },
-                new() { ServiceName = "Calendar Synchronization Service", Status = "Syncing (iCal/Google)", Latency = "20ms", HealthClass = "text-success" }
-            };
-
-            vm.SecurityIncidents = new List<DashboardSecurityAlertItem>
-            {
-                new() { Title = "SSL/TLS 1.3 Active & Valid", Description = "Wildcard certificate valid for *.hawassauniversity.edu.et until Nov 2027.", Severity = "Normal", OccurredAt = DateTime.Now.AddDays(-10) },
-                new() { Title = "0 Failed Brute-Force Attempts", Description = "Rate limiter actively enforcing IP rate limits across login endpoints.", Severity = "Normal", OccurredAt = DateTime.Now.AddMinutes(-30) }
-            };
 
             return View("SuperAdmin", vm);
         }

@@ -138,68 +138,87 @@
                         <span class="badge bg-purple-subtle text-purple px-2 py-1">@Model.PendingStudentProposals.Count Pending</span>
                     </div>
                     <div class="card-body p-3">
-                        <div class="d-flex flex-column gap-3">
-                            @foreach (var p in Model.PendingStudentProposals)
-                            {
-                                <div class="p-3 border rounded-3 bg-light d-flex justify-content-between align-items-center flex-wrap gap-3">
-                                    <div>
-                                        <div class="d-flex align-items-center gap-2 mb-1">
-                                            <h6 class="fw-bold text-dark mb-0">@p.EventTitle</h6>
-                                            <span class="badge bg-warning-subtle text-warning-emphasis small">Awaiting Endorsement</span>
+                        @if (Model.PendingStudentProposals != null && Model.PendingStudentProposals.Any())
+                        {
+                            <div class="d-flex flex-column gap-3">
+                                @foreach (var p in Model.PendingStudentProposals)
+                                {
+                                    <div class="p-3 border rounded-3 bg-light d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                        <div>
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <h6 class="fw-bold text-dark mb-0">@p.EventTitle</h6>
+                                                <span class="badge bg-warning-subtle text-warning-emphasis small">Awaiting Endorsement</span>
+                                            </div>
+                                            <p class="small text-muted mb-1"><i class="bi bi-person me-1"></i>Submitter: <strong>@p.SubmitterName</strong> &bull; <i class="bi bi-geo-alt me-1"></i>@p.Venue</p>
+                                            <small class="text-muted"><i class="bi bi-calendar me-1"></i>Proposed Date: @p.EventDate.ToString("MMMM dd, yyyy")</small>
                                         </div>
-                                        <p class="small text-muted mb-1"><i class="bi bi-person me-1"></i>Submitter: <strong>@p.SubmitterName</strong> &bull; <i class="bi bi-geo-alt me-1"></i>@p.Venue</p>
-                                        <small class="text-muted"><i class="bi bi-calendar me-1"></i>Proposed Date: @p.EventDate.ToString("MMMM dd, yyyy")</small>
+                                        <div class="d-flex gap-2 flex-shrink-0">
+                                            <a asp-controller="Events" asp-action="Details" asp-route-id="@p.Id" class="btn btn-sm btn-primary px-3">Review Details</a>
+                                        </div>
                                     </div>
-                                    <div class="d-flex gap-2 flex-shrink-0">
-                                        <button class="btn btn-sm btn-success px-3"><i class="bi bi-check-lg me-1"></i>Endorse</button>
-                                        <button class="btn btn-sm btn-outline-danger px-3"><i class="bi bi-x-lg me-1"></i>Reject</button>
-                                    </div>
-                                </div>
-                            }
-                        </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="p-4 text-center text-muted small">
+                                <i class="bi bi-check2-circle text-success fs-3 mb-2 d-block"></i>
+                                All department student proposals are up to date. No pending endorsement reviews.
+                            </div>
+                        }
                     </div>
                 </div>
 
-                <!-- WEEKLY TEACHING & SEMINAR TIMETABLE -->
+                <!-- ACADEMIC SYMPOSIUMS & UPCOMING SESSIONS -->
                 <div class="card shadow-sm border-0 mb-4 dashboard-main-card">
                     <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                         <div>
                             <h2 class="h5 fw-bold mb-0 text-dark">
-                                <i class="bi bi-calendar3 me-2 text-primary"></i>Weekly Academic Schedule & Lectures
+                                <i class="bi bi-calendar3 me-2 text-primary"></i>Upcoming Academic Symposiums & Research Sessions
                             </h2>
-                            <small class="text-muted">Active classes, lab reviews, and colloquiums</small>
+                            <small class="text-muted">Conferences, colloquiums, and defense sessions</small>
                         </div>
-                        <a asp-controller="Calendar" asp-action="Index" class="btn btn-sm btn-outline-primary">Open Calendar</a>
+                        <a asp-controller="Calendar" asp-action="Index" class="btn btn-sm btn-outline-primary rounded-pill px-3">Open Calendar</a>
                     </div>
                     <div class="card-body p-3">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light small text-uppercase">
-                                    <tr>
-                                        <th>Day</th>
-                                        <th>Course / Session</th>
-                                        <th>Time Slot</th>
-                                        <th>Classroom / Lab</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var s in Model.WeeklyClassSchedule)
-                                    {
+                        @if (Model.ResearchSymposiums != null && Model.ResearchSymposiums.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light small text-uppercase">
                                         <tr>
-                                            <td class="fw-bold text-dark">@s.Day</td>
-                                            <td>
-                                                <span class="badge bg-primary-subtle text-primary me-1">@s.CourseCode</span>
-                                                <span class="small fw-semibold text-dark">@s.CourseTitle</span>
-                                            </td>
-                                            <td class="small text-muted"><i class="bi bi-clock me-1"></i>@s.Time</td>
-                                            <td class="small text-secondary"><i class="bi bi-geo-alt me-1 text-danger"></i>@s.Room</td>
-                                            <td><span class="badge bg-success-subtle text-success">Scheduled</span></td>
+                                            <th>Symposium / Event</th>
+                                            <th>Date & Time</th>
+                                            <th>Venue</th>
+                                            <th>Action</th>
                                         </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var s in Model.ResearchSymposiums)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <span class="badge bg-primary-subtle text-primary me-1">@s.CategoryName</span>
+                                                    <strong class="text-dark small">@s.Title</strong>
+                                                </td>
+                                                <td class="small text-muted"><i class="bi bi-clock me-1"></i>@s.StartDate.ToString("MMM dd, yyyy hh:mm tt")</td>
+                                                <td class="small text-secondary"><i class="bi bi-geo-alt me-1 text-danger"></i>@s.VenueName</td>
+                                                <td>
+                                                    <a asp-controller="Events" asp-action="Details" asp-route-id="@s.Id" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1" style="font-size: 11px;">View</a>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="p-4 text-center text-muted small">
+                                <i class="bi bi-calendar-event text-secondary fs-3 mb-2 d-block"></i>
+                                No upcoming research colloquiums or symposiums scheduled.
+                            </div>
+                        }
                     </div>
                 </div>
 
@@ -268,13 +287,20 @@
                         </h2>
                     </div>
                     <div class="card-body p-3">
-                        @foreach (var r in Model.ResearchSymposiums)
+                        @if (Model.ResearchSymposiums != null && Model.ResearchSymposiums.Any())
                         {
-                            <div class="border-start border-3 border-purple ps-2">
-                                <h6 class="small fw-bold text-dark mb-1">@r.Title</h6>
-                                <p class="small text-muted mb-1">@r.ShortDescription</p>
-                                <small class="text-primary fw-semibold"><i class="bi bi-geo-alt me-1"></i>@r.VenueName &bull; @r.StartDate.ToString("MMM dd")</small>
-                            </div>
+                            @foreach (var r in Model.ResearchSymposiums)
+                            {
+                                <div class="border-start border-3 border-purple ps-2 mb-2">
+                                    <h6 class="small fw-bold text-dark mb-1">@r.Title</h6>
+                                    <p class="small text-muted mb-1">@r.ShortDescription</p>
+                                    <small class="text-primary fw-semibold"><i class="bi bi-geo-alt me-1"></i>@r.VenueName &bull; @r.StartDate.ToString("MMM dd")</small>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="small text-muted mb-0">No active research colloquiums announced.</p>
                         }
                     </div>
                 </div>

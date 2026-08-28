@@ -2,13 +2,22 @@
 
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "User Management";
+    ViewData["Title"] = "User Management & Access Control";
 }
 
-<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
+<!-- =======================================================
+     PAGE HEADER & TOP ACTION TOOLBAR
+     ======================================================= -->
+<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+                <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Index" class="text-decoration-none">Admin Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Users Directory</li>
+            </ol>
+        </nav>
         <h1 class="h3 fw-bold text-dark mb-1">User Directory & Access Control</h1>
-        <p class="text-muted small mb-0">Manage user accounts, SuperAdmin approvals, role assignments, and platform status.</p>
+        <p class="text-muted small mb-0">Manage campus accounts, role assignments, department affiliations, credentials, and governance status.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
         @if (Model.IsSuperAdmin)
@@ -18,6 +27,16 @@
                 <span>Approvals Queue (@Model.PendingApprovalCount)</span>
             </a>
         }
+        <a asp-controller="Admin" asp-action="ExportUsersCsv" 
+           asp-route-search="@Model.SearchTerm" 
+           asp-route-role="@Model.RoleFilter" 
+           asp-route-status="@Model.StatusFilter"
+           asp-route-departmentId="@Model.DepartmentFilter"
+           class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3"
+           title="Export user directory to CSV spreadsheet">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+            <span>Export CSV</span>
+        </a>
         <a asp-controller="Admin" asp-action="RegisterUser" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3">
             <i class="bi bi-person-plus-fill"></i>
             <span>Register New User</span>
@@ -25,9 +44,6 @@
         <button type="button" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#registerUserModal">
             <i class="bi bi-lightning-charge"></i>
             <span>Quick Register</span>
-        </button>
-        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportTableToCSV('usersTable', 'hawassa_campus_users.csv')">
-            <i class="bi bi-download me-1"></i>Export CSV
         </button>
     </div>
 </div>
@@ -37,16 +53,16 @@
      ======================================================= -->
 <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">
-        <div class="admin-stat-card">
+        <div class="admin-stat-card h-100">
             <div class="stat-icon-box bg-primary-subtle text-primary"><i class="bi bi-people"></i></div>
             <div>
                 <div class="stat-num">@Model.TotalCount</div>
-                <div class="stat-desc">Total Users</div>
+                <div class="stat-desc">Total Campus Users</div>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
-        <div class="admin-stat-card">
+        <div class="admin-stat-card h-100">
             <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-check2-circle"></i></div>
             <div>
                 <div class="stat-num">@Model.ActiveCount</div>
@@ -55,7 +71,7 @@
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
-        <div class="admin-stat-card">
+        <div class="admin-stat-card h-100">
             <div class="stat-icon-box bg-danger-subtle text-danger"><i class="bi bi-slash-circle"></i></div>
             <div>
                 <div class="stat-num">@Model.SuspendedCount</div>
@@ -65,7 +81,7 @@
     </div>
     <div class="col-sm-6 col-xl-3">
         <a asp-controller="Admin" asp-action="Users" asp-route-status="PENDING" class="text-decoration-none">
-            <div class="admin-stat-card border border-warning @(Model.PendingApprovalCount > 0 ? "shadow-sm bg-warning-subtle bg-opacity-25" : "")">
+            <div class="admin-stat-card border border-warning h-100 @(Model.PendingApprovalCount > 0 ? "shadow-sm bg-warning-subtle bg-opacity-25" : "")">
                 <div class="stat-icon-box bg-warning-subtle text-warning"><i class="bi bi-clock-history"></i></div>
                 <div>
                     <div class="stat-num text-warning-emphasis">
@@ -79,6 +95,7 @@
                 </div>
             </div>
         </a>
+    </div>
 </div>
 
 @if (Model.PendingApprovalCount > 0)
@@ -112,7 +129,7 @@
 }
 
 <!-- =======================================================
-     FILTERS & QUICK TABS
+     FILTERS & ADVANCED SEARCH BAR
      ======================================================= -->
 <div class="admin-card p-3 mb-4">
     <div class="d-flex flex-wrap gap-2 mb-3 pb-2 border-bottom">
@@ -131,33 +148,51 @@
     </div>
 
     <form method="get" class="row g-2 align-items-center">
-        <div class="col-md-5">
+        <input type="hidden" name="status" value="@Model.StatusFilter" />
+
+        <div class="col-12 col-md-3">
             <div class="input-group input-group-sm">
                 <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                <input type="search" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search by name, email, username, student ID..." />
+                <input type="search" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search by name, email, ID..." />
             </div>
         </div>
-        <div class="col-md-3">
+
+        <div class="col-6 col-md-2">
             <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="ALL" selected="@(Model.RoleFilter == null || Model.RoleFilter == "ALL")">All Roles</option>
                 <option value="STUDENT" selected="@(Model.RoleFilter == "STUDENT")">Students</option>
                 <option value="FACULTY" selected="@(Model.RoleFilter == "FACULTY")">Faculty</option>
                 <option value="STAFF" selected="@(Model.RoleFilter == "STAFF")">Staff</option>
-                <option value="ORGANIZATION" selected="@(Model.RoleFilter == "ORGANIZATION")">Organizations / Clubs</option>
-                <option value="ADMIN" selected="@(Model.RoleFilter == "ADMIN")">Administrators</option>
+                <option value="ORGANIZATION" selected="@(Model.RoleFilter == "ORGANIZATION")">Clubs & Orgs</option>
+                <option value="ADMIN" selected="@(Model.RoleFilter == "ADMIN")">Admins</option>
+                <option value="SUPERADMIN" selected="@(Model.RoleFilter == "SUPERADMIN")">SuperAdmins</option>
             </select>
         </div>
-        <div class="col-md-3">
-            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                <option value="ALL" selected="@(Model.StatusFilter == null || Model.StatusFilter == "ALL")">All Statuses</option>
-                <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">Active</option>
-                <option value="PENDING" selected="@(Model.StatusFilter == "PENDING")">Pending SuperAdmin Approval</option>
-                <option value="SUSPENDED" selected="@(Model.StatusFilter == "SUSPENDED")">Suspended</option>
-                <option value="INACTIVE" selected="@(Model.StatusFilter == "INACTIVE")">Inactive / Rejected</option>
+
+        <div class="col-6 col-md-3">
+            <select name="departmentId" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                @foreach (var dept in Model.Departments)
+                {
+                    <option value="@dept.id" selected="@(Model.DepartmentFilter == dept.id)">@dept.name</option>
+                }
             </select>
         </div>
-        <div class="col-md-1">
-            <a asp-controller="Admin" asp-action="Users" class="btn btn-sm btn-light border w-100" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+
+        <div class="col-6 col-md-2">
+            <select name="sortBy" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="newest" selected="@(Model.SortBy == "newest" || string.IsNullOrEmpty(Model.SortBy))">Newest Registered</option>
+                <option value="oldest" selected="@(Model.SortBy == "oldest")">Oldest Registered</option>
+                <option value="name_asc" selected="@(Model.SortBy == "name_asc")">Name (A-Z)</option>
+                <option value="name_desc" selected="@(Model.SortBy == "name_desc")">Name (Z-A)</option>
+                <option value="role" selected="@(Model.SortBy == "role")">Group by Role</option>
+                <option value="department" selected="@(Model.SortBy == "department")">By Department</option>
+            </select>
+        </div>
+
+        <div class="col-6 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Filter</button>
+            <a asp-controller="Admin" asp-action="Users" class="btn btn-sm btn-light border" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
         </div>
     </form>
 </div>
@@ -167,14 +202,15 @@
      ======================================================= -->
 <div class="admin-card overflow-hidden">
     <div class="table-responsive">
-        <table class="table admin-table align-middle" id="usersTable">
+        <table class="table admin-table align-middle mb-0" id="usersTable">
             <thead>
                 <tr>
                     <th>User & Identity</th>
                     <th>Email / Phone</th>
                     <th>Department</th>
-                    <th>Account Role</th>
+                    <th>Role</th>
                     <th>Status</th>
+                    <th>Activity</th>
                     <th>Registered</th>
                     <th class="text-end">Actions</th>
                 </tr>
@@ -183,12 +219,13 @@
                 @if (!Model.Users.Any())
                 {
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
+                        <td colspan="8" class="text-center py-5 text-muted">
                             <i class="bi bi-people fs-1 d-block mb-2 text-secondary opacity-50"></i>
-                            <p class="mb-2">No user accounts found matching the current criteria.</p>
-                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#registerUserModal">
-                                <i class="bi bi-person-plus me-1"></i>Register New User
-                            </button>
+                            <h5 class="fw-bold text-dark mb-1">No Accounts Found</h5>
+                            <p class="small text-muted mb-3">No user records matched the selected filters and search term.</p>
+                            <a asp-controller="Admin" asp-action="Users" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
+                            </a>
                         </td>
                     </tr>
                 }
@@ -198,7 +235,7 @@
                     <tr class="@(isPending ? "table-warning bg-opacity-25" : "")">
                         <td>
                             <div class="d-flex align-items-center gap-2">
-                                <div class="admin-avatar @(isPending ? "bg-warning text-dark fw-bold" : "")" style="width: 36px; height: 36px; font-size: 13px;">
+                                <div class="admin-avatar @(isPending ? "bg-warning text-dark fw-bold" : "bg-primary text-white") rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; font-size: 14px;">
                                     @(string.IsNullOrEmpty(user.FullName) ? "U" : user.FullName.Substring(0, 1).ToUpper())
                                 </div>
                                 <div>
@@ -210,18 +247,18 @@
                                         }
                                     </div>
                                     <div class="small text-muted d-flex align-items-center flex-wrap gap-2">
-                                        <span>@@@user.Username</span>
+                                        <span class="font-monospace">@@@user.Username</span>
                                         @if (!string.IsNullOrEmpty(user.StudentId))
                                         {
-                                            <span class="badge bg-light text-secondary border">ID: @user.StudentId</span>
+                                            <span class="badge bg-light text-primary border" style="font-size: 10px;"><i class="bi bi-card-text me-1"></i>ID: @user.StudentId</span>
                                         }
                                         else if (!string.IsNullOrEmpty(user.EmployeeId))
                                         {
-                                            <span class="badge bg-light text-secondary border">EMP: @user.EmployeeId</span>
+                                            <span class="badge bg-light text-secondary border" style="font-size: 10px;"><i class="bi bi-badge-ad me-1"></i>EMP: @user.EmployeeId</span>
                                         }
                                         @if (!string.IsNullOrEmpty(user.RegisteredByAdminName))
                                         {
-                                            <span class="text-primary small" style="font-size: 11px;"><i class="bi bi-person-gear me-1"></i>Reg. by: @user.RegisteredByAdminName</span>
+                                            <span class="text-primary small" style="font-size: 10px;"><i class="bi bi-person-gear me-1"></i>Reg by: @user.RegisteredByAdminName</span>
                                         }
                                     </div>
                                 </div>
@@ -235,7 +272,9 @@
                             <span class="badge bg-light text-dark border">@user.DepartmentName</span>
                         </td>
                         <td>
-                            <span class="badge bg-primary-subtle text-primary border fw-semibold">@user.AccountType</span>
+                            <span class="badge @(user.AccountType == "STUDENT" ? "bg-primary-subtle text-primary" : user.AccountType == "FACULTY" ? "bg-success-subtle text-success" : user.AccountType == "STAFF" ? "bg-info-subtle text-info" : user.AccountType == "ADMIN" || user.AccountType == "SUPERADMIN" ? "bg-dark text-white" : "bg-warning-subtle text-warning-emphasis") border fw-semibold">
+                                @user.AccountType
+                            </span>
                         </td>
                         <td>
                             @if (user.Status == "ACTIVE")
@@ -263,48 +302,34 @@
                                 </span>
                             }
                         </td>
+                        <td>
+                            <div class="small text-muted">
+                                <div><i class="bi bi-calendar-event me-1 text-primary"></i>@user.EventCount Events</div>
+                                <div><i class="bi bi-ticket-perforated me-1 text-success"></i>@user.RegistrationCount Registrations</div>
+                            </div>
+                        </td>
                         <td class="small text-muted">
                             @user.CreatedAt.ToString("MMM dd, yyyy")
                         </td>
                         <td class="text-end">
                             <div class="d-inline-flex align-items-center gap-1">
-                                @if (isPending)
+                                @if (isPending && Model.IsSuperAdmin)
                                 {
-                                    @if (Model.IsSuperAdmin)
-                                    {
-                                        <!-- SUPERADMIN QUICK APPROVE -->
-                                        <form asp-controller="Admin" asp-action="UserApprove" method="post" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@user.Id" />
-                                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                                            <button type="submit" class="btn btn-sm btn-success py-1 px-2 fw-semibold d-inline-flex align-items-center gap-1 shadow-sm" title="Approve & Activate User">
-                                                <i class="bi bi-check-lg"></i>
-                                                <span class="d-none d-md-inline">Approve</span>
-                                            </button>
-                                        </form>
-
-                                        <!-- SUPERADMIN QUICK REJECT -->
-                                        <form asp-controller="Admin" asp-action="UserReject" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to reject this registration?');">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@user.Id" />
-                                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                                            <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" title="Reject Registration">
-                                                <i class="bi bi-x-lg"></i>
-                                                <span class="d-none d-md-inline">Reject</span>
-                                            </button>
-                                        </form>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary-subtle text-secondary small py-1 px-2" title="Requires SuperAdmin clearance to activate">
-                                            <i class="bi bi-lock-fill me-1"></i>Awaiting SuperAdmin
-                                        </span>
-                                    }
+                                    <!-- SUPERADMIN QUICK APPROVE -->
+                                    <form asp-controller="Admin" asp-action="UserApprove" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@user.Id" />
+                                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                        <button type="submit" class="btn btn-sm btn-success py-1 px-2 fw-semibold d-inline-flex align-items-center gap-1 shadow-sm" title="Approve & Activate User">
+                                            <i class="bi bi-check-lg"></i>
+                                            <span class="d-none d-md-inline">Approve</span>
+                                        </button>
+                                    </form>
                                 }
 
                                 <!-- MANAGE DROPDOWN -->
                                 <div class="dropdown d-inline-block">
-                                    <button class="btn btn-sm btn-light border dropdown-toggle py-1 px-2" type="button" data-bs-toggle="dropdown">
+                                    <button class="btn btn-sm btn-light border dropdown-toggle py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         Manage
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
@@ -344,8 +369,16 @@
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@user.Id" />
                                                 <input type="hidden" name="status" value="SUSPENDED" />
-                                                <button type="submit" class="dropdown-item text-warning"><i class="bi bi-pause-circle me-2"></i>Suspend</button>
+                                                <button type="submit" class="dropdown-item text-warning"><i class="bi bi-pause-circle me-2"></i>Suspend Account</button>
                                             </form>
+                                        </li>
+
+                                        <li><hr class="dropdown-divider" /></li>
+                                        <li class="dropdown-header">Credentials & Security</li>
+                                        <li>
+                                            <button type="button" class="dropdown-item text-primary" onclick="openResetPasswordModal(@user.Id, '@user.FullName', '@user.Username')">
+                                                <i class="bi bi-key me-2"></i>Reset Password
+                                            </button>
                                         </li>
 
                                         @if (Model.IsSuperAdmin)
@@ -388,7 +421,7 @@
 
                                         <li><hr class="dropdown-divider" /></li>
                                         <li>
-                                            <form asp-controller="Admin" asp-action="UserDelete" method="post" onsubmit="return confirm('Are you sure you want to permanently delete this user?');">
+                                            <form asp-controller="Admin" asp-action="UserDelete" method="post" onsubmit="return confirm('Are you sure you want to permanently delete user @user.Username?');">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@user.Id" />
                                                 <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Delete User</button>
@@ -403,6 +436,105 @@
             </tbody>
         </table>
     </div>
+
+    <!-- =======================================================
+         PAGINATION & RANGE SUMMARY
+         ======================================================= -->
+    @if (Model.TotalFilteredCount > 0)
+    {
+        <div class="p-3 bg-light border-top d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="small text-muted">
+                Showing <strong>@(((Model.CurrentPage - 1) * Model.PageSize) + 1)</strong> to <strong>@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalFilteredCount))</strong> of <strong>@Model.TotalFilteredCount</strong> user accounts
+            </div>
+            
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Users Page navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                            <a class="page-link" asp-action="Users" 
+                               asp-route-page="@(Model.CurrentPage - 1)" 
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-search="@Model.SearchTerm" 
+                               asp-route-role="@Model.RoleFilter" 
+                               asp-route-status="@Model.StatusFilter"
+                               asp-route-departmentId="@Model.DepartmentFilter"
+                               asp-route-sortBy="@Model.SortBy">Previous</a>
+                        </li>
+
+                        @for (int p = 1; p <= Model.TotalPages; p++)
+                        {
+                            if (p == 1 || p == Model.TotalPages || (p >= Model.CurrentPage - 2 && p <= Model.CurrentPage + 2))
+                            {
+                                <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                    <a class="page-link" asp-action="Users" 
+                                       asp-route-page="@p" 
+                                       asp-route-pageSize="@Model.PageSize"
+                                       asp-route-search="@Model.SearchTerm" 
+                                       asp-route-role="@Model.RoleFilter" 
+                                       asp-route-status="@Model.StatusFilter"
+                                       asp-route-departmentId="@Model.DepartmentFilter"
+                                       asp-route-sortBy="@Model.SortBy">@p</a>
+                                </li>
+                            }
+                            else if (p == Model.CurrentPage - 3 || p == Model.CurrentPage + 3)
+                            {
+                                <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                            }
+                        }
+
+                        <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                            <a class="page-link" asp-action="Users" 
+                               asp-route-page="@(Model.CurrentPage + 1)" 
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-search="@Model.SearchTerm" 
+                               asp-route-role="@Model.RoleFilter" 
+                               asp-route-status="@Model.StatusFilter"
+                               asp-route-departmentId="@Model.DepartmentFilter"
+                               asp-route-sortBy="@Model.SortBy">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    }
+</div>
+
+<!-- =======================================================
+     PASSWORD RESET MODAL
+     ======================================================= -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form asp-controller="Admin" asp-action="UserResetPassword" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="resetPasswordUserIdInput" />
+
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="resetPasswordModalLabel">
+                        <i class="bi bi-key-fill me-2"></i>Reset User Credentials
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-dark mb-3">
+                        You are resetting the password for <strong id="resetPasswordUserNameDisplay"></strong> (<span id="resetPasswordUserHandleDisplay" class="font-monospace text-primary"></span>).
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Custom Temporary Password (Optional):</label>
+                        <input type="text" name="newPassword" class="form-control font-monospace" placeholder="Leave empty to auto-generate secure password..." />
+                        <small class="text-muted">If left blank, an auto-generated password (e.g. <code>Hawassa@@123456</code>) will be generated and emailed to the user.</small>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3 fw-semibold">
+                        Confirm Reset
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- =======================================================
@@ -414,7 +546,7 @@
             <div class="modal-header bg-primary text-white">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-person-plus-fill fs-5"></i>
-                    <h5 class="modal-title fw-bold mb-0" id="registerUserModalLabel">Register New Campus User Account</h5>
+                    <h5 class="modal-title fw-bold mb-0" id="registerUserModalLabel">Quick Register Campus Account</h5>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -429,11 +561,11 @@
                         <div>
                             @if (Model.IsSuperAdmin)
                             {
-                                <span><strong>SuperAdmin Provisioning:</strong> As a SuperAdmin, accounts you create can be activated immediately or placed in pending status.</span>
+                                <span><strong>SuperAdmin Provisioning:</strong> Accounts you create can be activated immediately or placed in pending status.</span>
                             }
                             else
                             {
-                                <span><strong>Admin Registration Policy:</strong> User accounts created by Campus Administrators are created in <strong>PENDING</strong> status and require SuperAdmin approval before the user can log in.</span>
+                                <span><strong>Admin Registration Policy:</strong> Accounts created by Campus Administrators are placed in <strong>PENDING</strong> status and require SuperAdmin approval before login is enabled.</span>
                             }
                         </div>
                     </div>
@@ -448,119 +580,83 @@
                         <!-- USERNAME -->
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-dark">Username *</label>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">@@</span>
-                                <input type="text" name="username" class="form-control" required placeholder="e.g. abebe_k" />
-                            </div>
+                            <input type="text" name="username" class="form-control form-control-sm" required placeholder="e.g. abebe.k" />
                         </div>
 
                         <!-- EMAIL -->
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-dark">University / Contact Email *</label>
-                            <input type="email" name="email" class="form-control form-control-sm" required placeholder="e.g. abebe@hawassa.edu.et" />
+                            <label class="form-label small fw-semibold text-dark">Official Email *</label>
+                            <input type="email" name="email" class="form-control form-control-sm" required placeholder="user@hawassa.edu.et" />
                         </div>
 
-                        <!-- PHONE NUMBER -->
+                        <!-- PHONE -->
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-dark">Phone Number</label>
-                            <input type="tel" name="phone" class="form-control form-control-sm" placeholder="e.g. +251 911 234567" />
+                            <input type="tel" name="phone" class="form-control form-control-sm" placeholder="+251 91 234 5678" />
                         </div>
 
-                        <!-- INITIAL PASSWORD -->
+                        <!-- ROLE -->
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-dark">Temporary Password *</label>
-                            <input type="text" name="password" class="form-control form-control-sm font-monospace" required value="Hawassa@2026!" />
-                            <small class="text-muted" style="font-size: 11px;">User will use this password on first login.</small>
-                        </div>
-
-                        <!-- ACCOUNT ROLE / TYPE -->
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-dark">Account Type & Role *</label>
-                            <select name="accountType" id="modalAccountType" class="form-select form-select-sm" required onchange="handleAccountTypeChange(this.value)">
-                                <option value="STUDENT" selected>Student Account</option>
+                            <label class="form-label small fw-semibold text-dark">Account Role / Type *</label>
+                            <select name="role" class="form-select form-select-sm" required id="modalUserRoleSelect">
+                                <option value="STUDENT">Student</option>
                                 <option value="FACULTY">Faculty / Academic Staff</option>
                                 <option value="STAFF">Administrative Staff</option>
-                                <option value="ORGANIZATION">Student Club / Organization</option>
+                                <option value="ORGANIZATION">Club / Campus Organization</option>
                                 @if (Model.IsSuperAdmin)
                                 {
                                     <option value="ADMIN">Campus Administrator</option>
-                                }
-                                else
-                                {
-                                    <option value="ADMIN" disabled>Campus Administrator (SuperAdmin Only)</option>
                                 }
                             </select>
                         </div>
 
                         <!-- DEPARTMENT -->
-                        <div class="col-md-12">
-                            <label class="form-label small fw-semibold text-dark">Academic Department / Faculty</label>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Academic Department</label>
                             <select name="departmentId" class="form-select form-select-sm">
-                                <option value="">-- Select Campus Department (Optional) --</option>
+                                <option value="">-- General Campus / Non-Affiliated --</option>
                                 @foreach (var dept in Model.Departments)
                                 {
-                                    <option value="@dept.id">@dept.name (@(dept.code ?? "DEPT"))</option>
+                                    <option value="@dept.id">@dept.name</option>
                                 }
                             </select>
                         </div>
 
-                        <!-- DYNAMIC FIELD: STUDENT ID -->
-                        <div class="col-md-6" id="studentIdContainer">
+                        <!-- STUDENT / EMPLOYEE ID -->
+                        <div class="col-md-6" id="modalStudentIdBox">
                             <label class="form-label small fw-semibold text-dark">Student ID Number</label>
-                            <input type="text" name="studentId" class="form-control form-control-sm" placeholder="e.g. UGR/1234/16 or HU/45821/15" />
+                            <input type="text" name="studentId" class="form-control form-control-sm" placeholder="e.g. HU/1234/15" />
                         </div>
 
-                        <!-- DYNAMIC FIELD: EMPLOYEE ID -->
-                        <div class="col-md-6 d-none" id="employeeIdContainer">
-                            <label class="form-label small fw-semibold text-dark">Staff / Faculty Employee ID</label>
-                            <input type="text" name="employeeId" class="form-control form-control-sm" placeholder="e.g. EMP-HU-1042 or FAC-HU-8091" />
+                        <div class="col-md-6" id="modalEmployeeIdBox">
+                            <label class="form-label small fw-semibold text-dark">Employee ID Number</label>
+                            <input type="text" name="employeeId" class="form-control form-control-sm" placeholder="e.g. EMP-9821" />
                         </div>
 
-                        <!-- DYNAMIC FIELD: ORGANIZATION NAME -->
-                        <div class="col-md-6 d-none" id="organizationNameContainer">
-                            <label class="form-label small fw-semibold text-dark">Club / Society Name</label>
-                            <input type="text" name="organizationName" class="form-control form-control-sm" placeholder="e.g. Hawassa Computing Society" />
+                        <!-- PASSWORD -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Initial Password *</label>
+                            <input type="password" name="password" class="form-control form-control-sm" required placeholder="Min 6 characters" />
                         </div>
 
-                        <!-- DYNAMIC FIELD: ORGANIZATION TYPE -->
-                        <div class="col-md-6 d-none" id="organizationTypeContainer">
-                            <label class="form-label small fw-semibold text-dark">Organization Category</label>
-                            <select name="organizationType" class="form-select form-select-sm">
-                                <option value="CLUB">Academic / Interest Club</option>
-                                <option value="SOCIETY">Student Society</option>
-                                <option value="UNION">Student Union Body</option>
-                                <option value="SPORTS">Sports Association</option>
+                        <!-- STATUS (SuperAdmin Only) -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Initial Account Status</label>
+                            <select name="initialStatus" class="form-select form-select-sm" @(!Model.IsSuperAdmin ? "disabled" : "")>
+                                <option value="PENDING" selected="@(!Model.IsSuperAdmin)">Pending SuperAdmin Approval</option>
+                                @if (Model.IsSuperAdmin)
+                                {
+                                    <option value="ACTIVE" selected>Active & Ready to Sign In</option>
+                                }
                             </select>
                         </div>
-
-                        @if (Model.IsSuperAdmin)
-                        {
-                            <!-- SUPERADMIN STATUS CHOICE -->
-                            <div class="col-md-12 pt-2 border-top">
-                                <label class="form-label small fw-semibold text-dark">Initial Account Status</label>
-                                <div class="d-flex gap-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="initialStatus" id="statusActive" value="ACTIVE" checked />
-                                        <label class="form-check-label small fw-semibold text-success" for="statusActive">
-                                            <i class="bi bi-check-circle me-1"></i>Active (Immediate Login Access)
-                                        </label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="initialStatus" id="statusPending" value="PENDING" />
-                                        <label class="form-check-label small fw-semibold text-warning-emphasis" for="statusPending">
-                                            <i class="bi bi-clock-history me-1"></i>Pending (Approval Queue)
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        }
                     </div>
                 </div>
 
-                <div class="modal-footer bg-light px-4 py-3">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-primary px-4 fw-semibold shadow-sm">
-                        <i class="bi bi-person-check-fill me-1"></i>Register User Account
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3 fw-semibold">
+                        <i class="bi bi-person-check me-1"></i>Provision Account
                     </button>
                 </div>
             </form>
@@ -568,37 +664,14 @@
     </div>
 </div>
 
-<script>
-    function handleAccountTypeChange(role) {
-        var studentCont = document.getElementById('studentIdContainer');
-        var empCont = document.getElementById('employeeIdContainer');
-        var orgNameCont = document.getElementById('organizationNameContainer');
-        var orgTypeCont = document.getElementById('organizationTypeContainer');
-
-        // Reset visibility
-        if (studentCont) studentCont.classList.add('d-none');
-        if (empCont) empCont.classList.add('d-none');
-        if (orgNameCont) orgNameCont.classList.add('d-none');
-        if (orgTypeCont) orgTypeCont.classList.add('d-none');
-
-        if (role === 'STUDENT') {
-            if (studentCont) studentCont.classList.remove('d-none');
-        } else if (role === 'STAFF' || role === 'FACULTY' || role === 'ADMIN') {
-            if (empCont) empCont.classList.remove('d-none');
-        } else if (role === 'ORGANIZATION') {
-            if (orgNameCont) orgNameCont.classList.remove('d-none');
-            if (orgTypeCont) orgTypeCont.classList.remove('d-none');
+@section Scripts {
+    <script>
+        function openResetPasswordModal(id, name, username) {
+            document.getElementById('resetPasswordUserIdInput').value = id;
+            document.getElementById('resetPasswordUserNameDisplay').innerText = name;
+            document.getElementById('resetPasswordUserHandleDisplay').innerText = '@@' + username;
+            var modal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+            modal.show();
         }
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-        var urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('openModal') === 'true') {
-            var modalEl = document.getElementById('registerUserModal');
-            if (modalEl) {
-                var modal = new bootstrap.Modal(modalEl);
-                modal.show();
-            }
-        }
-    });
-</script>
+    </script>
+}

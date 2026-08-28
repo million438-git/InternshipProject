@@ -565,115 +565,186 @@ else
 @if (!isAuthPage)
 {
     <!-- =====================================================
-         CLEAN MODERN CAMPUS FOOTER
+         CLEAN MODERN ENTERPRISE CAMPUS FOOTER
          ===================================================== -->
-
-    <footer class="site-footer">
-
+    <footer class="site-footer" role="contentinfo">
         <div class="container py-5">
-
-            <!-- 1. CENTERED BRAND & UNIVERSITY IDENTITY -->
-            <div class="text-center mb-4">
-                <div class="d-inline-flex align-items-center justify-content-center gap-3 mb-2">
-                    <img src="~/images/hawassa-logo.png" alt="Hawassa University Crest" class="bg-white rounded-circle p-1 shadow-sm" style="width: 52px; height: 52px; object-fit: contain;" />
-                    <div class="text-start">
-                        <h4 class="mb-0 fw-bold text-white tracking-tight fs-5">HAWASSA UNIVERSITY</h4>
-                        <small class="text-white-50 text-uppercase fw-semibold" style="font-size: 11px; letter-spacing: 1.5px;">Campus Event Management System (HUCEMS)</small>
+            <div class="row g-4 justify-content-between">
+                
+                <!-- 1. BRAND & IDENTITY COLUMN -->
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <img src="~/images/hawassa-logo.png" alt="Hawassa University Official Crest" class="bg-white rounded-circle p-1 shadow-sm" style="width: 52px; height: 52px; object-fit: contain;" />
+                        <div>
+                            <h5 class="mb-0 fw-bold text-white tracking-tight fs-6">HAWASSA UNIVERSITY</h5>
+                            <span class="text-white-50 text-uppercase fw-semibold" style="font-size: 11px; letter-spacing: 1.2px;">Unified Event Platform (HUCEMS)</span>
+                        </div>
+                    </div>
+                    <p class="text-white-50 small mb-3" style="line-height: 1.6; max-width: 340px;">
+                        The official unified platform for coordinating university academic conferences, departmental seminars, student club activities, and campus facilities.
+                    </p>
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-white bg-opacity-10 rounded-pill border border-white border-opacity-10">
+                        <span class="badge-pulse bg-success rounded-circle" style="width: 8px; height: 8px;"></span>
+                        <span class="text-white small fw-medium" style="font-size: 11px;">● All Systems Operational</span>
                     </div>
                 </div>
-                <p class="text-white-50 small max-w-600 mx-auto mt-2 mb-0" style="max-width: 620px; line-height: 1.6;">
-                    The official unified platform for coordinating university seminars, academic conferences, student activities, and campus events.
-                </p>
+
+                <!-- 2. QUICK LINKS COLUMN -->
+                <div class="col-6 col-md-3 col-lg-2">
+                    <h6 class="text-white fw-bold text-uppercase mb-3 pb-2 border-bottom border-white border-opacity-10 footer-col-heading">
+                        Quick Links
+                    </h6>
+                    <ul class="list-unstyled mb-0 d-flex flex-column gap-2 small">
+                        <li>
+                            <a asp-controller="Home" asp-action="Index" class="footer-nav-link p-0 text-white-50 hover-white d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-chevron-right text-primary" style="font-size: 10px;"></i>
+                                <span>Home</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Events" asp-action="Index" class="footer-nav-link p-0 text-white-50 hover-white d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-chevron-right text-primary" style="font-size: 10px;"></i>
+                                <span>Explore Events</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Calendar" asp-action="Index" class="footer-nav-link p-0 text-white-50 hover-white d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-chevron-right text-primary" style="font-size: 10px;"></i>
+                                <span>Academic Calendar</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Events" asp-action="Venues" class="footer-nav-link p-0 text-white-50 hover-white d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-chevron-right text-primary" style="font-size: 10px;"></i>
+                                <span>Campus Venues</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Announcements" asp-action="Index" class="footer-nav-link p-0 text-white-50 hover-white d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-chevron-right text-primary" style="font-size: 10px;"></i>
+                                <span>Bulletins & Notices</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Clubs" asp-action="Index" class="footer-nav-link p-0 text-white-50 hover-white d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-chevron-right text-primary" style="font-size: 10px;"></i>
+                                <span>Student Clubs</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 3. IMPORTANT PAGES & LEGAL COLUMN -->
+                <div class="col-6 col-md-3 col-lg-2">
+                    <h6 class="text-white fw-bold text-uppercase mb-3 pb-2 border-bottom border-white border-opacity-10 footer-col-heading">
+                        Resources
+                    </h6>
+                    <ul class="list-unstyled mb-0 d-flex flex-column gap-2 small">
+                        <li>
+                            <a asp-controller="Home" asp-action="About" class="footer-nav-link p-0 text-white-50 hover-white d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-chevron-right text-primary" style="font-size: 10px;"></i>
+                                <span>About HUCEMS</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Home" asp-action="Contact" class="footer-nav-link p-0 text-white-50 hover-white d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-chevron-right text-primary" style="font-size: 10px;"></i>
+                                <span>Contact & Support</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Home" asp-action="Privacy" class="footer-nav-link p-0 text-white-50 hover-white d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-chevron-right text-primary" style="font-size: 10px;"></i>
+                                <span>Privacy Policy</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Home" asp-action="Privacy" class="footer-nav-link p-0 text-white-50 hover-white d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-chevron-right text-primary" style="font-size: 10px;"></i>
+                                <span>Terms of Service</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Home" asp-action="Sitemap" class="footer-nav-link p-0 text-primary fw-semibold d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-compass text-primary" style="font-size: 11px;"></i>
+                                <span>All Pages Directory</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 4. CONTACT & SOCIAL CONNECT COLUMN -->
+                <div class="col-12 col-md-6 col-lg-3">
+                    <h6 class="text-white fw-bold text-uppercase mb-3 pb-2 border-bottom border-white border-opacity-10 footer-col-heading">
+                        Campus Desk
+                    </h6>
+                    <ul class="list-unstyled mb-3 d-flex flex-column gap-2 small text-white-50">
+                        <li class="d-flex align-items-start gap-2">
+                            <i class="bi bi-geo-alt-fill text-danger mt-1"></i>
+                            <span>Main Campus, Hawassa, Sidama, Ethiopia</span>
+                        </li>
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi bi-telephone-fill text-warning"></i>
+                            <span>Help Desk: <strong>+251 46 220 5411</strong></span>
+                        </li>
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi bi-envelope-fill text-primary"></i>
+                            <a href="mailto:events@hawassa.edu.et" class="text-white-50 text-decoration-none hover-white">events@hawassa.edu.et</a>
+                        </li>
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi bi-globe text-success"></i>
+                            <a href="https://www.hu.edu.et" target="_blank" rel="noopener noreferrer" class="text-white-50 text-decoration-none hover-white">www.hu.edu.et</a>
+                        </li>
+                    </ul>
+
+                    <!-- Social Channels -->
+                    <div class="d-flex gap-2 pt-1">
+                        <a href="https://t.me/hawassa_university" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Hawassa University Telegram Channel" title="Telegram Channel">
+                            <i class="bi bi-telegram"></i>
+                        </a>
+                        <a href="https://www.linkedin.com/school/hawassa-university/" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Hawassa University LinkedIn Profile" title="LinkedIn">
+                            <i class="bi bi-linkedin"></i>
+                        </a>
+                        <a href="https://www.facebook.com/HawassaUniversityOfficial/" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Hawassa University Facebook Page" title="Facebook">
+                            <i class="bi bi-facebook"></i>
+                        </a>
+                        <a href="https://twitter.com/HawassaUni" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Hawassa University X Profile" title="X (Twitter)">
+                            <i class="bi bi-twitter-x"></i>
+                        </a>
+                        <a href="https://www.youtube.com/c/HawassaUniversityOfficial" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Hawassa University YouTube Channel" title="YouTube">
+                            <i class="bi bi-youtube"></i>
+                        </a>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- 2. CLEAN HORIZONTAL NAVIGATION PILLS -->
-            <div class="d-flex flex-wrap justify-content-center align-items-center gap-2 gap-md-4 py-3 border-top border-bottom border-secondary border-opacity-15 my-4">
-                <a asp-controller="Home" asp-action="Index" class="footer-nav-link">Home</a>
-                <span class="text-secondary opacity-25 d-none d-md-inline">•</span>
-                <a asp-controller="Events" asp-action="Index" class="footer-nav-link">Events</a>
-                <span class="text-secondary opacity-25 d-none d-md-inline">•</span>
-                <a asp-controller="Calendar" asp-action="Index" class="footer-nav-link">Calendar</a>
-                <span class="text-secondary opacity-25 d-none d-md-inline">•</span>
-                <a asp-controller="Events" asp-action="Venues" class="footer-nav-link">Venues</a>
-                <span class="text-secondary opacity-25 d-none d-md-inline">•</span>
-                <a asp-controller="Announcements" asp-action="Index" class="footer-nav-link">Announcements</a>
-                <span class="text-secondary opacity-25 d-none d-md-inline">•</span>
-                <a asp-controller="Home" asp-action="About" class="footer-nav-link">About</a>
-                <span class="text-secondary opacity-25 d-none d-md-inline">•</span>
-                <a asp-controller="Home" asp-action="Contact" class="footer-nav-link">Contact & Support</a>
-                <span class="text-secondary opacity-25 d-none d-md-inline">•</span>
-                <a asp-controller="Home" asp-action="Privacy" class="footer-nav-link">Privacy Policy</a>
-                <span class="text-secondary opacity-25 d-none d-md-inline">•</span>
-                <a asp-controller="Home" asp-action="Sitemap" class="footer-nav-link text-primary fw-bold"><i class="bi bi-compass me-1"></i>All Pages Directory</a>
-            </div>
-
-            <!-- 3. INSTITUTIONAL CONTACT & VERIFIED BADGES -->
-            <div class="d-flex flex-wrap justify-content-center align-items-center gap-3 gap-md-4 text-white-50 small my-4">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-geo-alt-fill text-danger"></i>
-                    <span>Main Campus, Hawassa, Sidama, Ethiopia</span>
-                </div>
-                <div class="d-none d-md-inline text-secondary opacity-25">|</div>
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-telephone-fill text-warning"></i>
-                    <span>Desk: <strong>+251 46 220 5411</strong></span>
-                </div>
-                <div class="d-none d-md-inline text-secondary opacity-25">|</div>
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-envelope-fill text-primary"></i>
-                    <a href="mailto:events@hawassa.edu.et" class="text-white-50 text-decoration-none hover-white">events@hawassa.edu.et</a>
-                </div>
-                <div class="d-none d-md-inline text-secondary opacity-25">|</div>
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-globe text-success"></i>
-                    <a href="https://www.hu.edu.et" target="_blank" rel="noopener" class="text-white-50 text-decoration-none hover-white">www.hu.edu.et</a>
-                </div>
-            </div>
-
-            <!-- 4. SOCIAL MEDIA CHANNELS -->
-            <div class="d-flex justify-content-center gap-2 mb-4">
-                <a href="https://t.me/hawassa_university" target="_blank" rel="noopener" class="footer-social-btn" title="Telegram Channel">
-                    <i class="bi bi-telegram"></i>
-                </a>
-                <a href="https://www.linkedin.com/school/hawassa-university/" target="_blank" rel="noopener" class="footer-social-btn" title="LinkedIn">
-                    <i class="bi bi-linkedin"></i>
-                </a>
-                <a href="https://www.facebook.com/HawassaUniversityOfficial/" target="_blank" rel="noopener" class="footer-social-btn" title="Facebook">
-                    <i class="bi bi-facebook"></i>
-                </a>
-                <a href="https://twitter.com/HawassaUni" target="_blank" rel="noopener" class="footer-social-btn" title="X (Twitter)">
-                    <i class="bi bi-twitter-x"></i>
-                </a>
-                <a href="https://www.youtube.com/c/HawassaUniversityOfficial" target="_blank" rel="noopener" class="footer-social-btn" title="YouTube">
-                    <i class="bi bi-youtube"></i>
-                </a>
-            </div>
-
-            <!-- 5. BOTTOM COPYRIGHT & BACK TO TOP -->
-            <div class="pt-3 border-top border-secondary border-opacity-15 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 small text-white-50">
+            <!-- 5. BOTTOM COPYRIGHT & SUB-FOOTER -->
+            <div class="pt-4 mt-4 border-top border-white border-opacity-10 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 small text-white-50">
                 <p class="mb-0 text-center text-md-start">
-                    &copy; @DateTime.Now.Year <strong>Hawassa University</strong>. All rights reserved.
+                    &copy; @DateTime.UtcNow.Year <strong>Hawassa University</strong>. All rights reserved. Unified Campus Event Management System.
                 </p>
                 <div class="d-flex align-items-center gap-3">
-                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1" style="font-size: 11px;">
-                        ● Systems Active
-                    </span>
-                    <a href="#top" class="text-primary text-decoration-none fw-semibold d-inline-flex align-items-center gap-1">
-                        <i class="bi bi-arrow-up-circle-fill"></i> Back to Top
+                    <a asp-controller="Home" asp-action="Privacy" class="text-white-50 text-decoration-none hover-white" style="font-size: 12px;">Privacy Policy</a>
+                    <span class="text-white-50 opacity-25">•</span>
+                    <a asp-controller="Home" asp-action="Privacy" class="text-white-50 text-decoration-none hover-white" style="font-size: 12px;">Terms of Service</a>
+                    <span class="text-white-50 opacity-25">•</span>
+                    <a href="#top" class="text-primary text-decoration-none fw-semibold d-inline-flex align-items-center gap-1" title="Scroll to top of page">
+                        <i class="bi bi-arrow-up-circle-fill"></i>
+                        <span>Top</span>
                     </a>
                 </div>
             </div>
 
         </div>
-
     </footer>
 }
 else
 {
     <!-- MINIMAL CLEAN AUTH FOOTER -->
-    <footer class="py-3 text-center text-muted small border-top bg-body">
+    <footer class="py-3 text-center text-muted small border-top bg-body" role="contentinfo">
         <div class="container">
-            &copy; @DateTime.UtcNow.Year Hawassa University Unified Campus Event Management System. All rights reserved.
+            &copy; @DateTime.UtcNow.Year <strong>Hawassa University</strong> Unified Campus Event Management System. All rights reserved.
         </div>
     </footer>
 }

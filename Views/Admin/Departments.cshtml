@@ -2,18 +2,143 @@
 
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Department Management";
+    ViewData["Title"] = "Academic Departments Management";
 }
 
-<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
+<!-- =======================================================
+     PAGE HEADER & CROSS-NAVIGATION TABS
+     ======================================================= -->
+<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
-        <h1 class="h3 fw-bold mb-1">Department Management</h1>
-        <p class="text-muted small mb-0">Oversee academic departments, assign faculty parent bodies, and track department users.</p>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+                <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Index" class="text-decoration-none">Admin Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Academic Departments</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold text-dark mb-1">📚 Academic Departments Governance</h1>
+        <p class="text-muted small mb-0">Oversee academic departments, assign faculty parent bodies, track enrolled users, and manage department chairs.</p>
     </div>
-    <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#newDeptModal">
-        <i class="bi bi-plus-lg"></i>
-        <span>Add Department</span>
-    </button>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#newDeptModal">
+            <i class="bi bi-plus-lg"></i>
+            <span>Add Department</span>
+        </button>
+        <a asp-controller="Admin" asp-action="ExportDepartmentsCsv" 
+           asp-route-search="@Model.SearchTerm"
+           asp-route-facultyId="@Model.FacultyId"
+           asp-route-status="@Model.StatusFilter"
+           class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3"
+           title="Export department roster to CSV spreadsheet">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+            <span>Export CSV</span>
+        </a>
+    </div>
+</div>
+
+<!-- =======================================================
+     HIERARCHY NAVIGATION TABS
+     ======================================================= -->
+<ul class="nav nav-pills mb-4 gap-2">
+    <li class="nav-item">
+        <a class="nav-link bg-white border text-dark fw-semibold py-2 px-3" asp-controller="Admin" asp-action="Faculties">
+            <i class="bi bi-bank me-2 text-primary"></i>Faculties & Colleges (@Model.Faculties.Count)
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active fw-bold py-2 px-3 shadow-sm" asp-controller="Admin" asp-action="Departments">
+            <i class="bi bi-diagram-3 me-2"></i>Academic Departments (@Model.TotalCount)
+        </a>
+    </li>
+</ul>
+
+<!-- =======================================================
+     METRICS SUMMARY CARDS
+     ======================================================= -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-primary-subtle text-primary"><i class="bi bi-diagram-3"></i></div>
+            <div>
+                <div class="stat-num">@Model.TotalCount</div>
+                <div class="stat-desc">Total Departments</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-check-circle"></i></div>
+            <div>
+                <div class="stat-num">@Model.ActiveCount</div>
+                <div class="stat-desc">Active Departments</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-info-subtle text-info"><i class="bi bi-bank"></i></div>
+            <div>
+                <div class="stat-num">@Model.Faculties.Count</div>
+                <div class="stat-desc">Parent Faculties & Colleges</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-warning-subtle text-warning-emphasis"><i class="bi bi-people-fill"></i></div>
+            <div>
+                <div class="stat-num">@Model.TotalStudentsCount</div>
+                <div class="stat-desc">Enrolled Students & Staff</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =======================================================
+     FILTER & SEARCH BAR
+     ======================================================= -->
+<div class="admin-card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-center">
+        <div class="col-12 col-md-3">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input type="search" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search department, head, code..." />
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <select name="facultyId" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Parent Faculties / Colleges</option>
+                @foreach (var fac in Model.Faculties)
+                {
+                    <option value="@fac.id" selected="@(Model.FacultyId == fac.id)">@fac.name</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-6 col-md-2">
+            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="ALL" selected="@(Model.StatusFilter == null || Model.StatusFilter == "ALL")">All Statuses</option>
+                <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">🟢 Active</option>
+                <option value="INACTIVE" selected="@(Model.StatusFilter == "INACTIVE")">⚪ Inactive</option>
+            </select>
+        </div>
+
+        <div class="col-6 col-md-2">
+            <select name="sortBy" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="name_asc" selected="@(Model.SortBy == "name_asc" || string.IsNullOrEmpty(Model.SortBy))">Name (A-Z)</option>
+                <option value="name_desc" selected="@(Model.SortBy == "name_desc")">Name (Z-A)</option>
+                <option value="faculty" selected="@(Model.SortBy == "faculty")">Group by Faculty</option>
+                <option value="users_desc" selected="@(Model.SortBy == "users_desc")">Most Enrolled Users</option>
+                <option value="code" selected="@(Model.SortBy == "code")">Code</option>
+            </select>
+        </div>
+
+        <div class="col-6 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Filter</button>
+            <a asp-controller="Admin" asp-action="Departments" class="btn btn-sm btn-light border" title="Reset"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
 </div>
 
 <!-- =======================================================
@@ -21,13 +146,14 @@
      ======================================================= -->
 <div class="admin-card overflow-hidden">
     <div class="table-responsive">
-        <table class="table admin-table" id="departmentsTable">
+        <table class="table admin-table align-middle mb-0" id="departmentsTable">
             <thead>
                 <tr>
                     <th>Department Name</th>
                     <th>Code</th>
-                    <th>Parent Faculty</th>
+                    <th>Parent Faculty / College</th>
                     <th>Department Head</th>
+                    <th>Official Email</th>
                     <th>Enrolled Users</th>
                     <th>Status</th>
                     <th class="text-end">Actions</th>
@@ -37,177 +163,263 @@
                 @if (!Model.Departments.Any())
                 {
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
-                            <i class="bi bi-diagram-3 fs-2 d-block mb-2 text-secondary opacity-50"></i>
-                            <span class="fw-semibold">No academic departments registered yet.</span>
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#newDeptModal">
-                                    <i class="bi bi-plus-lg me-1"></i>Add First Department
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-diagram-3-fill fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            <h5 class="fw-bold text-dark mb-1">No Academic Departments Found</h5>
+                            <p class="small text-muted mb-3">No departments match your filter criteria.</p>
+                            <a asp-controller="Admin" asp-action="Departments" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
+                            </a>
+                        </td>
+                    </tr>
+                }
+                @foreach (var d in Model.Departments)
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-bold text-dark fs-6">@d.Name</div>
+                            <span class="text-muted small">Dept ID: #@d.Id</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-dark border font-monospace px-2 py-1">@(d.Code ?? "N/A")</span>
+                        </td>
+                        <td>
+                            <a asp-controller="Admin" asp-action="Departments" asp-route-facultyId="@d.FacultyId" class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none py-1 px-2">
+                                <i class="bi bi-bank me-1"></i>@d.FacultyName
+                            </a>
+                        </td>
+                        <td>
+                            <div class="small fw-semibold text-dark">
+                                <i class="bi bi-person-badge me-1 text-primary"></i>@(d.HeadName ?? "Not Assigned")
+                            </div>
+                        </td>
+                        <td class="text-muted small">@(d.Email ?? "N/A")</td>
+                        <td>
+                            <a asp-controller="Admin" asp-action="Users" asp-route-department="@d.Name" class="badge bg-light text-dark border text-decoration-none py-1 px-2" title="View Enrolled Users">
+                                <i class="bi bi-people me-1 text-success"></i>@d.StudentCount Users
+                            </a>
+                        </td>
+                        <td>
+                            @if (d.IsActive)
+                            {
+                                <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2 rounded-pill">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Active
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary-subtle text-secondary border py-1 px-2 rounded-pill">
+                                    Inactive
+                                </span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <div class="dropdown d-inline-block">
+                                <button class="btn btn-sm btn-light border dropdown-toggle py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Manage
                                 </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                    <li>
+                                        <a asp-controller="Admin" asp-action="Users" asp-route-department="@d.Name" class="dropdown-item">
+                                            <i class="bi bi-people me-2 text-primary"></i>View Users Roster
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <button type="button" class="dropdown-item" onclick="openEditDeptModal('@d.Id', '@d.Name', '@d.Code', '@d.FacultyId', '@d.HeadName', '@d.Email', '@d.IsActive')">
+                                            <i class="bi bi-pencil me-2 text-info"></i>Edit Department
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <form asp-controller="Admin" asp-action="DepartmentDelete" method="post" onsubmit="return confirm('Delete department @d.Name? Linked students and events will be unlinked safely.');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@d.Id" />
+                                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Delete Department</button>
+                                        </form>
+                                    </li>
+                                </ul>
                             </div>
                         </td>
                     </tr>
                 }
-                else
-                {
-                    @foreach (var d in Model.Departments)
-                    {
-                        <tr>
-                            <td class="fw-bold">@d.Name</td>
-                            <td><span class="badge bg-secondary-subtle text-secondary font-monospace">@(d.Code ?? "N/A")</span></td>
-                            <td>
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">@d.FacultyName</span>
-                            </td>
-                            <td>@(d.HeadName ?? "Not Assigned")</td>
-                            <td>
-                                <small class="text-muted"><i class="bi bi-person me-1"></i>@d.StudentCount Members</small>
-                            </td>
-                            <td>
-                                @if (d.IsActive)
-                                {
-                                    <span class="badge-status badge-active">Active</span>
-                                }
-                                else
-                                {
-                                    <span class="badge-status badge-suspended">Inactive</span>
-                                }
-                            </td>
-                            <td class="text-end">
-                                <button type="button" 
-                                        class="btn btn-sm btn-light border text-primary py-1 px-2 me-1" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#editDeptModal_@d.Id" 
-                                        title="Edit Department"
-                                        aria-label="Edit department @d.Name">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <form asp-controller="Admin" asp-action="DepartmentDelete" asp-route-id="@d.Id" method="post" class="d-inline"
-                                      data-confirm="Permanently delete academic department '@d.Name'? Associated enrolled student records will be safely unlinked."
-                                      data-confirm-title="Confirm Department Deletion"
-                                      data-confirm-btn="Delete Department">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-light border text-danger py-1 px-2" title="Delete" aria-label="Delete department @d.Name">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                }
             </tbody>
         </table>
     </div>
-</div>
 
-<!-- =======================================================
-     EDIT DEPARTMENT MODALS (SEMANTIC CONTAINER OUTSIDE TABLE)
-     ======================================================= -->
-@foreach (var d in Model.Departments)
-{
-    <div class="modal fade text-start" id="editDeptModal_@d.Id" tabindex="-1" aria-labelledby="editDeptModalTitle_@d.Id" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold" id="editDeptModalTitle_@d.Id">
-                        <i class="bi bi-pencil me-1 text-primary"></i>Edit Academic Department
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close dialog"></button>
-                </div>
-                <form asp-controller="Admin" asp-action="DepartmentEdit" method="post">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="id" value="@d.Id" />
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="edit_dept_name_@d.Id" class="form-label small fw-semibold">Department Name</label>
-                            <input type="text" id="edit_dept_name_@d.Id" name="name" class="form-control form-control-sm" required value="@d.Name" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit_dept_code_@d.Id" class="form-label small fw-semibold">Department Code</label>
-                            <input type="text" id="edit_dept_code_@d.Id" name="code" class="form-control form-control-sm" value="@d.Code" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit_dept_faculty_@d.Id" class="form-label small fw-semibold">Parent Faculty</label>
-                            <select id="edit_dept_faculty_@d.Id" name="facultyId" class="form-select form-select-sm" required>
-                                @foreach (var fac in Model.Faculties)
-                                {
-                                    <option value="@fac.id" selected="@(fac.id == d.FacultyId)">@fac.name</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="row g-2 mb-3">
-                            <div class="col-6">
-                                <label for="edit_dept_head_@d.Id" class="form-label small fw-semibold">Department Head</label>
-                                <input type="text" id="edit_dept_head_@d.Id" name="headName" class="form-control form-control-sm" value="@d.HeadName" />
-                            </div>
-                            <div class="col-6">
-                                <label for="edit_dept_email_@d.Id" class="form-label small fw-semibold">Email</label>
-                                <input type="email" id="edit_dept_email_@d.Id" name="email" class="form-control form-control-sm" value="@d.Email" />
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit_dept_status_@d.Id" class="form-label small fw-semibold">Status</label>
-                            <select id="edit_dept_status_@d.Id" name="isActive" class="form-select form-select-sm">
-                                <option value="true" selected="@(d.IsActive)">Active</option>
-                                <option value="false" selected="@(!d.IsActive)">Inactive</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-sm btn-primary px-3">Save Changes</button>
-                    </div>
-                </form>
+    <!-- =======================================================
+         PAGINATION & RANGE SUMMARY
+         ======================================================= -->
+    @if (Model.TotalFilteredCount > 0)
+    {
+        <div class="p-3 bg-light border-top d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="small text-muted">
+                Showing <strong>@(((Model.CurrentPage - 1) * Model.PageSize) + 1)</strong> to <strong>@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalFilteredCount))</strong> of <strong>@Model.TotalFilteredCount</strong> departments
             </div>
+            
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Departments Page navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                            <a class="page-link" asp-action="Departments" 
+                               asp-route-page="@(Model.CurrentPage - 1)" 
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-search="@Model.SearchTerm" 
+                               asp-route-facultyId="@Model.FacultyId"
+                               asp-route-status="@Model.StatusFilter"
+                               asp-route-sortBy="@Model.SortBy">Previous</a>
+                        </li>
+
+                        @for (int p = 1; p <= Model.TotalPages; p++)
+                        {
+                            if (p == 1 || p == Model.TotalPages || (p >= Model.CurrentPage - 2 && p <= Model.CurrentPage + 2))
+                            {
+                                <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                    <a class="page-link" asp-action="Departments" 
+                                       asp-route-page="@p" 
+                                       asp-route-pageSize="@Model.PageSize"
+                                       asp-route-search="@Model.SearchTerm" 
+                                       asp-route-facultyId="@Model.FacultyId"
+                                       asp-route-status="@Model.StatusFilter"
+                                       asp-route-sortBy="@Model.SortBy">@p</a>
+                                </li>
+                            }
+                            else if (p == Model.CurrentPage - 3 || p == Model.CurrentPage + 3)
+                            {
+                                <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                            }
+                        }
+
+                        <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                            <a class="page-link" asp-action="Departments" 
+                               asp-route-page="@(Model.CurrentPage + 1)" 
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-search="@Model.SearchTerm" 
+                               asp-route-facultyId="@Model.FacultyId"
+                               asp-route-status="@Model.StatusFilter"
+                               asp-route-sortBy="@Model.SortBy">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
         </div>
-    </div>
-}
+    }
+</div>
 
 <!-- =======================================================
      ADD DEPARTMENT MODAL
      ======================================================= -->
-<div class="modal fade" id="newDeptModal" tabindex="-1" aria-labelledby="newDeptModalTitle" aria-hidden="true">
+<div class="modal fade" id="newDeptModal" tabindex="-1" aria-labelledby="newDeptModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="newDeptModalTitle"><i class="bi bi-mortarboard me-1 text-primary"></i>Add Academic Department</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close dialog"></button>
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="newDeptModalLabel"><i class="bi bi-diagram-3 me-2"></i>Add Academic Department</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form asp-controller="Admin" asp-action="DepartmentCreate" method="post">
                 @Html.AntiForgeryToken()
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label for="new_dept_name" class="form-label small fw-semibold">Department Name</label>
-                        <input type="text" id="new_dept_name" name="name" class="form-control form-control-sm" required placeholder="e.g. Computer Science & Software Engineering" />
-                    </div>
-                    <div class="mb-3">
-                        <label for="new_dept_code" class="form-label small fw-semibold">Department Code</label>
-                        <input type="text" id="new_dept_code" name="code" class="form-control form-control-sm" placeholder="e.g. CS" />
-                    </div>
-                    <div class="mb-3">
-                        <label for="new_dept_faculty" class="form-label small fw-semibold">Parent Faculty</label>
-                        <select id="new_dept_faculty" name="facultyId" class="form-select form-select-sm" required>
+                        <label class="form-label small fw-semibold text-dark">Parent Faculty / College *</label>
+                        <select name="facultyId" class="form-select form-select-sm" required>
                             @foreach (var fac in Model.Faculties)
                             {
                                 <option value="@fac.id">@fac.name</option>
                             }
                         </select>
                     </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label for="new_dept_head" class="form-label small fw-semibold">Department Head</label>
-                            <input type="text" id="new_dept_head" name="headName" class="form-control form-control-sm" placeholder="e.g. Chala Gemeda" />
-                        </div>
-                        <div class="col-6">
-                            <label for="new_dept_email" class="form-label small fw-semibold">Email</label>
-                            <input type="email" id="new_dept_email" name="email" class="form-control form-control-sm" placeholder="cs.dept@hawassa.edu.et" />
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Department Name *</label>
+                        <input type="text" name="name" class="form-control form-control-sm" required placeholder="e.g. Computer Science" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Code / Acronym</label>
+                        <input type="text" name="code" class="form-control form-control-sm font-monospace" placeholder="e.g. CS" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Department Head / Chair</label>
+                        <input type="text" name="headName" class="form-control form-control-sm" placeholder="e.g. Dr. Tigist Mengistu" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Official Email</label>
+                        <input type="email" name="email" class="form-control form-control-sm" placeholder="cs.dept@hu.edu.et" />
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-primary px-3">Add Department</button>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3 fw-semibold">Save Department</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- =======================================================
+     EDIT DEPARTMENT MODAL
+     ======================================================= -->
+<div class="modal fade" id="editDeptModal" tabindex="-1" aria-labelledby="editDeptModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="editDeptModalLabel"><i class="bi bi-pencil-square me-2"></i>Edit Department</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-controller="Admin" asp-action="DepartmentEdit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editDeptId" />
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Parent Faculty / College *</label>
+                        <select name="facultyId" id="editDeptFacultyId" class="form-select form-select-sm" required>
+                            @foreach (var fac in Model.Faculties)
+                            {
+                                <option value="@fac.id">@fac.name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Department Name *</label>
+                        <input type="text" name="name" id="editDeptName" class="form-control form-control-sm" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Code / Acronym</label>
+                        <input type="text" name="code" id="editDeptCode" class="form-control form-control-sm font-monospace" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Department Head</label>
+                        <input type="text" name="headName" id="editDeptHead" class="form-control form-control-sm" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Official Email</label>
+                        <input type="email" name="email" id="editDeptEmail" class="form-control form-control-sm" />
+                    </div>
+                    <div class="form-check form-switch mt-3">
+                        <input class="form-check-input" type="checkbox" name="isActive" id="editDeptActive" value="true" />
+                        <label class="form-check-label small fw-semibold text-dark" for="editDeptActive">Department is Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3 fw-semibold">Update Department</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openEditDeptModal(id, name, code, facultyId, head, email, isActive) {
+            document.getElementById('editDeptId').value = id;
+            document.getElementById('editDeptName').value = name;
+            document.getElementById('editDeptCode').value = code || '';
+            document.getElementById('editDeptFacultyId').value = facultyId;
+            document.getElementById('editDeptHead').value = head || '';
+            document.getElementById('editDeptEmail').value = email || '';
+            document.getElementById('editDeptActive').checked = isActive === 'True' || isActive === true;
+
+            var modal = new bootstrap.Modal(document.getElementById('editDeptModal'));
+            modal.show();
+        }
+    </script>
+}

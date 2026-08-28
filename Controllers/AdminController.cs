@@ -336,18 +336,34 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =========================================================
         // 2. USER MANAGEMENT
         // =========================================================
-        public async Task<IActionResult> Users(string? search, string? role, string? status)
+        public async Task<IActionResult> Users(
+            string? search, 
+            string? role, 
+            string? status, 
+            ulong? departmentId, 
+            string? sortBy = "newest", 
+            int page = 1, 
+            int pageSize = 20)
         {
+            if (page < 1) page = 1;
+            if (pageSize < 5) pageSize = 5;
+            if (pageSize > 100) pageSize = 100;
+
             var vm = new AdminUsersViewModel
             {
                 SearchTerm = search,
                 RoleFilter = role,
-                StatusFilter = status
+                StatusFilter = status,
+                DepartmentFilter = departmentId,
+                SortBy = sortBy,
+                CurrentPage = page,
+                PageSize = pageSize
             };
 
             try
             {
                 var query = _db.users
+                    .AsNoTracking()
                     .Include(u => u.department)
                     .Include(u => u._eventorganizers)
                     .Include(u => u.registrations)
@@ -376,9 +392,30 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     query = query.Where(u => u.account_status == status);
                 }
 
-                var list = await query.OrderByDescending(u => u.created_at).ToListAsync();
+                if (departmentId.HasValue && departmentId.Value > 0)
+                {
+                    query = query.Where(u => u.department_id == departmentId.Value);
+                }
 
-                vm.Users = list.Select(u =>
+                vm.TotalFilteredCount = await query.CountAsync();
+
+                // Apply Sorting
+                query = sortBy switch
+                {
+                    "oldest" => query.OrderBy(u => u.created_at),
+                    "name_asc" => query.OrderBy(u => u.first_name).ThenBy(u => u.last_name),
+                    "name_desc" => query.OrderByDescending(u => u.first_name).ThenByDescending(u => u.last_name),
+                    "role" => query.OrderBy(u => u.account_type).ThenByDescending(u => u.created_at),
+                    "department" => query.OrderBy(u => u.department != null ? u.department.name : "").ThenBy(u => u.first_name),
+                    _ => query.OrderByDescending(u => u.created_at) // default "newest"
+                };
+
+                var pagedList = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                vm.Users = pagedList.Select(u =>
                 {
                     var assignedBy = u.user_roleusers.FirstOrDefault(ur => ur.assigned_byNavigation != null)?.assigned_byNavigation;
                     var regName = assignedBy != null ? $"{assignedBy.first_name} {assignedBy.last_name}".Trim() : null;
@@ -404,13 +441,17 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     };
                 }).ToList();
 
-                vm.TotalCount = vm.Users.Count;
-                vm.ActiveCount = vm.Users.Count(u => u.Status == "ACTIVE");
-                vm.SuspendedCount = vm.Users.Count(u => u.Status == "SUSPENDED");
-                vm.PendingCount = vm.Users.Count(u => u.Status == "PENDING" || u.Status == "PENDING_APPROVAL");
+                // Global metric summary counts
+                var allUsers = await _db.users.AsNoTracking().Select(u => u.account_status).ToListAsync();
+                vm.TotalCount = allUsers.Count;
+                vm.ActiveCount = allUsers.Count(s => s == "ACTIVE");
+                vm.SuspendedCount = allUsers.Count(s => s == "SUSPENDED");
+                vm.PendingCount = allUsers.Count(s => s == "PENDING" || s == "PENDING_APPROVAL");
                 vm.PendingApprovalCount = vm.PendingCount;
                 vm.IsSuperAdmin = IsSuperAdmin();
+
                 vm.Departments = await _db.departments
+                    .AsNoTracking()
                     .Where(d => d.is_active == null || d.is_active == true)
                     .OrderBy(d => d.name)
                     .ToListAsync();
@@ -422,6 +463,126 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             }
 
             return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportUsersCsv(string? search, string? role, string? status, ulong? departmentId)
+        {
+            try
+            {
+                var query = _db.users
+                    .AsNoTracking()
+                    .Include(u => u.department)
+                    .Include(u => u._eventorganizers)
+                    .Include(u => u.registrations)
+                    .Include(u => u.user_roleusers)
+                        .ThenInclude(ur => ur.assigned_byNavigation)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    query = query.Where(u => u.first_name.ToLower().Contains(s) ||
+                                             u.last_name.ToLower().Contains(s) ||
+                                             u.email.ToLower().Contains(s) ||
+                                             u.username.ToLower().Contains(s) ||
+                                             (u.student_id != null && u.student_id.ToLower().Contains(s)) ||
+                                             (u.employee_id != null && u.employee_id.ToLower().Contains(s)));
+                }
+
+                if (!string.IsNullOrWhiteSpace(role) && role != "ALL")
+                {
+                    query = query.Where(u => u.account_type == role);
+                }
+
+                if (!string.IsNullOrWhiteSpace(status) && status != "ALL")
+                {
+                    query = query.Where(u => u.account_status == status);
+                }
+
+                if (departmentId.HasValue && departmentId.Value > 0)
+                {
+                    query = query.Where(u => u.department_id == departmentId.Value);
+                }
+
+                var list = await query.OrderByDescending(u => u.created_at).ToListAsync();
+
+                var builder = new StringBuilder();
+                builder.AppendLine("User ID,Full Name,Username,Email,Phone,Account Type,Status,Student ID,Employee ID,Department,Registered By,Created Date,Events Organized,Registrations");
+
+                foreach (var u in list)
+                {
+                    var assignedBy = u.user_roleusers.FirstOrDefault(ur => ur.assigned_byNavigation != null)?.assigned_byNavigation;
+                    var regName = assignedBy != null ? $"{assignedBy.first_name} {assignedBy.last_name}".Trim() : "Self / System";
+                    var fullName = $"{u.first_name} {u.last_name}".Trim().Replace("\"", "\"\"");
+                    var deptName = (u.department?.name ?? "General").Replace("\"", "\"\"");
+
+                    builder.AppendLine($"{u.id},\"{fullName}\",\"{u.username}\",\"{u.email}\",\"{u.phone}\",\"{u.account_type}\",\"{u.account_status}\",\"{u.student_id}\",\"{u.employee_id}\",\"{deptName}\",\"{regName}\",\"{u.created_at:yyyy-MM-dd HH:mm:ss}\",{u._eventorganizers.Count},{u.registrations.Count}");
+                }
+
+                var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
+                return File(bytes, "text/csv", $"Hawassa_Users_Directory_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting users CSV");
+                TempData["ErrorMessage"] = "Failed to export users: " + ex.Message;
+                return RedirectToAction(nameof(Users));
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UserResetPassword(ulong id, string? newPassword = null)
+        {
+            try
+            {
+                var user = await _db.users.FindAsync(id);
+                if (user == null)
+                {
+                    TempData["ErrorMessage"] = "User not found.";
+                    return RedirectToAction(nameof(Users));
+                }
+
+                var targetType = user.account_type?.ToUpperInvariant() ?? "STUDENT";
+                if ((targetType == "ADMIN" || targetType == "SUPERADMIN") && !IsSuperAdmin())
+                {
+                    TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin can reset credentials for administrator accounts.";
+                    return RedirectToAction(nameof(Users));
+                }
+
+                // Generate temporary password if not provided
+                var tempPassword = string.IsNullOrWhiteSpace(newPassword) ? $"Hawassa@{RandomNumberGenerator.GetInt32(100000, 999999)}" : newPassword.Trim();
+                user.password_hash = AccountController.HashPassword(tempPassword);
+                user.updated_at = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+
+                await LogAuditAsync("USER_PASSWORD_RESET_BY_ADMIN", "USER", id, $"Administrator '{GetCurrentUserName()}' reset password for user '{user.username}' ({user.email})");
+
+                // Send email notice
+                try
+                {
+                    string emailSubject = "Hawassa University Portal - Temporary Password Reset";
+                    string emailBody = $@"<h3>Password Reset Notification</h3>
+                        <p>Hello {user.first_name} {user.last_name},</p>
+                        <p>An administrator has reset your password for the Hawassa University Portal account: <strong>{user.username}</strong>.</p>
+                        <p>Your temporary password is: <strong style='font-family: monospace; font-size: 16px; color: #1e3a8a;'>{tempPassword}</strong></p>
+                        <p>Please log in immediately and change your password in your Account Settings.</p>
+                        <p><a href='http://localhost:5110/Account/Login'>Sign In Here</a></p>";
+
+                    await _emailSender.SendEmailAsync(user.email, emailSubject, emailBody);
+                }
+                catch { }
+
+                TempData["SuccessMessage"] = $"Password for '{user.username}' successfully reset to: {tempPassword}";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resetting user password");
+                TempData["ErrorMessage"] = "Failed to reset password: " + ex.Message;
+            }
+
+            return RedirectToAction(nameof(Users));
         }
 
         [HttpPost]
@@ -1136,7 +1297,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             if (userIds == null || !userIds.Any())
             {
                 TempData["ErrorMessage"] = "No users selected for approval.";
-                return RedirectToAction(nameof(Users));
+                return RedirectToAction(nameof(UserApprovals));
             }
 
             int approvedCount = 0;
@@ -1180,7 +1341,54 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
 
-            return RedirectToAction(nameof(Users));
+            return RedirectToAction(nameof(UserApprovals));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BatchRejectUsers(List<ulong> userIds, string? reason = null, string? returnUrl = null)
+        {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin accounts have authorization to decline registrations in bulk.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            if (userIds == null || !userIds.Any())
+            {
+                TempData["ErrorMessage"] = "No users selected for rejection.";
+                return RedirectToAction(nameof(UserApprovals));
+            }
+
+            int rejectedCount = 0;
+            var note = string.IsNullOrWhiteSpace(reason) ? "Bulk administrative verification declined." : reason.Trim();
+            try
+            {
+                var usersToReject = await _db.users
+                    .Where(u => userIds.Contains(u.id) && (u.account_status == "PENDING" || u.account_status == "PENDING_APPROVAL"))
+                    .ToListAsync();
+
+                foreach (var user in usersToReject)
+                {
+                    user.account_status = "INACTIVE";
+                    user.updated_at = DateTime.UtcNow;
+                    rejectedCount++;
+                }
+
+                await _db.SaveChangesAsync();
+                await LogAuditAsync("BATCH_USERS_REJECTED_BY_SUPERADMIN", "USER", 0, $"SuperAdmin '{GetCurrentUserName()}' batch declined {rejectedCount} user accounts. Reason: {note}");
+                TempData["SuccessMessage"] = $"Declined {rejectedCount} registration requests and set status to INACTIVE.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error batch rejecting users");
+                TempData["ErrorMessage"] = "Failed to batch decline users: " + ex.Message;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(UserApprovals));
         }
 
         [HttpPost]
@@ -1234,14 +1442,20 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
 
-            return RedirectToAction(nameof(Users));
+            return RedirectToAction(nameof(UserApprovals));
         }
 
         // =========================================================
         // DEDICATED SUPERADMIN USER APPROVALS CENTER
         // =========================================================
         [HttpGet]
-        public async Task<IActionResult> UserApprovals(string? search, string? role)
+        public async Task<IActionResult> UserApprovals(
+            string? search, 
+            string? role, 
+            ulong? departmentId, 
+            string? sortBy = "newest", 
+            int page = 1, 
+            int pageSize = 20)
         {
             if (!IsSuperAdmin())
             {
@@ -1249,16 +1463,25 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            if (page < 1) page = 1;
+            if (pageSize < 5) pageSize = 5;
+            if (pageSize > 100) pageSize = 100;
+
             var vm = new AdminUserApprovalViewModel
             {
                 SearchTerm = search,
                 RoleFilter = role,
+                DepartmentFilter = departmentId,
+                SortBy = sortBy,
+                CurrentPage = page,
+                PageSize = pageSize,
                 IsSuperAdmin = true
             };
 
             try
             {
                 var query = _db.users
+                    .AsNoTracking()
                     .Include(u => u.department)
                         .ThenInclude(d => d!.faculty)
                     .Include(u => u.user_roleusers)
@@ -1282,9 +1505,29 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     query = query.Where(u => u.account_type == role);
                 }
 
-                var list = await query.OrderByDescending(u => u.created_at).ToListAsync();
+                if (departmentId.HasValue && departmentId.Value > 0)
+                {
+                    query = query.Where(u => u.department_id == departmentId.Value);
+                }
 
-                vm.PendingUsers = list.Select(u =>
+                vm.TotalFilteredCount = await query.CountAsync();
+
+                // Apply Sorting
+                query = sortBy switch
+                {
+                    "oldest" => query.OrderBy(u => u.created_at),
+                    "name_asc" => query.OrderBy(u => u.first_name).ThenBy(u => u.last_name),
+                    "name_desc" => query.OrderByDescending(u => u.first_name).ThenByDescending(u => u.last_name),
+                    "role" => query.OrderBy(u => u.account_type).ThenByDescending(u => u.created_at),
+                    _ => query.OrderByDescending(u => u.created_at) // default "newest"
+                };
+
+                var pagedList = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                vm.PendingUsers = pagedList.Select(u =>
                 {
                     var assignedBy = u.user_roleusers.FirstOrDefault(ur => ur.assigned_byNavigation != null)?.assigned_byNavigation;
                     var regName = assignedBy != null ? $"{assignedBy.first_name} {assignedBy.last_name}".Trim() : "Campus Administrator";
@@ -1297,6 +1540,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         Phone = u.phone,
                         AccountType = u.account_type,
                         Status = u.account_status,
+                        DepartmentId = u.department_id,
                         DepartmentName = u.department?.name ?? "General Campus",
                         FacultyName = u.department?.faculty?.name,
                         StudentId = u.student_id,
@@ -1309,7 +1553,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     };
                 }).ToList();
 
-                var allPending = await _db.users.Where(u => u.account_status == "PENDING" || u.account_status == "PENDING_APPROVAL").ToListAsync();
+                var allPending = await _db.users
+                    .AsNoTracking()
+                    .Where(u => u.account_status == "PENDING" || u.account_status == "PENDING_APPROVAL")
+                    .ToListAsync();
+
                 vm.TotalPendingCount = allPending.Count;
                 vm.StudentPendingCount = allPending.Count(u => u.account_type == "STUDENT");
                 vm.FacultyPendingCount = allPending.Count(u => u.account_type == "FACULTY");
@@ -1317,6 +1565,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 vm.OrganizationPendingCount = allPending.Count(u => u.account_type == "ORGANIZATION");
 
                 vm.Departments = await _db.departments
+                    .AsNoTracking()
                     .Where(d => d.is_active == null || d.is_active == true)
                     .OrderBy(d => d.name)
                     .ToListAsync();
@@ -1329,6 +1578,73 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             return View(vm);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ExportPendingApprovalsCsv(string? search, string? role, ulong? departmentId)
+        {
+            if (!IsSuperAdmin())
+            {
+                return Forbid();
+            }
+
+            try
+            {
+                var query = _db.users
+                    .AsNoTracking()
+                    .Include(u => u.department)
+                        .ThenInclude(d => d!.faculty)
+                    .Include(u => u.user_roleusers)
+                        .ThenInclude(ur => ur.assigned_byNavigation)
+                    .Where(u => u.account_status == "PENDING" || u.account_status == "PENDING_APPROVAL")
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    query = query.Where(u => u.first_name.ToLower().Contains(s) ||
+                                             u.last_name.ToLower().Contains(s) ||
+                                             u.email.ToLower().Contains(s) ||
+                                             u.username.ToLower().Contains(s) ||
+                                             (u.student_id != null && u.student_id.ToLower().Contains(s)) ||
+                                             (u.employee_id != null && u.employee_id.ToLower().Contains(s)));
+                }
+
+                if (!string.IsNullOrWhiteSpace(role) && role != "ALL")
+                {
+                    query = query.Where(u => u.account_type == role);
+                }
+
+                if (departmentId.HasValue && departmentId.Value > 0)
+                {
+                    query = query.Where(u => u.department_id == departmentId.Value);
+                }
+
+                var list = await query.OrderByDescending(u => u.created_at).ToListAsync();
+
+                var builder = new StringBuilder();
+                builder.AppendLine("User ID,Full Name,Username,Email,Phone,Account Type,Student ID,Employee ID,Department,Faculty,Registered By,Submission Date (UTC),Status");
+
+                foreach (var u in list)
+                {
+                    var assignedBy = u.user_roleusers.FirstOrDefault(ur => ur.assigned_byNavigation != null)?.assigned_byNavigation;
+                    var regName = assignedBy != null ? $"{assignedBy.first_name} {assignedBy.last_name}".Trim() : "Campus Administrator";
+                    var fullName = $"{u.first_name} {u.last_name}".Trim().Replace("\"", "\"\"");
+                    var deptName = (u.department?.name ?? "General Campus").Replace("\"", "\"\"");
+                    var facName = (u.department?.faculty?.name ?? "").Replace("\"", "\"\"");
+
+                    builder.AppendLine($"{u.id},\"{fullName}\",\"{u.username}\",\"{u.email}\",\"{u.phone}\",\"{u.account_type}\",\"{u.student_id}\",\"{u.employee_id}\",\"{deptName}\",\"{facName}\",\"{regName}\",\"{u.created_at:yyyy-MM-dd HH:mm:ss}\",\"{u.account_status}\"");
+                }
+
+                var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
+                return File(bytes, "text/csv", $"Hawassa_Pending_Approvals_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting pending approvals CSV");
+                TempData["ErrorMessage"] = "Failed to export CSV: " + ex.Message;
+                return RedirectToAction(nameof(UserApprovals));
+            }
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RejectUser(ulong id, string? reason = null, string? returnUrl = null) => await UserReject(id, reason, returnUrl);
@@ -1336,18 +1652,36 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =========================================================
         // 3. EVENT MANAGEMENT
         // =========================================================
-        public async Task<IActionResult> Events(string? search, string? status, string? category)
+        public async Task<IActionResult> Events(
+            string? search, 
+            string? status, 
+            ulong? categoryId, 
+            ulong? venueId, 
+            string? timeframe = "ALL", 
+            string? sortBy = "newest", 
+            int page = 1, 
+            int pageSize = 20)
         {
+            if (page < 1) page = 1;
+            if (pageSize < 5) pageSize = 5;
+            if (pageSize > 100) pageSize = 100;
+
             var vm = new AdminEventsViewModel
             {
                 SearchTerm = search,
                 StatusFilter = status,
-                CategoryFilter = category
+                CategoryId = categoryId,
+                VenueId = venueId,
+                Timeframe = timeframe,
+                SortBy = sortBy,
+                CurrentPage = page,
+                PageSize = pageSize
             };
 
             try
             {
                 var query = _db.events
+                    .AsNoTracking()
                     .Include(e => e.organizer)
                     .Include(e => e.category)
                     .Include(e => e.venue)
@@ -1369,18 +1703,49 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     else query = query.Where(e => e.status == status);
                 }
 
-                if (!string.IsNullOrWhiteSpace(category) && category != "ALL")
+                if (categoryId.HasValue && categoryId.Value > 0)
                 {
-                    query = query.Where(e => e.category != null && e.category.name == category);
+                    query = query.Where(e => e.category_id == categoryId.Value);
                 }
 
-                var list = await query.OrderByDescending(e => e.created_at).ToListAsync();
+                if (venueId.HasValue && venueId.Value > 0)
+                {
+                    query = query.Where(e => e.venue_id == venueId.Value);
+                }
 
-                vm.Events = list.Select(e => new AdminEventRow
+                var now = DateTime.UtcNow;
+                if (!string.IsNullOrWhiteSpace(timeframe) && timeframe != "ALL")
+                {
+                    if (timeframe == "UPCOMING") query = query.Where(e => e.start_at >= now);
+                    else if (timeframe == "TODAY") query = query.Where(e => e.start_at.Date == now.Date);
+                    else if (timeframe == "PAST") query = query.Where(e => e.end_at < now);
+                }
+
+                vm.TotalFilteredCount = await query.CountAsync();
+
+                // Apply Sorting
+                query = sortBy switch
+                {
+                    "oldest" => query.OrderBy(e => e.created_at),
+                    "event_date_asc" => query.OrderBy(e => e.start_at),
+                    "event_date_desc" => query.OrderByDescending(e => e.start_at),
+                    "registrations_desc" => query.OrderByDescending(e => e.registrations.Count),
+                    "title_asc" => query.OrderBy(e => e.title),
+                    _ => query.OrderByDescending(e => e.created_at) // default "newest"
+                };
+
+                var pagedList = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                vm.Events = pagedList.Select(e => new AdminEventRow
                 {
                     Id = e.id,
                     Title = e.title,
+                    CategoryId = e.category_id,
                     CategoryName = e.category?.name ?? "General",
+                    VenueId = e.venue_id,
                     VenueName = e.venue?.name ?? "Main Campus",
                     OrganizerName = e.organizer != null ? $"{e.organizer.first_name} {e.organizer.last_name}".Trim() : "Organizer",
                     OrganizationName = e.organization?.name,
@@ -1395,10 +1760,26 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     CreatedAt = e.created_at
                 }).ToList();
 
-                vm.TotalEvents = vm.Events.Count;
-                vm.PendingApprovalCount = vm.Events.Count(e => e.ApprovalStatus == "PENDING");
-                vm.PublishedCount = vm.Events.Count(e => e.Status == "PUBLISHED");
-                vm.CancelledCount = vm.Events.Count(e => e.Status == "CANCELLED");
+                // Global metric summary counts
+                var allEvts = await _db.events.AsNoTracking().Select(e => new { e.status, e.approval_status, e.start_at, e.end_at }).ToListAsync();
+                vm.TotalEvents = allEvts.Count;
+                vm.PendingApprovalCount = allEvts.Count(e => e.approval_status == "PENDING");
+                vm.PublishedCount = allEvts.Count(e => e.status == "PUBLISHED");
+                vm.CancelledCount = allEvts.Count(e => e.status == "CANCELLED");
+                vm.UpcomingCount = allEvts.Count(e => e.start_at >= now);
+                vm.TodayCount = allEvts.Count(e => e.start_at.Date == now.Date);
+
+                vm.Categories = await _db.event_categories
+                    .AsNoTracking()
+                    .Where(c => c.is_active == null || c.is_active == true)
+                    .OrderBy(c => c.name)
+                    .ToListAsync();
+
+                vm.Venues = await _db.venues
+                    .AsNoTracking()
+                    .Where(v => v.status == "AVAILABLE")
+                    .OrderBy(v => v.name)
+                    .ToListAsync();
             }
             catch (Exception ex)
             {
@@ -1406,6 +1787,161 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             }
 
             return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportEventsCsv(string? search, string? status, ulong? categoryId, ulong? venueId, string? timeframe)
+        {
+            try
+            {
+                var query = _db.events
+                    .AsNoTracking()
+                    .Include(e => e.organizer)
+                    .Include(e => e.category)
+                    .Include(e => e.venue)
+                    .Include(e => e.organization)
+                    .Include(e => e.registrations)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    query = query.Where(e => e.title.ToLower().Contains(s) || (e.description != null && e.description.ToLower().Contains(s)));
+                }
+
+                if (!string.IsNullOrWhiteSpace(status) && status != "ALL")
+                {
+                    if (status == "PENDING") query = query.Where(e => e.approval_status == "PENDING");
+                    else if (status == "APPROVED") query = query.Where(e => e.approval_status == "APPROVED");
+                    else if (status == "REJECTED") query = query.Where(e => e.approval_status == "REJECTED");
+                    else query = query.Where(e => e.status == status);
+                }
+
+                if (categoryId.HasValue && categoryId.Value > 0)
+                {
+                    query = query.Where(e => e.category_id == categoryId.Value);
+                }
+
+                if (venueId.HasValue && venueId.Value > 0)
+                {
+                    query = query.Where(e => e.venue_id == venueId.Value);
+                }
+
+                var now = DateTime.UtcNow;
+                if (!string.IsNullOrWhiteSpace(timeframe) && timeframe != "ALL")
+                {
+                    if (timeframe == "UPCOMING") query = query.Where(e => e.start_at >= now);
+                    else if (timeframe == "TODAY") query = query.Where(e => e.start_at.Date == now.Date);
+                    else if (timeframe == "PAST") query = query.Where(e => e.end_at < now);
+                }
+
+                var list = await query.OrderByDescending(e => e.start_at).ToListAsync();
+
+                var builder = new StringBuilder();
+                builder.AppendLine("Event ID,Title,Category,Venue,Organizer,Organization,Start Date,End Date,Capacity,Registrations,Status,Approval Status,Is Public,Is Featured,Created Date");
+
+                foreach (var e in list)
+                {
+                    var organizer = e.organizer != null ? $"{e.organizer.first_name} {e.organizer.last_name}".Trim() : "Organizer";
+                    var title = e.title.Replace("\"", "\"\"");
+                    var catName = (e.category?.name ?? "General").Replace("\"", "\"\"");
+                    var venName = (e.venue?.name ?? "Main Campus").Replace("\"", "\"\"");
+                    var orgName = (e.organization?.name ?? "").Replace("\"", "\"\"");
+
+                    builder.AppendLine($"{e.id},\"{title}\",\"{catName}\",\"{venName}\",\"{organizer}\",\"{orgName}\",\"{e.start_at:yyyy-MM-dd HH:mm}\",\"{e.end_at:yyyy-MM-dd HH:mm}\",{e.capacity?.ToString() ?? "Unlimited"},{e.registrations.Count},\"{e.status}\",\"{e.approval_status}\",{e.is_public == true},{e.is_featured == true},\"{e.created_at:yyyy-MM-dd HH:mm}\"");
+                }
+
+                var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
+                return File(bytes, "text/csv", $"Hawassa_Events_Schedule_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting events CSV");
+                TempData["ErrorMessage"] = "Failed to export events: " + ex.Message;
+                return RedirectToAction(nameof(Events));
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BatchApproveEvents(List<ulong> eventIds, string? returnUrl = null)
+        {
+            if (eventIds == null || !eventIds.Any())
+            {
+                TempData["ErrorMessage"] = "No events selected for approval.";
+                return RedirectToAction(nameof(Events));
+            }
+
+            int approvedCount = 0;
+            try
+            {
+                var eventsToApprove = await _db.events
+                    .Where(e => eventIds.Contains(e.id) && e.approval_status == "PENDING")
+                    .ToListAsync();
+
+                foreach (var evt in eventsToApprove)
+                {
+                    evt.approval_status = "APPROVED";
+                    evt.status = "PUBLISHED";
+                    evt.updated_at = DateTime.UtcNow;
+                    approvedCount++;
+                }
+
+                await _db.SaveChangesAsync();
+                await LogAuditAsync("BATCH_EVENTS_APPROVED", "EVENT", 0, $"Approved and published {approvedCount} campus events in bulk.");
+                TempData["SuccessMessage"] = $"Successfully approved and published {approvedCount} events!";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error batch approving events");
+                TempData["ErrorMessage"] = "Failed to batch approve events: " + ex.Message;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Events));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BatchRejectEvents(List<ulong> eventIds, string? reason = null, string? returnUrl = null)
+        {
+            if (eventIds == null || !eventIds.Any())
+            {
+                TempData["ErrorMessage"] = "No events selected for rejection.";
+                return RedirectToAction(nameof(Events));
+            }
+
+            int rejectedCount = 0;
+            try
+            {
+                var eventsToReject = await _db.events
+                    .Where(e => eventIds.Contains(e.id) && e.approval_status == "PENDING")
+                    .ToListAsync();
+
+                foreach (var evt in eventsToReject)
+                {
+                    evt.approval_status = "REJECTED";
+                    evt.status = "DRAFT";
+                    evt.updated_at = DateTime.UtcNow;
+                    rejectedCount++;
+                }
+
+                await _db.SaveChangesAsync();
+                await LogAuditAsync("BATCH_EVENTS_REJECTED", "EVENT", 0, $"Rejected {rejectedCount} submitted events in bulk. Note: {reason ?? "Admin discretion"}");
+                TempData["SuccessMessage"] = $"Rejected {rejectedCount} events in bulk.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error batch rejecting events");
+                TempData["ErrorMessage"] = "Failed to batch reject events: " + ex.Message;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Events));
         }
 
         [HttpPost]
@@ -1586,16 +2122,39 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         public async Task<IActionResult> FeatureEvent(ulong id) => await EventToggleFeature(id);
 
         // =========================================================
+        // =========================================================
         // 4. ANNOUNCEMENT MANAGEMENT
         // =========================================================
-        public async Task<IActionResult> Announcements(string? search)
+        public async Task<IActionResult> Announcements(
+            string? search, 
+            string? type, 
+            string? priority, 
+            string? status, 
+            ulong? departmentId, 
+            int page = 1, 
+            int pageSize = 15)
         {
-            var vm = new AdminAnnouncementsViewModel { SearchTerm = search };
+            if (page < 1) page = 1;
+            if (pageSize < 5) pageSize = 5;
+            if (pageSize > 100) pageSize = 100;
+
+            var vm = new AdminAnnouncementsViewModel
+            {
+                SearchTerm = search,
+                TypeFilter = type,
+                PriorityFilter = priority,
+                StatusFilter = status,
+                DepartmentFilter = departmentId,
+                CurrentPage = page,
+                PageSize = pageSize
+            };
+
             try
             {
-                vm.Departments = await _db.departments.Where(d => d.is_active == true).OrderBy(d => d.name).ToListAsync();
+                vm.Departments = await _db.departments.AsNoTracking().Where(d => d.is_active == true).OrderBy(d => d.name).ToListAsync();
 
                 var query = _db.announcements
+                    .AsNoTracking()
                     .Include(a => a.author)
                     .Include(a => a.department)
                     .AsQueryable();
@@ -1603,27 +2162,63 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     var s = search.Trim().ToLower();
-                    query = query.Where(a => a.title.ToLower().Contains(s) || a.content.ToLower().Contains(s));
+                    query = query.Where(a => a.title.ToLower().Contains(s) || 
+                                             a.content.ToLower().Contains(s) || 
+                                             (a.summary != null && a.summary.ToLower().Contains(s)) ||
+                                             (a.author != null && (a.author.first_name.ToLower().Contains(s) || a.author.last_name.ToLower().Contains(s))));
                 }
 
-                var list = await query.OrderByDescending(a => a.created_at).ToListAsync();
+                if (!string.IsNullOrWhiteSpace(type) && type != "ALL")
+                {
+                    query = query.Where(a => a.announcement_type == type);
+                }
 
-                vm.Announcements = list.Select(a => new AdminAnnouncementRow
+                if (!string.IsNullOrWhiteSpace(priority) && priority != "ALL")
+                {
+                    if (priority == "PINNED") query = query.Where(a => a.priority == "URGENT" || a.priority == "HIGH");
+                    else query = query.Where(a => a.priority == priority);
+                }
+
+                if (!string.IsNullOrWhiteSpace(status) && status != "ALL")
+                {
+                    query = query.Where(a => a.status == status);
+                }
+
+                if (departmentId.HasValue && departmentId.Value > 0)
+                {
+                    query = query.Where(a => a.department_id == departmentId.Value);
+                }
+
+                vm.TotalFilteredCount = await query.CountAsync();
+
+                var pagedList = await query
+                    .OrderByDescending(a => a.priority == "URGENT" || a.priority == "HIGH")
+                    .ThenByDescending(a => a.created_at)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                vm.Announcements = pagedList.Select(a => new AdminAnnouncementRow
                 {
                     Id = a.id,
                     Title = a.title,
                     Content = a.content,
+                    Summary = a.summary,
                     AuthorName = a.author != null ? $"{a.author.first_name} {a.author.last_name}".Trim() : "University Admin",
+                    DepartmentId = a.department_id,
                     DepartmentName = a.department?.name ?? "Campus-wide",
+                    AnnouncementType = a.announcement_type,
                     Priority = a.priority,
                     Status = a.status,
-                    IsPinned = a.priority == "URGENT" || a.priority == "HIGH",
-                    CreatedAt = a.created_at
+                    CreatedAt = a.created_at,
+                    PublishedAt = a.published_at
                 }).ToList();
 
-                vm.TotalCount = vm.Announcements.Count;
-                vm.PinnedCount = vm.Announcements.Count(a => a.IsPinned);
-                vm.PublishedCount = vm.Announcements.Count(a => a.Status == "PUBLISHED");
+                // Metrics
+                vm.TotalCount = await _db.announcements.CountAsync();
+                vm.PinnedCount = await _db.announcements.CountAsync(a => a.priority == "URGENT" || a.priority == "HIGH");
+                vm.PublishedCount = await _db.announcements.CountAsync(a => a.status == "PUBLISHED");
+                vm.DraftCount = await _db.announcements.CountAsync(a => a.status == "DRAFT");
             }
             catch (Exception ex)
             {
@@ -1631,6 +2226,107 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             }
 
             return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AnnouncementTogglePin(ulong id)
+        {
+            try
+            {
+                var ann = await _db.announcements.FindAsync(id);
+                if (ann == null)
+                {
+                    TempData["ErrorMessage"] = "Announcement not found.";
+                    return RedirectToAction(nameof(Announcements));
+                }
+
+                if (ann.priority == "URGENT" || ann.priority == "HIGH")
+                {
+                    ann.priority = "NORMAL";
+                    TempData["SuccessMessage"] = $"Announcement '{ann.title}' unpinned.";
+                }
+                else
+                {
+                    ann.priority = "HIGH";
+                    TempData["SuccessMessage"] = $"Announcement '{ann.title}' pinned as priority bulletin.";
+                }
+
+                ann.updated_at = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+                await LogAuditAsync("ANNOUNCEMENT_PIN_TOGGLED", "ANNOUNCEMENT", id, $"Changed priority to {ann.priority}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error toggling announcement pin status");
+                TempData["ErrorMessage"] = "Failed to toggle pin: " + ex.Message;
+            }
+            return RedirectToAction(nameof(Announcements));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportAnnouncementsCsv(string? search, string? type, string? priority, string? status, ulong? departmentId)
+        {
+            try
+            {
+                var query = _db.announcements
+                    .AsNoTracking()
+                    .Include(a => a.author)
+                    .Include(a => a.department)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    query = query.Where(a => a.title.ToLower().Contains(s) || 
+                                             a.content.ToLower().Contains(s) || 
+                                             (a.summary != null && a.summary.ToLower().Contains(s)) ||
+                                             (a.author != null && (a.author.first_name.ToLower().Contains(s) || a.author.last_name.ToLower().Contains(s))));
+                }
+
+                if (!string.IsNullOrWhiteSpace(type) && type != "ALL")
+                {
+                    query = query.Where(a => a.announcement_type == type);
+                }
+
+                if (!string.IsNullOrWhiteSpace(priority) && priority != "ALL")
+                {
+                    if (priority == "PINNED") query = query.Where(a => a.priority == "URGENT" || a.priority == "HIGH");
+                    else query = query.Where(a => a.priority == priority);
+                }
+
+                if (!string.IsNullOrWhiteSpace(status) && status != "ALL")
+                {
+                    query = query.Where(a => a.status == status);
+                }
+
+                if (departmentId.HasValue && departmentId.Value > 0)
+                {
+                    query = query.Where(a => a.department_id == departmentId.Value);
+                }
+
+                var list = await query.OrderByDescending(a => a.created_at).Take(2000).ToListAsync();
+
+                var builder = new StringBuilder();
+                builder.AppendLine("Bulletin ID,Title,Type,Priority,Target Scope,Author,Status,Created Date,Published Date");
+
+                foreach (var a in list)
+                {
+                    var title = a.title.Replace("\"", "\"\"");
+                    var dept = (a.department?.name ?? "Campus-wide").Replace("\"", "\"\"");
+                    var author = (a.author != null ? $"{a.author.first_name} {a.author.last_name}".Trim() : "University Admin").Replace("\"", "\"\"");
+                    builder.AppendLine($"{a.id},\"{title}\",\"{a.announcement_type}\",\"{a.priority}\",\"{dept}\",\"{author}\",\"{a.status}\",\"{a.created_at:yyyy-MM-dd HH:mm}\",\"{a.published_at:yyyy-MM-dd HH:mm}\"");
+                }
+
+                var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
+                return File(bytes, "text/csv", $"Hawassa_Campus_Announcements_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting announcements CSV");
+                TempData["ErrorMessage"] = "Failed to export announcements: " + ex.Message;
+                return RedirectToAction(nameof(Announcements));
+            }
         }
 
         [HttpPost]
@@ -1829,48 +2525,184 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =========================================================
         // 5. ORGANIZATION MANAGEMENT
         // =========================================================
-        public async Task<IActionResult> Organizations(string? search)
+        public async Task<IActionResult> Organizations(
+            string? search, 
+            string? type, 
+            string? status, 
+            ulong? departmentId, 
+            string? sortBy = "newest", 
+            int page = 1, 
+            int pageSize = 20)
         {
-            var vm = new AdminOrganizationsViewModel { SearchTerm = search };
+            if (page < 1) page = 1;
+            if (pageSize < 5) pageSize = 5;
+            if (pageSize > 100) pageSize = 100;
+
+            var vm = new AdminOrganizationsViewModel
+            {
+                SearchTerm = search,
+                TypeFilter = type,
+                StatusFilter = status,
+                DepartmentFilter = departmentId,
+                SortBy = sortBy,
+                CurrentPage = page,
+                PageSize = pageSize
+            };
+
             try
             {
                 var query = _db.organizations
+                    .AsNoTracking()
                     .Include(o => o.department)
                     .Include(o => o.organization_members)
+                        .ThenInclude(om => om.user)
                     .Include(o => o._events)
                     .AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     var s = search.Trim().ToLower();
-                    query = query.Where(o => o.name.ToLower().Contains(s) || (o.short_name != null && o.short_name.ToLower().Contains(s)));
+                    query = query.Where(o => o.name.ToLower().Contains(s) || 
+                                             (o.short_name != null && o.short_name.ToLower().Contains(s)) ||
+                                             (o.email != null && o.email.ToLower().Contains(s)));
                 }
 
-                var list = await query.OrderByDescending(o => o.created_at).ToListAsync();
-
-                vm.Organizations = list.Select(o => new AdminOrganizationRow
+                if (!string.IsNullOrWhiteSpace(type) && type != "ALL")
                 {
-                    Id = o.id,
-                    Name = o.name,
-                    ShortName = o.short_name,
-                    OrganizationType = o.organization_type,
-                    DepartmentName = o.department?.name ?? "Campus Club",
-                    Email = o.email,
-                    Status = o.status,
-                    MemberCount = o.organization_members.Count,
-                    EventCount = o._events.Count,
-                    CreatedAt = o.created_at
+                    query = query.Where(o => o.organization_type == type);
+                }
+
+                if (!string.IsNullOrWhiteSpace(status) && status != "ALL")
+                {
+                    query = query.Where(o => o.status == status);
+                }
+
+                if (departmentId.HasValue && departmentId.Value > 0)
+                {
+                    query = query.Where(o => o.department_id == departmentId.Value);
+                }
+
+                vm.TotalFilteredCount = await query.CountAsync();
+
+                // Apply Sorting
+                query = sortBy switch
+                {
+                    "oldest" => query.OrderBy(o => o.created_at),
+                    "name_asc" => query.OrderBy(o => o.name),
+                    "name_desc" => query.OrderByDescending(o => o.name),
+                    "members_desc" => query.OrderByDescending(o => o.organization_members.Count),
+                    "events_desc" => query.OrderByDescending(o => o._events.Count),
+                    "type" => query.OrderBy(o => o.organization_type).ThenBy(o => o.name),
+                    _ => query.OrderByDescending(o => o.created_at) // default "newest"
+                };
+
+                var pagedList = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                vm.Organizations = pagedList.Select(o =>
+                {
+                    var leader = o.organization_members.FirstOrDefault(m => m.membership_role == "PRESIDENT" || m.membership_role == "ADMIN" || m.membership_role == "OFFICER")?.user;
+                    return new AdminOrganizationRow
+                    {
+                        Id = o.id,
+                        Name = o.name,
+                        ShortName = o.short_name,
+                        OrganizationType = o.organization_type,
+                        DepartmentId = o.department_id,
+                        DepartmentName = o.department?.name ?? "General Campus Club",
+                        LeaderName = leader != null ? $"{leader.first_name} {leader.last_name}".Trim() : null,
+                        LeaderEmail = leader?.email,
+                        Email = o.email,
+                        LogoUrl = o.logo_url,
+                        Status = o.status,
+                        MemberCount = o.organization_members.Count,
+                        EventCount = o._events.Count,
+                        CreatedAt = o.created_at
+                    };
                 }).ToList();
 
-                vm.TotalCount = vm.Organizations.Count;
-                vm.ActiveCount = vm.Organizations.Count(o => o.Status == "ACTIVE");
-                vm.PendingCount = vm.Organizations.Count(o => o.Status == "PENDING");
+                // Global metrics
+                var allOrgs = await _db.organizations.AsNoTracking().Select(o => new { o.status, MemberCount = o.organization_members.Count }).ToListAsync();
+                vm.TotalCount = allOrgs.Count;
+                vm.ActiveCount = allOrgs.Count(o => o.status == "ACTIVE");
+                vm.PendingCount = allOrgs.Count(o => o.status == "PENDING");
+                vm.TotalMembersCount = allOrgs.Sum(o => o.MemberCount);
+
+                vm.Departments = await _db.departments
+                    .AsNoTracking()
+                    .Where(d => d.is_active == null || d.is_active == true)
+                    .OrderBy(d => d.name)
+                    .ToListAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error querying organizations");
             }
             return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportOrganizationsCsv(string? search, string? type, string? status, ulong? departmentId)
+        {
+            try
+            {
+                var query = _db.organizations
+                    .AsNoTracking()
+                    .Include(o => o.department)
+                    .Include(o => o.organization_members)
+                        .ThenInclude(om => om.user)
+                    .Include(o => o._events)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    query = query.Where(o => o.name.ToLower().Contains(s) || 
+                                             (o.short_name != null && o.short_name.ToLower().Contains(s)) ||
+                                             (o.email != null && o.email.ToLower().Contains(s)));
+                }
+
+                if (!string.IsNullOrWhiteSpace(type) && type != "ALL")
+                {
+                    query = query.Where(o => o.organization_type == type);
+                }
+
+                if (!string.IsNullOrWhiteSpace(status) && status != "ALL")
+                {
+                    query = query.Where(o => o.status == status);
+                }
+
+                if (departmentId.HasValue && departmentId.Value > 0)
+                {
+                    query = query.Where(o => o.department_id == departmentId.Value);
+                }
+
+                var list = await query.OrderByDescending(o => o.created_at).ToListAsync();
+
+                var builder = new StringBuilder();
+                builder.AppendLine("Organization ID,Name,Short Code,Type,Department,Status,Email,Phone,Leader,Members Count,Events Organized,Created Date");
+
+                foreach (var o in list)
+                {
+                    var leader = o.organization_members.FirstOrDefault(m => m.membership_role == "PRESIDENT" || m.membership_role == "ADMIN" || m.membership_role == "OFFICER")?.user;
+                    var leaderName = leader != null ? $"{leader.first_name} {leader.last_name}".Trim() : "Not Designated";
+                    var name = o.name.Replace("\"", "\"\"");
+                    var deptName = (o.department?.name ?? "General Campus Club").Replace("\"", "\"\"");
+
+                    builder.AppendLine($"{o.id},\"{name}\",\"{o.short_name}\",\"{o.organization_type}\",\"{deptName}\",\"{o.status}\",\"{o.email}\",\"{o.phone}\",\"{leaderName}\",{o.organization_members.Count},{o._events.Count},\"{o.created_at:yyyy-MM-dd HH:mm}\"");
+                }
+
+                var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
+                return File(bytes, "text/csv", $"Hawassa_Organizations_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting organizations CSV");
+                TempData["ErrorMessage"] = "Failed to export organizations: " + ex.Message;
+                return RedirectToAction(nameof(Organizations));
+            }
         }
 
         [HttpPost]
@@ -2010,17 +2842,59 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =========================================================
         // 6. FACULTIES & DEPARTMENTS
         // =========================================================
-        public async Task<IActionResult> Faculties()
+        public async Task<IActionResult> Faculties(
+            string? search, 
+            string? sortBy = "name_asc", 
+            int page = 1, 
+            int pageSize = 20)
         {
-            var vm = new AdminFacultiesViewModel();
+            if (page < 1) page = 1;
+            if (pageSize < 5) pageSize = 5;
+            if (pageSize > 100) pageSize = 100;
+
+            var vm = new AdminFacultiesViewModel
+            {
+                SearchTerm = search,
+                SortBy = sortBy,
+                CurrentPage = page,
+                PageSize = pageSize
+            };
+
             try
             {
-                var faculties = await _db.faculties
+                var query = _db.faculties
+                    .AsNoTracking()
                     .Include(f => f.departments)
-                    .OrderBy(f => f.name)
+                        .ThenInclude(d => d.users)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    query = query.Where(f => f.name.ToLower().Contains(s) || 
+                                             (f.code != null && f.code.ToLower().Contains(s)) ||
+                                             (f.dean_name != null && f.dean_name.ToLower().Contains(s)) ||
+                                             (f.email != null && f.email.ToLower().Contains(s)));
+                }
+
+                vm.TotalFilteredCount = await query.CountAsync();
+
+                // Apply Sorting
+                query = sortBy switch
+                {
+                    "name_desc" => query.OrderByDescending(f => f.name),
+                    "code" => query.OrderBy(f => f.code),
+                    "depts_desc" => query.OrderByDescending(f => f.departments.Count),
+                    "newest" => query.OrderByDescending(f => f.created_at),
+                    _ => query.OrderBy(f => f.name) // default "name_asc"
+                };
+
+                var pagedList = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
                     .ToListAsync();
 
-                vm.Faculties = faculties.Select(f => new AdminFacultyRow
+                vm.Faculties = pagedList.Select(f => new AdminFacultyRow
                 {
                     Id = f.id,
                     Name = f.name,
@@ -2028,16 +2902,65 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     DeanName = f.dean_name,
                     Email = f.email,
                     IsActive = f.is_active ?? true,
-                    DepartmentCount = f.departments.Count
+                    DepartmentCount = f.departments.Count,
+                    EnrolledUsersCount = f.departments.Sum(d => d.users.Count)
                 }).ToList();
 
-                vm.TotalCount = vm.Faculties.Count;
+                // Global summary metrics
+                var allFacs = await _db.faculties.AsNoTracking().Include(f => f.departments).ThenInclude(d => d.users).ToListAsync();
+                vm.TotalCount = allFacs.Count;
+                vm.ActiveCount = allFacs.Count(f => f.is_active == true);
+                vm.TotalDepartmentsCount = allFacs.Sum(f => f.departments.Count);
+                vm.TotalStudentsCount = allFacs.Sum(f => f.departments.Sum(d => d.users.Count));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error querying faculties");
             }
             return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportFacultiesCsv(string? search)
+        {
+            try
+            {
+                var query = _db.faculties
+                    .AsNoTracking()
+                    .Include(f => f.departments)
+                        .ThenInclude(d => d.users)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    query = query.Where(f => f.name.ToLower().Contains(s) || 
+                                             (f.code != null && f.code.ToLower().Contains(s)) ||
+                                             (f.dean_name != null && f.dean_name.ToLower().Contains(s)));
+                }
+
+                var list = await query.OrderBy(f => f.name).ToListAsync();
+
+                var builder = new StringBuilder();
+                builder.AppendLine("Faculty ID,Faculty/College Name,Code,Dean Name,Email,Phone,Departments Count,Enrolled Users,Status,Created Date");
+
+                foreach (var f in list)
+                {
+                    var name = f.name.Replace("\"", "\"\"");
+                    var dean = (f.dean_name ?? "Not Assigned").Replace("\"", "\"\"");
+                    var totalUsers = f.departments.Sum(d => d.users.Count);
+                    builder.AppendLine($"{f.id},\"{name}\",\"{f.code}\",\"{dean}\",\"{f.email}\",\"{f.phone}\",{f.departments.Count},{totalUsers},{(f.is_active == true ? "ACTIVE" : "INACTIVE")},\"{f.created_at:yyyy-MM-dd HH:mm}\"");
+                }
+
+                var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
+                return File(bytes, "text/csv", $"Hawassa_Faculties_Roster_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting faculties CSV");
+                TempData["ErrorMessage"] = "Failed to export faculties: " + ex.Message;
+                return RedirectToAction(nameof(Faculties));
+            }
         }
 
         [HttpPost]
@@ -2175,18 +3098,74 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteFaculty(ulong id) => await FacultyDelete(id);
 
-        public async Task<IActionResult> Departments()
+        public async Task<IActionResult> Departments(
+            string? search, 
+            ulong? facultyId, 
+            string? status, 
+            string? sortBy = "name_asc", 
+            int page = 1, 
+            int pageSize = 20)
         {
-            var vm = new AdminDepartmentsViewModel();
+            if (page < 1) page = 1;
+            if (pageSize < 5) pageSize = 5;
+            if (pageSize > 100) pageSize = 100;
+
+            var vm = new AdminDepartmentsViewModel
+            {
+                SearchTerm = search,
+                FacultyId = facultyId,
+                StatusFilter = status,
+                SortBy = sortBy,
+                CurrentPage = page,
+                PageSize = pageSize
+            };
+
             try
             {
-                var depts = await _db.departments
+                var query = _db.departments
+                    .AsNoTracking()
                     .Include(d => d.faculty)
                     .Include(d => d.users)
-                    .OrderBy(d => d.name)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    query = query.Where(d => d.name.ToLower().Contains(s) || 
+                                             (d.code != null && d.code.ToLower().Contains(s)) ||
+                                             (d.head_name != null && d.head_name.ToLower().Contains(s)) ||
+                                             (d.email != null && d.email.ToLower().Contains(s)));
+                }
+
+                if (facultyId.HasValue && facultyId.Value > 0)
+                {
+                    query = query.Where(d => d.faculty_id == facultyId.Value);
+                }
+
+                if (!string.IsNullOrWhiteSpace(status) && status != "ALL")
+                {
+                    bool isActive = status == "ACTIVE";
+                    query = query.Where(d => d.is_active == isActive);
+                }
+
+                vm.TotalFilteredCount = await query.CountAsync();
+
+                // Apply Sorting
+                query = sortBy switch
+                {
+                    "name_desc" => query.OrderByDescending(d => d.name),
+                    "code" => query.OrderBy(d => d.code),
+                    "faculty" => query.OrderBy(d => d.faculty != null ? d.faculty.name : "").ThenBy(d => d.name),
+                    "users_desc" => query.OrderByDescending(d => d.users.Count),
+                    _ => query.OrderBy(d => d.name) // default "name_asc"
+                };
+
+                var pagedList = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
                     .ToListAsync();
 
-                vm.Departments = depts.Select(d => new AdminDepartmentRow
+                vm.Departments = pagedList.Select(d => new AdminDepartmentRow
                 {
                     Id = d.id,
                     Name = d.name,
@@ -2199,14 +3178,77 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     StudentCount = d.users.Count
                 }).ToList();
 
-                vm.Faculties = await _db.faculties.Where(f => f.is_active == true).OrderBy(f => f.name).ToListAsync();
-                vm.TotalCount = vm.Departments.Count;
+                // Global summaries
+                var allDepts = await _db.departments.AsNoTracking().Include(d => d.users).ToListAsync();
+                vm.TotalCount = allDepts.Count;
+                vm.ActiveCount = allDepts.Count(d => d.is_active == true);
+                vm.TotalStudentsCount = allDepts.Sum(d => d.users.Count);
+
+                vm.Faculties = await _db.faculties
+                    .AsNoTracking()
+                    .Where(f => f.is_active == true)
+                    .OrderBy(f => f.name)
+                    .ToListAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error querying departments");
             }
             return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportDepartmentsCsv(string? search, ulong? facultyId, string? status)
+        {
+            try
+            {
+                var query = _db.departments
+                    .AsNoTracking()
+                    .Include(d => d.faculty)
+                    .Include(d => d.users)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    query = query.Where(d => d.name.ToLower().Contains(s) || 
+                                             (d.code != null && d.code.ToLower().Contains(s)) ||
+                                             (d.head_name != null && d.head_name.ToLower().Contains(s)));
+                }
+
+                if (facultyId.HasValue && facultyId.Value > 0)
+                {
+                    query = query.Where(d => d.faculty_id == facultyId.Value);
+                }
+
+                if (!string.IsNullOrWhiteSpace(status) && status != "ALL")
+                {
+                    bool isActive = status == "ACTIVE";
+                    query = query.Where(d => d.is_active == isActive);
+                }
+
+                var list = await query.OrderBy(d => d.name).ToListAsync();
+
+                var builder = new StringBuilder();
+                builder.AppendLine("Department ID,Department Name,Code,Parent Faculty,Department Head,Email,Enrolled Users,Status,Created Date");
+
+                foreach (var d in list)
+                {
+                    var name = d.name.Replace("\"", "\"\"");
+                    var facName = (d.faculty?.name ?? "General").Replace("\"", "\"\"");
+                    var head = (d.head_name ?? "Not Assigned").Replace("\"", "\"\"");
+                    builder.AppendLine($"{d.id},\"{name}\",\"{d.code}\",\"{facName}\",\"{head}\",\"{d.email}\",{d.users.Count},{(d.is_active == true ? "ACTIVE" : "INACTIVE")},\"{d.created_at:yyyy-MM-dd HH:mm}\"");
+                }
+
+                var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
+                return File(bytes, "text/csv", $"Hawassa_Departments_Roster_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting departments CSV");
+                TempData["ErrorMessage"] = "Failed to export departments: " + ex.Message;
+                return RedirectToAction(nameof(Departments));
+            }
         }
 
         [HttpPost]
@@ -2323,17 +3365,72 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =========================================================
         // 7. VENUE MANAGEMENT
         // =========================================================
-        public async Task<IActionResult> Venues()
+        public async Task<IActionResult> Venues(
+            string? search, 
+            string? type, 
+            string? status, 
+            string? sortBy = "capacity_desc", 
+            int page = 1, 
+            int pageSize = 20)
         {
-            var vm = new AdminVenuesViewModel();
+            if (page < 1) page = 1;
+            if (pageSize < 5) pageSize = 5;
+            if (pageSize > 100) pageSize = 100;
+
+            var vm = new AdminVenuesViewModel
+            {
+                SearchTerm = search,
+                TypeFilter = type,
+                StatusFilter = status,
+                SortBy = sortBy,
+                CurrentPage = page,
+                PageSize = pageSize
+            };
+
             try
             {
-                var venues = await _db.venues
+                var query = _db.venues
+                    .AsNoTracking()
                     .Include(v => v._events)
-                    .OrderBy(v => v.name)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    query = query.Where(v => v.name.ToLower().Contains(s) || 
+                                             (v.building_name != null && v.building_name.ToLower().Contains(s)) ||
+                                             (v.room_number != null && v.room_number.ToLower().Contains(s)) ||
+                                             (v.amenities != null && v.amenities.ToLower().Contains(s)));
+                }
+
+                if (!string.IsNullOrWhiteSpace(type) && type != "ALL")
+                {
+                    query = query.Where(v => v.venue_type == type);
+                }
+
+                if (!string.IsNullOrWhiteSpace(status) && status != "ALL")
+                {
+                    query = query.Where(v => v.status == status);
+                }
+
+                vm.TotalFilteredCount = await query.CountAsync();
+
+                // Apply Sorting
+                query = sortBy switch
+                {
+                    "capacity_asc" => query.OrderBy(v => v.capacity),
+                    "bookings_desc" => query.OrderByDescending(v => v._events.Count),
+                    "name_asc" => query.OrderBy(v => v.name),
+                    "type" => query.OrderBy(v => v.venue_type).ThenBy(v => v.name),
+                    _ => query.OrderByDescending(v => v.capacity) // default "capacity_desc"
+                };
+
+                var pagedList = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
                     .ToListAsync();
 
-                vm.Venues = venues.Select(v => new AdminVenueRow
+                vm.Venues = pagedList.Select(v => new AdminVenueRow
                 {
                     Id = v.id,
                     Name = v.name,
@@ -2347,15 +3444,95 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     ScheduledEventsCount = v._events.Count
                 }).ToList();
 
-                vm.TotalCount = vm.Venues.Count;
-                vm.AvailableCount = vm.Venues.Count(v => v.Status == "AVAILABLE");
-                vm.MaintenanceCount = vm.Venues.Count(v => v.Status == "MAINTENANCE");
+                // Global metrics
+                var allVenues = await _db.venues.AsNoTracking().Select(v => new { v.status, v.capacity }).ToListAsync();
+                vm.TotalCount = allVenues.Count;
+                vm.AvailableCount = allVenues.Count(v => v.status == "AVAILABLE");
+                vm.MaintenanceCount = allVenues.Count(v => v.status == "MAINTENANCE");
+                vm.InactiveCount = allVenues.Count(v => v.status == "INACTIVE");
+                vm.TotalCampusSeatingCapacity = allVenues.Sum(v => (long)v.capacity);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error querying venues");
             }
             return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportVenuesCsv(string? search, string? type, string? status)
+        {
+            try
+            {
+                var query = _db.venues
+                    .AsNoTracking()
+                    .Include(v => v._events)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    query = query.Where(v => v.name.ToLower().Contains(s) || 
+                                             (v.building_name != null && v.building_name.ToLower().Contains(s)) ||
+                                             (v.room_number != null && v.room_number.ToLower().Contains(s)));
+                }
+
+                if (!string.IsNullOrWhiteSpace(type) && type != "ALL")
+                {
+                    query = query.Where(v => v.venue_type == type);
+                }
+
+                if (!string.IsNullOrWhiteSpace(status) && status != "ALL")
+                {
+                    query = query.Where(v => v.status == status);
+                }
+
+                var list = await query.OrderByDescending(v => v.capacity).ToListAsync();
+
+                var builder = new StringBuilder();
+                builder.AppendLine("Venue ID,Venue Name,Building,Room Number,Venue Type,Seating Capacity,Status,Amenities,Scheduled Events Count,Created Date");
+
+                foreach (var v in list)
+                {
+                    var name = v.name.Replace("\"", "\"\"");
+                    var bldg = (v.building_name ?? "Campus Main").Replace("\"", "\"\"");
+                    var amen = (v.amenities ?? "None").Replace("\"", "\"\"");
+                    builder.AppendLine($"{v.id},\"{name}\",\"{bldg}\",\"{v.room_number}\",\"{v.venue_type}\",{v.capacity},\"{v.status}\",\"{amen}\",{v._events.Count},\"{v.created_at:yyyy-MM-dd HH:mm}\"");
+                }
+
+                var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
+                return File(bytes, "text/csv", $"Hawassa_Venues_Facilities_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting venues CSV");
+                TempData["ErrorMessage"] = "Failed to export venues: " + ex.Message;
+                return RedirectToAction(nameof(Venues));
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VenueToggleStatus(ulong id, string status)
+        {
+            try
+            {
+                var v = await _db.venues.FindAsync(id);
+                if (v != null)
+                {
+                    v.status = status.ToUpper();
+                    v.updated_at = DateTime.UtcNow;
+                    await _db.SaveChangesAsync();
+                    await LogAuditAsync("VENUE_STATUS_CHANGED", "VENUE", id, $"Changed venue status to: {status}");
+                    TempData["SuccessMessage"] = $"Venue status updated to {status}.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating venue status");
+                TempData["ErrorMessage"] = "Failed to change status: " + ex.Message;
+            }
+            return RedirectToAction(nameof(Venues));
         }
 
         [HttpPost]
@@ -2597,50 +3774,119 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =========================================================
         // 10. COMMENTS & FEEDBACK
         // =========================================================
-        public async Task<IActionResult> Comments()
+        public async Task<IActionResult> Comments(
+            string? search, 
+            string? tab = "COMMENTS", 
+            string? rating = "ALL", 
+            int page = 1, 
+            int pageSize = 20)
         {
-            var vm = new AdminCommentsFeedbackViewModel();
+            if (page < 1) page = 1;
+            if (pageSize < 5) pageSize = 5;
+            if (pageSize > 100) pageSize = 100;
+
+            var activeTab = string.Equals(tab, "FEEDBACK", StringComparison.OrdinalIgnoreCase) ? "FEEDBACK" : "COMMENTS";
+
+            var vm = new AdminCommentsFeedbackViewModel
+            {
+                SearchTerm = search,
+                Tab = activeTab,
+                RatingFilter = rating,
+                CurrentPage = page,
+                PageSize = pageSize
+            };
+
             try
             {
-                var comments = await _db.event_comments
-                    .Include(c => c._event)
-                    .Include(c => c.user)
-                    .Where(c => !c.is_deleted)
-                    .OrderByDescending(c => c.created_at)
-                    .Take(50)
-                    .ToListAsync();
-
-                vm.Comments = comments.Select(c => new AdminCommentRow
+                if (activeTab == "COMMENTS")
                 {
-                    Id = c.id,
-                    EventTitle = c._event?.title ?? "Campus Event",
-                    EventId = c.event_id,
-                    UserName = c.user != null ? $"{c.user.first_name} {c.user.last_name}".Trim() : "Anonymous",
-                    CommentText = c.comment,
-                    IsFlagged = false,
-                    CreatedAt = c.created_at
-                }).ToList();
+                    var query = _db.event_comments
+                        .AsNoTracking()
+                        .Include(c => c._event)
+                        .Include(c => c.user)
+                        .Where(c => !c.is_deleted)
+                        .AsQueryable();
 
-                var feedbacks = await _db.event_feedbacks
-                    .Include(f => f._event)
-                    .Include(f => f.user)
-                    .OrderByDescending(f => f.created_at)
-                    .Take(50)
-                    .ToListAsync();
+                    if (!string.IsNullOrWhiteSpace(search))
+                    {
+                        var s = search.Trim().ToLower();
+                        query = query.Where(c => c.comment.ToLower().Contains(s) ||
+                                                 (c._event != null && c._event.title.ToLower().Contains(s)) ||
+                                                 (c.user != null && (c.user.first_name.ToLower().Contains(s) || c.user.last_name.ToLower().Contains(s) || c.user.email.ToLower().Contains(s))));
+                    }
 
-                vm.Feedbacks = feedbacks.Select(f => new AdminFeedbackRow
+                    vm.TotalFilteredCount = await query.CountAsync();
+
+                    var pagedList = await query
+                        .OrderByDescending(c => c.created_at)
+                        .Skip((page - 1) * pageSize)
+                        .Take(pageSize)
+                        .ToListAsync();
+
+                    vm.Comments = pagedList.Select(c => new AdminCommentRow
+                    {
+                        Id = c.id,
+                        EventId = c.event_id,
+                        EventTitle = c._event?.title ?? "Campus Event",
+                        UserId = c.user_id,
+                        UserName = c.user != null ? $"{c.user.first_name} {c.user.last_name}".Trim() : "Anonymous Attendee",
+                        UserEmail = c.user?.email,
+                        CommentText = c.comment,
+                        IsDeleted = c.is_deleted,
+                        IsEdited = c.is_edited,
+                        CreatedAt = c.created_at
+                    }).ToList();
+                }
+                else
                 {
-                    Id = f.id,
-                    EventTitle = f._event?.title ?? "Campus Event",
-                    UserName = f.user != null ? $"{f.user.first_name} {f.user.last_name}".Trim() : "Anonymous",
-                    Rating = f.rating,
-                    FeedbackText = f.comment,
-                    CreatedAt = f.created_at
-                }).ToList();
+                    var query = _db.event_feedbacks
+                        .AsNoTracking()
+                        .Include(f => f._event)
+                        .Include(f => f.user)
+                        .AsQueryable();
 
-                vm.TotalComments = vm.Comments.Count;
-                vm.TotalFeedbacks = vm.Feedbacks.Count;
-                vm.AverageRating = vm.Feedbacks.Any() ? vm.Feedbacks.Average(f => (double)f.Rating) : 4.8;
+                    if (!string.IsNullOrWhiteSpace(search))
+                    {
+                        var s = search.Trim().ToLower();
+                        query = query.Where(f => (f.comment != null && f.comment.ToLower().Contains(s)) ||
+                                                 (f._event != null && f._event.title.ToLower().Contains(s)) ||
+                                                 (f.user != null && (f.user.first_name.ToLower().Contains(s) || f.user.last_name.ToLower().Contains(s) || f.user.email.ToLower().Contains(s))));
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(rating) && rating != "ALL")
+                    {
+                        if (rating == "CRITICAL") query = query.Where(f => f.rating <= 2);
+                        else if (byte.TryParse(rating, out var rVal)) query = query.Where(f => f.rating == rVal);
+                    }
+
+                    vm.TotalFilteredCount = await query.CountAsync();
+
+                    var pagedList = await query
+                        .OrderByDescending(f => f.created_at)
+                        .Skip((page - 1) * pageSize)
+                        .Take(pageSize)
+                        .ToListAsync();
+
+                    vm.Feedbacks = pagedList.Select(f => new AdminFeedbackRow
+                    {
+                        Id = f.id,
+                        EventId = f.event_id,
+                        EventTitle = f._event?.title ?? "Campus Event",
+                        UserId = f.user_id,
+                        UserName = f.is_anonymous ? "Anonymous Attendee" : (f.user != null ? $"{f.user.first_name} {f.user.last_name}".Trim() : "Attendee"),
+                        UserEmail = f.is_anonymous ? null : f.user?.email,
+                        Rating = f.rating,
+                        FeedbackText = f.comment,
+                        IsAnonymous = f.is_anonymous,
+                        CreatedAt = f.created_at
+                    }).ToList();
+                }
+
+                // Global metrics
+                vm.TotalComments = await _db.event_comments.CountAsync(c => !c.is_deleted);
+                vm.TotalFeedbacks = await _db.event_feedbacks.CountAsync();
+                vm.AverageRating = await _db.event_feedbacks.AnyAsync() ? await _db.event_feedbacks.AverageAsync(f => (double)f.rating) : 5.0;
+                vm.CriticalFeedbackCount = await _db.event_feedbacks.CountAsync(f => f.rating <= 2);
             }
             catch (Exception ex)
             {
@@ -2659,10 +3905,107 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 c.is_deleted = true;
                 c.deleted_at = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
-                await LogAuditAsync("COMMENT_DELETED", "COMMENT", id, "Moderator deleted inappropriate comment");
-                TempData["SuccessMessage"] = "Comment deleted.";
+                await LogAuditAsync("COMMENT_DELETED", "COMMENT", id, "Moderator pruned inappropriate event discussion comment");
+                TempData["SuccessMessage"] = "Comment deleted successfully.";
             }
-            return RedirectToAction(nameof(Comments));
+            return RedirectToAction(nameof(Comments), new { tab = "COMMENTS" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> FeedbackDelete(ulong id)
+        {
+            var f = await _db.event_feedbacks.FindAsync(id);
+            if (f != null)
+            {
+                _db.event_feedbacks.Remove(f);
+                await _db.SaveChangesAsync();
+                await LogAuditAsync("FEEDBACK_DELETED", "FEEDBACK", id, "Moderator removed abusive event feedback");
+                TempData["SuccessMessage"] = "Feedback entry removed successfully.";
+            }
+            return RedirectToAction(nameof(Comments), new { tab = "FEEDBACK" });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportCommentsCsv(string? tab, string? search, string? rating)
+        {
+            try
+            {
+                var activeTab = string.Equals(tab, "FEEDBACK", StringComparison.OrdinalIgnoreCase) ? "FEEDBACK" : "COMMENTS";
+                var builder = new StringBuilder();
+
+                if (activeTab == "COMMENTS")
+                {
+                    var query = _db.event_comments
+                        .AsNoTracking()
+                        .Include(c => c._event)
+                        .Include(c => c.user)
+                        .Where(c => !c.is_deleted)
+                        .AsQueryable();
+
+                    if (!string.IsNullOrWhiteSpace(search))
+                    {
+                        var s = search.Trim().ToLower();
+                        query = query.Where(c => c.comment.ToLower().Contains(s) ||
+                                                 (c._event != null && c._event.title.ToLower().Contains(s)) ||
+                                                 (c.user != null && (c.user.first_name.ToLower().Contains(s) || c.user.last_name.ToLower().Contains(s))));
+                    }
+
+                    var list = await query.OrderByDescending(c => c.created_at).Take(2000).ToListAsync();
+                    builder.AppendLine("Comment ID,Event Title,Commenter Name,Email,Comment Text,Posted Date");
+
+                    foreach (var c in list)
+                    {
+                        var eventTitle = (c._event?.title ?? "Campus Event").Replace("\"", "\"\"");
+                        var userName = (c.user != null ? $"{c.user.first_name} {c.user.last_name}".Trim() : "Anonymous").Replace("\"", "\"\"");
+                        var email = c.user?.email ?? "";
+                        var text = c.comment.Replace("\"", "\"\"");
+                        builder.AppendLine($"{c.id},\"{eventTitle}\",\"{userName}\",\"{email}\",\"{text}\",\"{c.created_at:yyyy-MM-dd HH:mm}\"");
+                    }
+                }
+                else
+                {
+                    var query = _db.event_feedbacks
+                        .AsNoTracking()
+                        .Include(f => f._event)
+                        .Include(f => f.user)
+                        .AsQueryable();
+
+                    if (!string.IsNullOrWhiteSpace(search))
+                    {
+                        var s = search.Trim().ToLower();
+                        query = query.Where(f => (f.comment != null && f.comment.ToLower().Contains(s)) ||
+                                                 (f._event != null && f._event.title.ToLower().Contains(s)) ||
+                                                 (f.user != null && (f.user.first_name.ToLower().Contains(s) || f.user.last_name.ToLower().Contains(s))));
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(rating) && rating != "ALL")
+                    {
+                        if (rating == "CRITICAL") query = query.Where(f => f.rating <= 2);
+                        else if (byte.TryParse(rating, out var rVal)) query = query.Where(f => f.rating == rVal);
+                    }
+
+                    var list = await query.OrderByDescending(f => f.created_at).Take(2000).ToListAsync();
+                    builder.AppendLine("Feedback ID,Event Title,Attendee Name,Star Rating,Feedback Text,Submitted Date");
+
+                    foreach (var f in list)
+                    {
+                        var eventTitle = (f._event?.title ?? "Campus Event").Replace("\"", "\"\"");
+                        var userName = (f.is_anonymous ? "Anonymous Attendee" : (f.user != null ? $"{f.user.first_name} {f.user.last_name}".Trim() : "Attendee")).Replace("\"", "\"\"");
+                        var text = (f.comment ?? "").Replace("\"", "\"\"");
+                        builder.AppendLine($"{f.id},\"{eventTitle}\",\"{userName}\",{f.rating},\"{text}\",\"{f.created_at:yyyy-MM-dd HH:mm}\"");
+                    }
+                }
+
+                var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
+                return File(bytes, "text/csv", $"Hawassa_Community_{activeTab}_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting comments CSV");
+                TempData["ErrorMessage"] = "Failed to export CSV: " + ex.Message;
+                return RedirectToAction(nameof(Comments));
+            }
         }
 
         // =========================================================
@@ -2921,12 +4264,18 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var vm = new AdminRolesPermissionsViewModel();
             try
             {
-                vm.AllPermissions = await _db.permissions.ToListAsync();
+                vm.AllPermissions = await _db.permissions
+                    .AsNoTracking()
+                    .OrderBy(p => p.module)
+                    .ThenBy(p => p.name)
+                    .ToListAsync();
 
                 var roles = await _db.roles
+                    .AsNoTracking()
                     .Include(r => r.user_roles)
                     .Include(r => r.role_permissions)
                     .ThenInclude(rp => rp.permission)
+                    .OrderBy(r => r.id)
                     .ToListAsync();
 
                 vm.Roles = roles.Select(r => new AdminRoleRow
@@ -2934,22 +4283,16 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     Id = r.id,
                     Name = r.name,
                     Description = r.description,
+                    IsSystemRole = r.is_system_role ?? false,
                     UserCount = r.user_roles.Count,
+                    AssignedPermissionIds = r.role_permissions.Select(rp => rp.permission_id).ToList(),
                     AssignedPermissions = r.role_permissions.Select(rp => rp.permission.name).ToList()
                 }).ToList();
 
-                if (!vm.Roles.Any())
-                {
-                    vm.Roles = new List<AdminRoleRow>
-                    {
-                        new() { Id = 1, Name = "Super Admin", Description = "Full unrestricted platform control", UserCount = 2, AssignedPermissions = new List<string> { "Manage Users", "Manage Events", "Manage Roles", "Manage Settings", "View Audit Logs" } },
-                        new() { Id = 2, Name = "Administrator", Description = "Campus operational management", UserCount = 5, AssignedPermissions = new List<string> { "Manage Users", "Manage Events", "Approve Postings", "View Reports" } },
-                        new() { Id = 3, Name = "Event Manager", Description = "Event review, scheduling, and approvals", UserCount = 12, AssignedPermissions = new List<string> { "Create Events", "Approve Events", "Manage Venues", "Manage Calendar" } },
-                        new() { Id = 4, Name = "Organization Manager", Description = "Student clubs and associations management", UserCount = 25, AssignedPermissions = new List<string> { "Manage Club", "Create Club Events", "Manage Members" } },
-                        new() { Id = 5, Name = "Content Moderator", Description = "Discussions and comments moderation", UserCount = 8, AssignedPermissions = new List<string> { "Moderate Comments", "Review Feedback" } },
-                        new() { Id = 6, Name = "Student", Description = "Standard student attendee profile", UserCount = 1180, AssignedPermissions = new List<string> { "View Events", "Register Events", "Join Groups", "Post Comments" } }
-                    };
-                }
+                vm.TotalRolesCount = vm.Roles.Count;
+                vm.TotalPermissionsCount = vm.AllPermissions.Count;
+                vm.TotalRoleBindingsCount = vm.Roles.Sum(r => r.UserCount);
+                vm.TotalAdminAccountsCount = vm.Roles.Where(r => r.Name.Contains("Admin", StringComparison.OrdinalIgnoreCase)).Sum(r => r.UserCount);
             }
             catch (Exception ex)
             {
@@ -2960,11 +4303,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RoleCreate(string name, string? description)
+        public async Task<IActionResult> RoleCreate(string name, string? description, List<ulong>? permissionIds)
         {
             if (!IsSuperAdmin())
             {
-                TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin can create custom roles and assign permissions.";
+                TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin can create custom roles.";
                 return RedirectToAction(nameof(Roles));
             }
 
@@ -2972,7 +4315,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             {
                 var r = new Role
                 {
-                    name = name,
+                    name = name.Trim(),
                     description = description,
                     is_system_role = false,
                     created_at = DateTime.UtcNow,
@@ -2980,33 +4323,297 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 };
                 _db.roles.Add(r);
                 await _db.SaveChangesAsync();
-                await LogAuditAsync("ROLE_CREATED", "ROLE", r.id, $"Created security role: {name}");
-                TempData["SuccessMessage"] = $"Role '{name}' created successfully.";
+
+                if (permissionIds != null && permissionIds.Any())
+                {
+                    foreach (var pid in permissionIds.Distinct())
+                    {
+                        _db.role_permissions.Add(new role_permission
+                        {
+                            role_id = r.id,
+                            permission_id = pid
+                        });
+                    }
+                    await _db.SaveChangesAsync();
+                }
+
+                await LogAuditAsync("ROLE_CREATED", "ROLE", r.id, $"Created custom security role '{name}' with {permissionIds?.Count ?? 0} privileges.");
+                TempData["SuccessMessage"] = $"Security Role '{name}' created successfully.";
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating role");
-                TempData["ErrorMessage"] = "Failed to create role.";
+                TempData["ErrorMessage"] = "Failed to create role: " + ex.Message;
             }
             return RedirectToAction(nameof(Roles));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RoleEdit(ulong id, string name, string? description)
+        {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin can modify roles.";
+                return RedirectToAction(nameof(Roles));
+            }
+
+            try
+            {
+                var r = await _db.roles.FindAsync(id);
+                if (r == null)
+                {
+                    TempData["ErrorMessage"] = "Role not found.";
+                    return RedirectToAction(nameof(Roles));
+                }
+
+                r.name = name.Trim();
+                r.description = description;
+                r.updated_at = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+
+                await LogAuditAsync("ROLE_UPDATED", "ROLE", id, $"Updated security role details: '{name}'");
+                TempData["SuccessMessage"] = $"Role '{name}' updated successfully.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating role");
+                TempData["ErrorMessage"] = "Failed to update role: " + ex.Message;
+            }
+            return RedirectToAction(nameof(Roles));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RoleUpdatePermissions(ulong roleId, List<ulong>? permissionIds)
+        {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin can modify RBAC matrix.";
+                return RedirectToAction(nameof(Roles));
+            }
+
+            try
+            {
+                var role = await _db.roles.FindAsync(roleId);
+                if (role == null)
+                {
+                    TempData["ErrorMessage"] = "Role not found.";
+                    return RedirectToAction(nameof(Roles));
+                }
+
+                var existingPermissions = await _db.role_permissions.Where(rp => rp.role_id == roleId).ToListAsync();
+                _db.role_permissions.RemoveRange(existingPermissions);
+
+                if (permissionIds != null && permissionIds.Any())
+                {
+                    foreach (var pid in permissionIds.Distinct())
+                    {
+                        _db.role_permissions.Add(new role_permission
+                        {
+                            role_id = roleId,
+                            permission_id = pid
+                        });
+                    }
+                }
+
+                role.updated_at = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+
+                await LogAuditAsync("ROLE_PERMISSIONS_UPDATED", "ROLE", roleId, $"Updated privileges for role '{role.name}' ({permissionIds?.Count ?? 0} assigned).");
+                TempData["SuccessMessage"] = $"Permissions for role '{role.name}' updated successfully.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating role permissions");
+                TempData["ErrorMessage"] = "Failed to update permissions: " + ex.Message;
+            }
+            return RedirectToAction(nameof(Roles));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RoleDelete(ulong id)
+        {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin can delete roles.";
+                return RedirectToAction(nameof(Roles));
+            }
+
+            try
+            {
+                var role = await _db.roles.Include(r => r.user_roles).FirstOrDefaultAsync(r => r.id == id);
+                if (role == null)
+                {
+                    TempData["ErrorMessage"] = "Role not found.";
+                    return RedirectToAction(nameof(Roles));
+                }
+
+                if (role.is_system_role == true)
+                {
+                    TempData["ErrorMessage"] = "System Critical Role cannot be deleted.";
+                    return RedirectToAction(nameof(Roles));
+                }
+
+                if (role.user_roles.Any())
+                {
+                    TempData["ErrorMessage"] = $"Cannot delete role '{role.name}' while {role.user_roles.Count} user(s) are actively assigned. Reassign users first.";
+                    return RedirectToAction(nameof(Roles));
+                }
+
+                var rps = await _db.role_permissions.Where(rp => rp.role_id == id).ToListAsync();
+                _db.role_permissions.RemoveRange(rps);
+                _db.roles.Remove(role);
+                await _db.SaveChangesAsync();
+
+                await LogAuditAsync("ROLE_DELETED", "ROLE", id, $"Deleted custom role '{role.name}'");
+                TempData["SuccessMessage"] = $"Custom role '{role.name}' removed successfully.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting role");
+                TempData["ErrorMessage"] = "Failed to delete role: " + ex.Message;
+            }
+            return RedirectToAction(nameof(Roles));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportRolesCsv()
+        {
+            if (!IsSuperAdmin())
+            {
+                return Forbid();
+            }
+
+            try
+            {
+                var roles = await _db.roles
+                    .AsNoTracking()
+                    .Include(r => r.user_roles)
+                    .Include(r => r.role_permissions)
+                    .ThenInclude(rp => rp.permission)
+                    .OrderBy(r => r.id)
+                    .ToListAsync();
+
+                var builder = new StringBuilder();
+                builder.AppendLine("Role ID,Role Name,Type,Assigned Users,Privilege Count,Assigned Privileges,Description");
+
+                foreach (var r in roles)
+                {
+                    var name = r.name.Replace("\"", "\"\"");
+                    var type = r.is_system_role == true ? "SYSTEM_RESERVED" : "CUSTOM_CAMPUS";
+                    var perms = string.Join("; ", r.role_permissions.Select(rp => rp.permission.name)).Replace("\"", "\"\"");
+                    var desc = (r.description ?? "").Replace("\"", "\"\"");
+                    builder.AppendLine($"{r.id},\"{name}\",\"{type}\",{r.user_roles.Count},{r.role_permissions.Count},\"{perms}\",\"{desc}\"");
+                }
+
+                var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
+                return File(bytes, "text/csv", $"Hawassa_RBAC_Security_Matrix_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting roles CSV");
+                TempData["ErrorMessage"] = "Failed to export RBAC matrix: " + ex.Message;
+                return RedirectToAction(nameof(Roles));
+            }
         }
 
         // =========================================================
         // 16. CATEGORIES & TAGS
         // =========================================================
-        public async Task<IActionResult> Categories()
+        public async Task<IActionResult> Categories(string? search, string? status)
         {
-            var vm = new AdminCategoriesTagsViewModel();
+            var vm = new AdminCategoriesTagsViewModel
+            {
+                SearchTerm = search,
+                StatusFilter = status
+            };
+
             try
             {
-                vm.Categories = await _db.event_categories.Include(c => c._events).ToListAsync();
-                vm.Tags = await _db.event_tags.ToListAsync();
+                var catQuery = _db.event_categories
+                    .AsNoTracking()
+                    .Include(c => c._events)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    catQuery = catQuery.Where(c => c.name.ToLower().Contains(s) || 
+                                                   (c.slug != null && c.slug.ToLower().Contains(s)) ||
+                                                   (c.description != null && c.description.ToLower().Contains(s)));
+                }
+
+                if (!string.IsNullOrWhiteSpace(status) && status != "ALL")
+                {
+                    bool isActive = status == "ACTIVE";
+                    catQuery = catQuery.Where(c => (c.is_active ?? true) == isActive);
+                }
+
+                vm.Categories = await catQuery.OrderBy(c => c.name).ToListAsync();
+
+                var tagQuery = _db.event_tags.AsNoTracking().AsQueryable();
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    tagQuery = tagQuery.Where(t => t.name.ToLower().Contains(s) || (t.slug != null && t.slug.ToLower().Contains(s)));
+                }
+                vm.Tags = await tagQuery.OrderBy(t => t.name).ToListAsync();
+
+                // Metrics
+                var allCategories = await _db.event_categories.AsNoTracking().Include(c => c._events).ToListAsync();
+                vm.TotalCategoriesCount = allCategories.Count;
+                vm.ActiveCategoriesCount = allCategories.Count(c => c.is_active == null || c.is_active == true);
+                vm.TotalTagsCount = await _db.event_tags.CountAsync();
+                vm.TotalCategorizedEventsCount = allCategories.Sum(c => c._events.Count);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error querying categories & tags");
             }
             return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportCategoriesCsv(string? search)
+        {
+            try
+            {
+                var query = _db.event_categories
+                    .AsNoTracking()
+                    .Include(c => c._events)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    query = query.Where(c => c.name.ToLower().Contains(s) || 
+                                             (c.slug != null && c.slug.ToLower().Contains(s)) ||
+                                             (c.description != null && c.description.ToLower().Contains(s)));
+                }
+
+                var list = await query.OrderBy(c => c.name).ToListAsync();
+
+                var builder = new StringBuilder();
+                builder.AppendLine("Category ID,Name,Slug,Icon,Description,Events Count,Status,Created Date");
+
+                foreach (var c in list)
+                {
+                    var name = c.name.Replace("\"", "\"\"");
+                    var desc = (c.description ?? "General").Replace("\"", "\"\"");
+                    builder.AppendLine($"{c.id},\"{name}\",\"{c.slug}\",\"{c.icon}\",\"{desc}\",{c._events.Count},{(c.is_active ?? true ? "ACTIVE" : "INACTIVE")},\"{c.created_at:yyyy-MM-dd HH:mm}\"");
+                }
+
+                var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
+                return File(bytes, "text/csv", $"Hawassa_Event_Categories_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting categories CSV");
+                TempData["ErrorMessage"] = "Failed to export categories: " + ex.Message;
+                return RedirectToAction(nameof(Categories));
+            }
         }
 
         [HttpPost]
@@ -3140,7 +4747,12 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =========================================================
         // 17. SECURITY & AUDIT LOGS
         // =========================================================
-        public async Task<IActionResult> AuditLogs(string? search)
+        public async Task<IActionResult> AuditLogs(
+            string? search, 
+            string? entity, 
+            string? timeframe = "ALL", 
+            int page = 1, 
+            int pageSize = 25)
         {
             if (!IsSuperAdmin())
             {
@@ -3148,10 +4760,23 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var vm = new AdminAuditLogsViewModel { SearchTerm = search };
+            if (page < 1) page = 1;
+            if (pageSize < 10) pageSize = 10;
+            if (pageSize > 250) pageSize = 250;
+
+            var vm = new AdminAuditLogsViewModel
+            {
+                SearchTerm = search,
+                EntityFilter = entity,
+                Timeframe = timeframe,
+                CurrentPage = page,
+                PageSize = pageSize
+            };
+
             try
             {
                 var query = _db.audit_logs
+                    .AsNoTracking()
                     .Include(a => a.user)
                     .AsQueryable();
 
@@ -3160,30 +4785,124 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     var s = search.Trim().ToLower();
                     query = query.Where(a => a.action.ToLower().Contains(s) ||
                                              (a.description != null && a.description.ToLower().Contains(s)) ||
-                                             (a.user != null && (a.user.first_name.ToLower().Contains(s) || a.user.last_name.ToLower().Contains(s))));
+                                             (a.ip_address != null && a.ip_address.ToLower().Contains(s)) ||
+                                             (a.user != null && (a.user.first_name.ToLower().Contains(s) || a.user.last_name.ToLower().Contains(s) || a.user.email.ToLower().Contains(s))));
                 }
 
-                var list = await query.OrderByDescending(a => a.created_at).Take(150).ToListAsync();
+                if (!string.IsNullOrWhiteSpace(entity) && entity != "ALL")
+                {
+                    query = query.Where(a => a.entity_type == entity);
+                }
 
-                vm.Logs = list.Select(a => new AdminAuditLogRow
+                var now = DateTime.UtcNow;
+                if (!string.IsNullOrWhiteSpace(timeframe) && timeframe != "ALL")
+                {
+                    if (timeframe == "TODAY") query = query.Where(a => a.created_at.Date == now.Date);
+                    else if (timeframe == "LAST_24_HOURS") query = query.Where(a => a.created_at >= now.AddHours(-24));
+                    else if (timeframe == "LAST_7_DAYS") query = query.Where(a => a.created_at >= now.AddDays(-7));
+                    else if (timeframe == "LAST_30_DAYS") query = query.Where(a => a.created_at >= now.AddDays(-30));
+                }
+
+                vm.TotalFilteredCount = await query.CountAsync();
+
+                var pagedList = await query
+                    .OrderByDescending(a => a.created_at)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                vm.Logs = pagedList.Select(a => new AdminAuditLogRow
                 {
                     Id = a.id,
                     Action = a.action,
                     EntityType = a.entity_type,
                     EntityId = a.entity_id,
-                    UserName = a.user != null ? $"{a.user.first_name} {a.user.last_name}".Trim() : "System / Guest",
+                    UserId = a.user_id,
+                    UserName = a.user != null ? $"{a.user.first_name} {a.user.last_name}".Trim() : "System Automated",
+                    UserEmail = a.user?.email,
+                    UserRole = a.user != null ? "Active User" : "System",
                     IpAddress = a.ip_address,
+                    UserAgent = a.user_agent,
+                    OldValues = a.old_values,
+                    NewValues = a.new_values,
                     Description = a.description,
                     CreatedAt = a.created_at
                 }).ToList();
 
-                vm.TotalCount = vm.Logs.Count;
+                // Global metrics
+                vm.TotalCount = await _db.audit_logs.CountAsync();
+                vm.TodayLogsCount = await _db.audit_logs.CountAsync(a => a.created_at.Date == now.Date);
+                vm.SecurityActionsCount = await _db.audit_logs.CountAsync(a => a.action.Contains("DELETE") || a.action.Contains("REJECT") || a.action.Contains("SUSPEND") || a.action.Contains("PASSWORD") || a.action.Contains("AUTH"));
+                vm.UniqueActorsCount = await _db.audit_logs.Where(a => a.user_id != null).Select(a => a.user_id).Distinct().CountAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error querying audit logs");
             }
             return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportAuditLogsCsv(string? search, string? entity, string? timeframe)
+        {
+            if (!IsSuperAdmin())
+            {
+                return Forbid();
+            }
+
+            try
+            {
+                var query = _db.audit_logs
+                    .AsNoTracking()
+                    .Include(a => a.user)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim().ToLower();
+                    query = query.Where(a => a.action.ToLower().Contains(s) ||
+                                             (a.description != null && a.description.ToLower().Contains(s)) ||
+                                             (a.ip_address != null && a.ip_address.ToLower().Contains(s)) ||
+                                             (a.user != null && (a.user.first_name.ToLower().Contains(s) || a.user.last_name.ToLower().Contains(s) || a.user.email.ToLower().Contains(s))));
+                }
+
+                if (!string.IsNullOrWhiteSpace(entity) && entity != "ALL")
+                {
+                    query = query.Where(a => a.entity_type == entity);
+                }
+
+                var now = DateTime.UtcNow;
+                if (!string.IsNullOrWhiteSpace(timeframe) && timeframe != "ALL")
+                {
+                    if (timeframe == "TODAY") query = query.Where(a => a.created_at.Date == now.Date);
+                    else if (timeframe == "LAST_24_HOURS") query = query.Where(a => a.created_at >= now.AddHours(-24));
+                    else if (timeframe == "LAST_7_DAYS") query = query.Where(a => a.created_at >= now.AddDays(-7));
+                    else if (timeframe == "LAST_30_DAYS") query = query.Where(a => a.created_at >= now.AddDays(-30));
+                }
+
+                var list = await query.OrderByDescending(a => a.created_at).Take(5000).ToListAsync();
+
+                var builder = new StringBuilder();
+                builder.AppendLine("Log ID,Timestamp,Action,Entity Scope,Entity ID,Actor Name,Actor Email,IP Address,User Agent,Description");
+
+                foreach (var a in list)
+                {
+                    var userName = a.user != null ? $"{a.user.first_name} {a.user.last_name}".Trim() : "System Automated";
+                    var userEmail = a.user?.email ?? "";
+                    var desc = (a.description ?? a.action).Replace("\"", "\"\"");
+                    var ua = (a.user_agent ?? "").Replace("\"", "\"\"");
+                    builder.AppendLine($"{a.id},\"{a.created_at:yyyy-MM-dd HH:mm:ss}\",\"{a.action}\",\"{a.entity_type}\",{a.entity_id},\"{userName}\",\"{userEmail}\",\"{a.ip_address}\",\"{ua}\",\"{desc}\"");
+                }
+
+                var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
+                return File(bytes, "text/csv", $"Hawassa_Security_Audit_Trail_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting audit logs CSV");
+                TempData["ErrorMessage"] = "Failed to export audit logs: " + ex.Message;
+                return RedirectToAction(nameof(AuditLogs));
+            }
         }
 
         // =========================================================

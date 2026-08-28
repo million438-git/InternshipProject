@@ -5,7 +5,10 @@
     ViewData["Title"] = "User Registration Approvals & Activation";
 }
 
-<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
+<!-- =======================================================
+     PAGE HEADER & TOP ACTION TOOLBAR
+     ======================================================= -->
+<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-1 small">
@@ -14,26 +17,37 @@
                 <li class="breadcrumb-item active" aria-current="page">Registration Approvals</li>
             </ol>
         </nav>
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
             <h1 class="h3 fw-bold text-dark mb-0">SuperAdmin User Approvals & Activation</h1>
             <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill">
                 <i class="bi bi-clock-history me-1"></i>@Model.TotalPendingCount Pending
             </span>
         </div>
-        <p class="text-muted small mb-0 mt-1">Review accounts registered by Campus Administrators and grant verified access to the platform.</p>
+        <p class="text-muted small mb-0 mt-1">Review accounts registered by Campus Administrators and grant cryptographic login credentials.</p>
     </div>
-    <div class="d-flex flex-wrap gap-2 mt-3 mt-md-0">
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-controller="Admin" asp-action="ExportPendingApprovalsCsv" 
+           asp-route-search="@Model.SearchTerm" 
+           asp-route-role="@Model.RoleFilter" 
+           asp-route-departmentId="@Model.DepartmentFilter"
+           class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3"
+           title="Export current pending queue to CSV spreadsheet">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+            <span>Export CSV</span>
+        </a>
+
         @if (Model.IsSuperAdmin && Model.TotalPendingCount > 0)
         {
-            <form asp-controller="Admin" asp-action="ApproveAllPending" method="post" class="d-inline" onsubmit="return confirm('Approve and activate ALL @Model.TotalPendingCount pending user registrations at once?');">
+            <form asp-controller="Admin" asp-action="ApproveAllPending" method="post" class="d-inline" onsubmit="return confirm('Approve and activate ALL @Model.TotalPendingCount pending user registrations at once? This grants immediate campus portal access.');">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
                 <button type="submit" class="btn btn-success btn-sm fw-semibold shadow-sm d-inline-flex align-items-center gap-1 px-3">
                     <i class="bi bi-check-all fs-6"></i>
-                    <span>Approve All Pending (@Model.TotalPendingCount)</span>
+                    <span>Approve All (@Model.TotalPendingCount)</span>
                 </button>
             </form>
         }
+
         <a asp-controller="Admin" asp-action="RegisterUser" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3">
             <i class="bi bi-person-plus-fill"></i>
             <span>Register New User</span>
@@ -49,7 +63,7 @@
      ======================================================= -->
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
-        <div class="admin-stat-card border border-warning bg-warning-subtle bg-opacity-10">
+        <div class="admin-stat-card border border-warning bg-warning-subtle bg-opacity-10 h-100">
             <div class="stat-icon-box bg-warning-subtle text-warning"><i class="bi bi-hourglass-split"></i></div>
             <div>
                 <div class="stat-num text-dark">@Model.TotalPendingCount</div>
@@ -58,7 +72,7 @@
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="admin-stat-card">
+        <div class="admin-stat-card h-100">
             <div class="stat-icon-box bg-primary-subtle text-primary"><i class="bi bi-mortarboard"></i></div>
             <div>
                 <div class="stat-num">@Model.StudentPendingCount</div>
@@ -67,7 +81,7 @@
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="admin-stat-card">
+        <div class="admin-stat-card h-100">
             <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-person-video3"></i></div>
             <div>
                 <div class="stat-num">@Model.FacultyPendingCount</div>
@@ -76,7 +90,7 @@
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="admin-stat-card">
+        <div class="admin-stat-card h-100">
             <div class="stat-icon-box bg-info-subtle text-info"><i class="bi bi-briefcase"></i></div>
             <div>
                 <div class="stat-num">@(Model.StaffPendingCount + Model.OrganizationPendingCount)</div>
@@ -95,9 +109,9 @@
             <i class="bi bi-shield-check fs-5"></i>
         </div>
         <div>
-            <h6 class="fw-bold mb-0 text-primary">Two-Tier Governance Policy Active</h6>
+            <h6 class="fw-bold mb-0 text-primary">Two-Tier Campus Governance Policy Active</h6>
             <p class="mb-0 text-dark small">
-                Standard Campus Administrators can provision accounts, but only SuperAdministrators hold cryptographic authority to activate login credentials.
+                Campus Administrators can provision new profiles, but only SuperAdministrators hold cryptographic authority to activate accounts.
             </p>
         </div>
     </div>
@@ -107,54 +121,79 @@
 </div>
 
 <!-- =======================================================
-     SEARCH & FILTER BAR
+     SEARCH, FILTER & SORT BAR
      ======================================================= -->
 <div class="admin-card p-3 mb-4">
     <form method="get" class="row g-2 align-items-center">
-        <div class="col-md-7">
+        <div class="col-12 col-md-4">
             <div class="input-group input-group-sm">
                 <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                <input type="search" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search pending by name, username, email, student ID, employee ID..." />
+                <input type="search" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search by name, username, email, ID..." />
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-2">
             <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
-                <option value="ALL" selected="@(Model.RoleFilter == null || Model.RoleFilter == "ALL")">All Pending Roles (@Model.TotalPendingCount)</option>
+                <option value="ALL" selected="@(Model.RoleFilter == null || Model.RoleFilter == "ALL")">All Roles (@Model.TotalPendingCount)</option>
                 <option value="STUDENT" selected="@(Model.RoleFilter == "STUDENT")">Students (@Model.StudentPendingCount)</option>
                 <option value="FACULTY" selected="@(Model.RoleFilter == "FACULTY")">Faculty (@Model.FacultyPendingCount)</option>
                 <option value="STAFF" selected="@(Model.RoleFilter == "STAFF")">Staff (@Model.StaffPendingCount)</option>
                 <option value="ORGANIZATION" selected="@(Model.RoleFilter == "ORGANIZATION")">Clubs & Orgs (@Model.OrganizationPendingCount)</option>
             </select>
         </div>
-        <div class="col-md-2 d-flex gap-2">
-            <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Filter</button>
+        <div class="col-6 col-md-2">
+            <select name="departmentId" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                @foreach (var dept in Model.Departments)
+                {
+                    <option value="@dept.id" selected="@(Model.DepartmentFilter == dept.id)">@dept.name</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <select name="sortBy" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="newest" selected="@(Model.SortBy == "newest" || string.IsNullOrEmpty(Model.SortBy))">Newest First</option>
+                <option value="oldest" selected="@(Model.SortBy == "oldest")">Oldest First (SLA)</option>
+                <option value="name_asc" selected="@(Model.SortBy == "name_asc")">Name (A-Z)</option>
+                <option value="name_desc" selected="@(Model.SortBy == "name_desc")">Name (Z-A)</option>
+                <option value="role" selected="@(Model.SortBy == "role")">Group by Role</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Apply</button>
             <a asp-controller="Admin" asp-action="UserApprovals" class="btn btn-sm btn-light border" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
         </div>
     </form>
 </div>
 
 <!-- =======================================================
-     BATCH APPROVAL FORM & PENDING USERS TABLE
+     BATCH APPROVAL / REJECTION FORM & PENDING USERS TABLE
      ======================================================= -->
 <div class="admin-card overflow-hidden">
     <form asp-controller="Admin" asp-action="BatchApproveUsers" method="post" id="batchApproveForm">
         @Html.AntiForgeryToken()
         <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
 
-        <!-- BULK ACTIONS STRIP (Visible when items selected) -->
+        <!-- BULK ACTIONS STRIP -->
         <div class="bg-light border-bottom p-3 d-flex flex-wrap align-items-center justify-content-between gap-3" id="batchActionBar">
-            <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
                 <div class="form-check mb-0">
                     <input class="form-check-input" type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" />
                     <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="selectAllCheckbox">
                         Select All (<span id="selectedCountDisplay">0</span>)
                     </label>
                 </div>
-                <span class="text-muted small">Select multiple users to approve simultaneously.</span>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-secondary py-0 px-2" style="font-size: 11px;" onclick="selectByRole('STUDENT')">Students</button>
+                    <button type="button" class="btn btn-outline-secondary py-0 px-2" style="font-size: 11px;" onclick="selectByRole('FACULTY')">Faculty</button>
+                    <button type="button" class="btn btn-outline-secondary py-0 px-2" style="font-size: 11px;" onclick="clearSelection()">Clear</button>
+                </div>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <button type="submit" class="btn btn-success btn-sm fw-semibold shadow-sm" id="batchApproveBtn" disabled>
-                    <i class="bi bi-check-circle me-1"></i> Approve Selected
+                <button type="submit" class="btn btn-success btn-sm fw-semibold shadow-sm" id="batchApproveBtn" disabled onclick="return confirm('Approve all selected accounts?');">
+                    <i class="bi bi-check-circle me-1"></i> Approve Selected (<span class="batchCountText">0</span>)
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm fw-semibold shadow-sm" id="batchRejectBtn" disabled onclick="openBatchRejectModal()">
+                    <i class="bi bi-x-circle me-1"></i> Decline Selected (<span class="batchCountText">0</span>)
                 </button>
             </div>
         </div>
@@ -168,7 +207,7 @@
                         <th>Role & Category</th>
                         <th>Academic Unit</th>
                         <th>Registered By (Admin)</th>
-                        <th>Submission Date</th>
+                        <th>Submission Date & SLA</th>
                         <th class="text-end">Verification Actions</th>
                     </tr>
                 </thead>
@@ -177,24 +216,36 @@
                     {
                         <tr>
                             <td colspan="7" class="text-center py-5 text-muted">
-                                <i class="bi bi-check2-all fs-1 d-block mb-2 text-success"></i>
-                                <h5 class="fw-bold text-dark mb-1">Approval Queue is Clear</h5>
-                                <p class="small text-muted mb-3">There are currently no user registration requests awaiting SuperAdmin review.</p>
-                                <a asp-controller="Admin" asp-action="RegisterUser" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-person-plus me-1"></i>Register New Account
-                                </a>
+                                @if (Model.TotalPendingCount == 0)
+                                {
+                                    <i class="bi bi-check2-all fs-1 d-block mb-2 text-success"></i>
+                                    <h5 class="fw-bold text-dark mb-1">Approval Queue is Clear</h5>
+                                    <p class="small text-muted mb-3">There are currently no user registration requests awaiting SuperAdmin review.</p>
+                                    <a asp-controller="Admin" asp-action="RegisterUser" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-person-plus me-1"></i>Register New Account
+                                    </a>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-funnel fs-1 d-block mb-2 text-warning"></i>
+                                    <h5 class="fw-bold text-dark mb-1">No Matching Registrations Found</h5>
+                                    <p class="small text-muted mb-3">No pending accounts matched your current search and filter criteria.</p>
+                                    <a asp-controller="Admin" asp-action="UserApprovals" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset All Filters
+                                    </a>
+                                }
                             </td>
                         </tr>
                     }
                     @foreach (var user in Model.PendingUsers)
                     {
-                        <tr class="table-warning bg-opacity-25">
+                        <tr class="approval-row" id="row-@user.Id" data-role="@user.AccountType">
                             <td>
                                 <input type="checkbox" name="userIds" value="@user.Id" class="form-check-input user-select-chk" onchange="updateBatchState()" />
                             </td>
                             <td>
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="admin-avatar bg-warning text-dark fw-bold" style="width: 38px; height: 38px; font-size: 14px;">
+                                    <div class="admin-avatar bg-warning text-dark fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-size: 14px;">
                                         @(string.IsNullOrEmpty(user.FullName) ? "U" : user.FullName.Substring(0, 1).ToUpper())
                                     </div>
                                     <div>
@@ -203,17 +254,17 @@
                                             <span class="badge bg-warning-subtle text-warning-emphasis border border-warning ms-1" style="font-size: 10px;">Pending</span>
                                         </div>
                                         <div class="small text-muted d-flex align-items-center gap-2">
-                                            <span>@@@user.Username</span>
+                                            <span class="font-monospace">@@@user.Username</span>
                                             <span>&bull;</span>
                                             <span>@user.Email</span>
                                         </div>
                                         @if (!string.IsNullOrEmpty(user.StudentId))
                                         {
-                                            <span class="badge bg-light text-primary border" style="font-size: 11px;"><i class="bi bi-card-text me-1"></i>ID: @user.StudentId</span>
+                                            <span class="badge bg-light text-primary border mt-1" style="font-size: 11px;"><i class="bi bi-card-text me-1"></i>ID: @user.StudentId</span>
                                         }
                                         else if (!string.IsNullOrEmpty(user.EmployeeId))
                                         {
-                                            <span class="badge bg-light text-secondary border" style="font-size: 11px;"><i class="bi bi-badge-ad me-1"></i>EMP: @user.EmployeeId</span>
+                                            <span class="badge bg-light text-secondary border mt-1" style="font-size: 11px;"><i class="bi bi-badge-ad me-1"></i>EMP: @user.EmployeeId</span>
                                         }
                                     </div>
                                 </div>
@@ -227,7 +278,7 @@
                                 <div class="small fw-semibold text-dark">@user.DepartmentName</div>
                                 @if (!string.IsNullOrEmpty(user.FacultyName))
                                 {
-                                    <small class="text-muted">@user.FacultyName</small>
+                                    <small class="text-muted d-block">@user.FacultyName</small>
                                 }
                             </td>
                             <td>
@@ -238,7 +289,10 @@
                             </td>
                             <td>
                                 <div class="small text-dark">@user.RegisteredAt.ToString("MMM dd, yyyy")</div>
-                                <small class="text-muted">@user.RegisteredAt.ToString("hh:mm tt")</small>
+                                <div class="d-flex align-items-center gap-1 mt-1">
+                                    <small class="text-muted">@user.RegisteredAt.ToString("hh:mm tt")</small>
+                                    <span class="badge bg-light text-muted border" style="font-size: 10px;">@user.TimeWaitingFormatted</span>
+                                </div>
                             </td>
                             <td class="text-end">
                                 <div class="d-inline-flex align-items-center gap-1">
@@ -250,7 +304,7 @@
                                         </button>
 
                                         <!-- REJECT BUTTON (OPEN MODAL) -->
-                                        <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2" onclick="openRejectModal(@user.Id, '@user.FullName', '@user.Username')">
+                                        <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2" title="Decline Registration" onclick="openRejectModal(@user.Id, '@user.FullName', '@user.Username')">
                                             <i class="bi bi-x-lg"></i>
                                         </button>
                                     }
@@ -262,7 +316,7 @@
                                     }
 
                                     <!-- INSPECT DETAILS MODAL BUTTON -->
-                                    <button type="button" class="btn btn-sm btn-light border py-1 px-2" onclick="openInspectModal(@user.Id, '@user.FullName', '@user.Username', '@user.Email', '@(user.Phone ?? "N/A")', '@user.AccountType', '@user.DepartmentName', '@(user.StudentId ?? user.EmployeeId ?? "N/A")', '@user.RegisteredByAdminName', '@user.RegisteredAt.ToString("MMM dd, yyyy hh:mm tt")', '@(user.Bio ?? "Standard campus registration note.")')">
+                                    <button type="button" class="btn btn-sm btn-light border py-1 px-2" title="View Dossier" onclick="openInspectModal(@user.Id, '@user.FullName', '@user.Username', '@user.Email', '@(user.Phone ?? "N/A")', '@user.AccountType', '@user.DepartmentName', '@(user.StudentId ?? user.EmployeeId ?? "N/A")', '@user.RegisteredByAdminName', '@user.RegisteredAt.ToString("MMM dd, yyyy hh:mm tt")', '@(user.Bio ?? "Standard campus registration metadata.")')">
                                         <i class="bi bi-eye"></i>
                                     </button>
                                 </div>
@@ -272,6 +326,65 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- =======================================================
+             PAGINATION & PAGE SIZE SELECTOR
+             ======================================================= -->
+        @if (Model.TotalFilteredCount > 0)
+        {
+            <div class="p-3 bg-light border-top d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="small text-muted">
+                    Showing <strong>@(((Model.CurrentPage - 1) * Model.PageSize) + 1)</strong> to <strong>@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalFilteredCount))</strong> of <strong>@Model.TotalFilteredCount</strong> pending registrations
+                </div>
+                
+                @if (Model.TotalPages > 1)
+                {
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                                <a class="page-link" asp-action="UserApprovals" 
+                                   asp-route-page="@(Model.CurrentPage - 1)" 
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.SearchTerm" 
+                                   asp-route-role="@Model.RoleFilter" 
+                                   asp-route-departmentId="@Model.DepartmentFilter"
+                                   asp-route-sortBy="@Model.SortBy">Previous</a>
+                            </li>
+
+                            @for (int p = 1; p <= Model.TotalPages; p++)
+                            {
+                                if (p == 1 || p == Model.TotalPages || (p >= Model.CurrentPage - 2 && p <= Model.CurrentPage + 2))
+                                {
+                                    <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                        <a class="page-link" asp-action="UserApprovals" 
+                                           asp-route-page="@p" 
+                                           asp-route-pageSize="@Model.PageSize"
+                                           asp-route-search="@Model.SearchTerm" 
+                                           asp-route-role="@Model.RoleFilter" 
+                                           asp-route-departmentId="@Model.DepartmentFilter"
+                                           asp-route-sortBy="@Model.SortBy">@p</a>
+                                    </li>
+                                }
+                                else if (p == Model.CurrentPage - 3 || p == Model.CurrentPage + 3)
+                                {
+                                    <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                                }
+                            }
+
+                            <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                                <a class="page-link" asp-action="UserApprovals" 
+                                   asp-route-page="@(Model.CurrentPage + 1)" 
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-search="@Model.SearchTerm" 
+                                   asp-route-role="@Model.RoleFilter" 
+                                   asp-route-departmentId="@Model.DepartmentFilter"
+                                   asp-route-sortBy="@Model.SortBy">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+            </div>
+        }
     </form>
 </div>
 
@@ -285,7 +398,7 @@
 </form>
 
 <!-- =======================================================
-     REJECT MODAL WITH REASON
+     SINGLE REJECT MODAL WITH REASON
      ======================================================= -->
 <div class="modal fade" id="rejectUserModal" tabindex="-1" aria-labelledby="rejectUserModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -307,7 +420,7 @@
                     </p>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Reason / Rejection Note (Sent to applicant & registering admin):</label>
-                        <textarea name="reason" class="form-control rounded-3" rows="3" placeholder="e.g. Student ID could not be verified in the SIS registry..."></textarea>
+                        <textarea name="reason" class="form-control rounded-3" rows="3" placeholder="e.g. Identification ID could not be verified in official registry..."></textarea>
                     </div>
                     <div class="alert alert-warning p-2 small mb-0">
                         <i class="bi bi-exclamation-triangle me-1"></i> The user status will be marked <strong>INACTIVE</strong> and access will remain revoked.
@@ -325,7 +438,47 @@
 </div>
 
 <!-- =======================================================
-     INSPECT USER DETAILS MODAL
+     BATCH REJECT MODAL WITH REASON
+     ======================================================= -->
+<div class="modal fade" id="batchRejectModal" tabindex="-1" aria-labelledby="batchRejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form asp-controller="Admin" asp-action="BatchRejectUsers" method="post" id="batchRejectForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                <div id="batchRejectUserIdsContainer"></div>
+
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold" id="batchRejectModalLabel">
+                        <i class="bi bi-exclamation-diamond-fill me-2"></i>Decline Selected Registrations
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-dark mb-2">
+                        You are about to decline <strong><span id="batchRejectCountDisplay">0</span></strong> selected user registration requests.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Reason / Administrative Note:</label>
+                        <textarea name="reason" class="form-control rounded-3" rows="3" placeholder="e.g. Batch registration verification failed or required documents missing."></textarea>
+                    </div>
+                    <div class="alert alert-warning p-2 small mb-0">
+                        <i class="bi bi-exclamation-triangle me-1"></i> All selected accounts will be set to <strong>INACTIVE</strong> and barred from login.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger btn-sm px-3 fw-semibold">
+                        Decline All Selected
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- =======================================================
+     INSPECT USER DETAILS DOSSIER MODAL
      ======================================================= -->
 <div class="modal fade" id="inspectUserModal" tabindex="-1" aria-labelledby="inspectUserModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -402,18 +555,63 @@
     <script>
         function toggleSelectAll(master) {
             const checkboxes = document.querySelectorAll('.user-select-chk');
-            checkboxes.forEach(c => c.checked = master.checked);
+            checkboxes.forEach(c => {
+                c.checked = master.checked;
+                highlightRow(c);
+            });
+            updateBatchState();
+        }
+
+        function highlightRow(checkbox) {
+            const row = checkbox.closest('tr');
+            if (row) {
+                if (checkbox.checked) {
+                    row.classList.add('table-warning', 'bg-opacity-50');
+                } else {
+                    row.classList.remove('table-warning', 'bg-opacity-50');
+                }
+            }
+        }
+
+        function selectByRole(role) {
+            const checkboxes = document.querySelectorAll('.user-select-chk');
+            checkboxes.forEach(c => {
+                const row = c.closest('tr');
+                if (row && row.getAttribute('data-role') === role) {
+                    c.checked = true;
+                } else {
+                    c.checked = false;
+                }
+                highlightRow(c);
+            });
+            updateBatchState();
+        }
+
+        function clearSelection() {
+            const checkboxes = document.querySelectorAll('.user-select-chk');
+            checkboxes.forEach(c => {
+                c.checked = false;
+                highlightRow(c);
+            });
+            const master = document.getElementById('selectAllCheckbox');
+            if (master) master.checked = false;
             updateBatchState();
         }
 
         function updateBatchState() {
-            const checkboxes = document.querySelectorAll('.user-select-chk:checked');
-            const count = checkboxes.length;
+            const checkedBoxes = document.querySelectorAll('.user-select-chk:checked');
+            const count = checkedBoxes.length;
+            
+            document.querySelectorAll('.user-select-chk').forEach(c => highlightRow(c));
+
             document.getElementById('selectedCountDisplay').innerText = count;
-            const btn = document.getElementById('batchApproveBtn');
-            if (btn) {
-                btn.disabled = count === 0;
-            }
+            document.querySelectorAll('.batchCountText').forEach(el => el.innerText = count);
+            
+            const approveBtn = document.getElementById('batchApproveBtn');
+            const rejectBtn = document.getElementById('batchRejectBtn');
+            
+            if (approveBtn) approveBtn.disabled = count === 0;
+            if (rejectBtn) rejectBtn.disabled = count === 0;
         }
 
         function approveSingleUser(id, name) {
@@ -428,6 +626,27 @@
             document.getElementById('rejectUserNameDisplay').innerText = name;
             document.getElementById('rejectUserHandleDisplay').innerText = '@@' + username;
             var modal = new bootstrap.Modal(document.getElementById('rejectUserModal'));
+            modal.show();
+        }
+
+        function openBatchRejectModal() {
+            const checkedBoxes = document.querySelectorAll('.user-select-chk:checked');
+            const count = checkedBoxes.length;
+            if (count === 0) return;
+
+            document.getElementById('batchRejectCountDisplay').innerText = count;
+            const container = document.getElementById('batchRejectUserIdsContainer');
+            container.innerHTML = '';
+            
+            checkedBoxes.forEach(c => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'userIds';
+                input.value = c.value;
+                container.appendChild(input);
+            });
+
+            var modal = new bootstrap.Modal(document.getElementById('batchRejectModal'));
             modal.show();
         }
 

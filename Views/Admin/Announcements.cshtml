@@ -2,44 +2,66 @@
 
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Announcement Management";
+    ViewData["Title"] = "Campus Announcements & Bulletins";
 }
 
-<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
+<!-- =======================================================
+     PAGE HEADER & TOP ACTION TOOLBAR
+     ======================================================= -->
+<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
-        <h1 class="h3 fw-bold text-dark mb-1">Announcement & Bulletin Management</h1>
-        <p class="text-muted small mb-0">Publish official campus notices, pin important updates, and archive old bulletins.</p>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+                <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Index" class="text-decoration-none">Admin Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Announcements</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold text-dark mb-1">📢 Campus Announcements & Bulletin Board</h1>
+        <p class="text-muted small mb-0">Publish official university notices, pin priority bulletins, and broadcast updates to academic departments.</p>
     </div>
-    <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#newAnnouncementModal">
-        <i class="bi bi-plus-lg"></i>
-        <span>New Announcement</span>
-    </button>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#newAnnouncementModal">
+            <i class="bi bi-plus-lg"></i>
+            <span>Publish Notice</span>
+        </button>
+        <a asp-controller="Admin" asp-action="ExportAnnouncementsCsv" 
+           asp-route-search="@Model.SearchTerm"
+           asp-route-type="@Model.TypeFilter"
+           asp-route-priority="@Model.PriorityFilter"
+           asp-route-status="@Model.StatusFilter"
+           asp-route-departmentId="@Model.DepartmentFilter"
+           class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3"
+           title="Export bulletins to CSV">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+            <span>Export CSV</span>
+        </a>
+    </div>
 </div>
 
 <!-- =======================================================
-     METRICS
+     METRICS SUMMARY CARDS
      ======================================================= -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="admin-stat-card">
-            <div class="stat-icon-box bg-primary-subtle text-primary"><i class="bi bi-megaphone"></i></div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-primary-subtle text-primary"><i class="bi bi-megaphone-fill"></i></div>
             <div>
                 <div class="stat-num">@Model.TotalCount</div>
-                <div class="stat-desc">Total Announcements</div>
+                <div class="stat-desc">Total Bulletins</div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="admin-stat-card">
-            <div class="stat-icon-box bg-warning-subtle text-warning"><i class="bi bi-pin-angle"></i></div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-warning-subtle text-warning-emphasis"><i class="bi bi-pin-angle-fill"></i></div>
             <div>
                 <div class="stat-num">@Model.PinnedCount</div>
-                <div class="stat-desc">Pinned Bulletins</div>
+                <div class="stat-desc">Pinned Priority</div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="admin-stat-card">
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
             <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-check2-circle"></i></div>
             <div>
                 <div class="stat-num">@Model.PublishedCount</div>
@@ -47,69 +69,175 @@
             </div>
         </div>
     </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-secondary-subtle text-secondary"><i class="bi bi-journal-text"></i></div>
+            <div>
+                <div class="stat-num">@Model.DraftCount</div>
+                <div class="stat-desc">Drafts & Archived</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- =======================================================
-     ANNOUNCEMENTS LIST
+     FILTERS & ADVANCED SEARCH BAR
+     ======================================================= -->
+<div class="admin-card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-center">
+        <div class="col-12 col-md-3">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input type="search" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search title, content, author..." />
+            </div>
+        </div>
+
+        <div class="col-6 col-md-2">
+            <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="ALL" selected="@(Model.TypeFilter == null || Model.TypeFilter == "ALL")">All Types</option>
+                <option value="GENERAL" selected="@(Model.TypeFilter == "GENERAL")">General</option>
+                <option value="ACADEMIC" selected="@(Model.TypeFilter == "ACADEMIC")">Academic</option>
+                <option value="NEWS" selected="@(Model.TypeFilter == "NEWS")">News</option>
+                <option value="NOTICE" selected="@(Model.TypeFilter == "NOTICE")">Notice</option>
+                <option value="ALERT" selected="@(Model.TypeFilter == "ALERT")">Alert</option>
+                <option value="CLOSURE" selected="@(Model.TypeFilter == "CLOSURE")">Closure</option>
+                <option value="CAREER" selected="@(Model.TypeFilter == "CAREER")">Career</option>
+            </select>
+        </div>
+
+        <div class="col-6 col-md-2">
+            <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="ALL" selected="@(Model.PriorityFilter == null || Model.PriorityFilter == "ALL")">All Priorities</option>
+                <option value="PINNED" selected="@(Model.PriorityFilter == "PINNED")">📌 Pinned Only</option>
+                <option value="URGENT" selected="@(Model.PriorityFilter == "URGENT")">🚨 Urgent</option>
+                <option value="HIGH" selected="@(Model.PriorityFilter == "HIGH")">⚡ High</option>
+                <option value="NORMAL" selected="@(Model.PriorityFilter == "NORMAL")">Normal</option>
+                <option value="LOW" selected="@(Model.PriorityFilter == "LOW")">Low</option>
+            </select>
+        </div>
+
+        <div class="col-6 col-md-2">
+            <select name="departmentId" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="" selected="@(!Model.DepartmentFilter.HasValue)">All Departments</option>
+                @foreach (var dept in Model.Departments)
+                {
+                    <option value="@dept.id" selected="@(Model.DepartmentFilter == dept.id)">@dept.name</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-6 col-md-1">
+            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="ALL" selected="@(Model.StatusFilter == null || Model.StatusFilter == "ALL")">All</option>
+                <option value="PUBLISHED" selected="@(Model.StatusFilter == "PUBLISHED")">Published</option>
+                <option value="DRAFT" selected="@(Model.StatusFilter == "DRAFT")">Draft</option>
+                <option value="ARCHIVED" selected="@(Model.StatusFilter == "ARCHIVED")">Archived</option>
+            </select>
+        </div>
+
+        <div class="col-12 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Filter</button>
+            <a asp-controller="Admin" asp-action="Announcements" class="btn btn-sm btn-light border" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- =======================================================
+     ANNOUNCEMENTS LIST TABLE
      ======================================================= -->
 <div class="admin-card overflow-hidden">
     <div class="table-responsive">
-        <table class="table admin-table" id="announcementsTable">
+        <table class="table admin-table align-middle mb-0" id="announcementsTable">
             <thead>
                 <tr>
-                    <th>Title & Content</th>
-                    <th>Author / Scope</th>
-                    <th>Priority</th>
+                    <th>Title & Bulletin Summary</th>
+                    <th>Classification</th>
+                    <th>Target Scope</th>
+                    <th>Publisher</th>
                     <th>Status</th>
-                    <th>Date Published</th>
+                    <th>Published Date</th>
                     <th class="text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in Model.Announcements)
+                @if (!Model.Announcements.Any())
                 {
                     <tr>
-                        <td style="max-width: 320px;">
-                            <div class="d-flex align-items-center gap-2">
-                                @if (item.IsPinned)
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-megaphone fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            <h5 class="fw-bold text-dark mb-1">No Announcements Found</h5>
+                            <p class="small text-muted mb-3">No campus bulletins match your filter criteria.</p>
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newAnnouncementModal">
+                                <i class="bi bi-plus-lg me-1"></i>Publish New Notice
+                            </button>
+                        </td>
+                    </tr>
+                }
+                @foreach (var ann in Model.Announcements)
+                {
+                    <tr>
+                        <td style="max-width: 300px;">
+                            <div class="d-flex align-items-center gap-1 mb-1">
+                                @if (ann.IsPinned)
                                 {
-                                    <i class="bi bi-pin-angle-fill text-warning" title="Pinned Announcement"></i>
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning" style="font-size: 10px;">
+                                        <i class="bi bi-pin-angle-fill me-1"></i>PINNED
+                                    </span>
                                 }
-                                <div>
-                                    <div class="fw-bold text-dark">@item.Title</div>
-                                    <small class="text-muted text-truncate d-block" style="max-width: 300px;">@item.Content</small>
-                                </div>
+                                <span class="fw-bold text-dark text-truncate d-inline-block" style="max-width: 240px;" title="@ann.Title">
+                                    @ann.Title
+                                </span>
+                            </div>
+                            <div class="small text-muted text-truncate" style="max-width: 280px;" title="@ann.Content">
+                                @(ann.Summary ?? (ann.Content.Length > 80 ? ann.Content.Substring(0, 77) + "..." : ann.Content))
                             </div>
                         </td>
                         <td>
-                            <div class="small fw-semibold text-dark">@item.AuthorName</div>
-                            <small class="text-muted">@item.DepartmentName</small>
+                            <span class="badge @(ann.Priority == "URGENT" ? "bg-danger-subtle text-danger border-danger-subtle" : ann.Priority == "HIGH" ? "bg-warning-subtle text-warning-emphasis border-warning" : "bg-light text-secondary border")" style="font-size: 11px;">
+                                @ann.AnnouncementType / @ann.Priority
+                            </span>
                         </td>
                         <td>
-                            @if (item.Priority == "URGENT" || item.Priority == "HIGH")
+                            <span class="badge bg-light text-dark border">
+                                <i class="bi bi-building me-1 text-primary"></i>@ann.DepartmentName
+                            </span>
+                        </td>
+                        <td>
+                            <div class="small fw-semibold text-dark">@ann.AuthorName</div>
+                        </td>
+                        <td>
+                            @if (ann.Status == "PUBLISHED")
                             {
-                                <span class="badge bg-danger-subtle text-danger">@item.Priority</span>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 10px;">Published</span>
+                            }
+                            else if (ann.Status == "DRAFT")
+                            {
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning rounded-pill" style="font-size: 10px;">Draft</span>
                             }
                             else
                             {
-                                <span class="badge bg-secondary-subtle text-secondary">@item.Priority</span>
+                                <span class="badge bg-secondary-subtle text-secondary border rounded-pill" style="font-size: 10px;">Archived</span>
                             }
                         </td>
                         <td>
-                            <span class="badge-status badge-published">@item.Status</span>
-                        </td>
-                        <td class="small text-muted">
-                            @item.CreatedAt.ToString("MMM dd, yyyy")
+                            <div class="small text-dark">@ann.CreatedAt.ToString("yyyy-MM-dd")</div>
+                            <small class="text-muted">@ann.CreatedAt.ToString("HH:mm")</small>
                         </td>
                         <td class="text-end">
                             <div class="d-inline-flex gap-1">
-                                <form asp-controller="Admin" asp-action="AnnouncementTogglePin" asp-route-id="@item.Id" method="post" class="d-inline">
+                                <form asp-controller="Admin" asp-action="AnnouncementTogglePin" asp-route-id="@ann.Id" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-light border py-1 px-2" title="Toggle Pin">
-                                        <i class="bi bi-pin-angle"></i>
+                                    <button type="submit" class="btn btn-sm btn-light border py-1 px-2 @(ann.IsPinned ? "text-warning" : "text-secondary")" title="@(ann.IsPinned ? "Unpin Bulletin" : "Pin Bulletin")">
+                                        <i class="bi @(ann.IsPinned ? "bi-pin-angle-fill" : "bi-pin-angle")"></i>
                                     </button>
                                 </form>
-                                <form asp-controller="Admin" asp-action="AnnouncementDelete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Delete announcement?');">
+                                <button type="button" 
+                                        class="btn btn-sm btn-light border text-primary py-1 px-2" 
+                                        onclick="openEditAnnouncementModal('@ann.Id', '@(Html.Raw(ann.Title.Replace("'", "\\'")))', '@(Html.Raw(ann.Content.Replace("'", "\\'").Replace("\n", "\\n").Replace("\r", "")))', '@ann.Priority', '@ann.AnnouncementType')" 
+                                        title="Edit Announcement">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <form asp-controller="Admin" asp-action="AnnouncementDelete" asp-route-id="@ann.Id" method="post" class="d-inline" onsubmit="return confirm('Delete announcement \'@ann.Title\'?');">
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="btn btn-sm btn-light border text-danger py-1 px-2" title="Delete">
                                         <i class="bi bi-trash"></i>
@@ -122,105 +250,211 @@
             </tbody>
         </table>
     </div>
+
+    <!-- =======================================================
+         PAGINATION BAR
+         ======================================================= -->
+    @if (Model.TotalFilteredCount > 0)
+    {
+        <div class="p-3 bg-light border-top d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="small text-muted">
+                Showing <strong>@(((Model.CurrentPage - 1) * Model.PageSize) + 1)</strong> to <strong>@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalFilteredCount))</strong> of <strong>@Model.TotalFilteredCount</strong> bulletins
+            </div>
+            
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Announcements Page navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                            <a class="page-link" asp-action="Announcements" 
+                               asp-route-page="@(Model.CurrentPage - 1)" 
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-search="@Model.SearchTerm" 
+                               asp-route-type="@Model.TypeFilter"
+                               asp-route-priority="@Model.PriorityFilter"
+                               asp-route-status="@Model.StatusFilter"
+                               asp-route-departmentId="@Model.DepartmentFilter">Previous</a>
+                        </li>
+
+                        @for (int p = 1; p <= Model.TotalPages; p++)
+                        {
+                            if (p == 1 || p == Model.TotalPages || (p >= Model.CurrentPage - 2 && p <= Model.CurrentPage + 2))
+                            {
+                                <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                    <a class="page-link" asp-action="Announcements" 
+                                       asp-route-page="@p" 
+                                       asp-route-pageSize="@Model.PageSize"
+                                       asp-route-search="@Model.SearchTerm" 
+                                       asp-route-type="@Model.TypeFilter"
+                                       asp-route-priority="@Model.PriorityFilter"
+                                       asp-route-status="@Model.StatusFilter"
+                                       asp-route-departmentId="@Model.DepartmentFilter">@p</a>
+                                </li>
+                            }
+                            else if (p == Model.CurrentPage - 3 || p == Model.CurrentPage + 3)
+                            {
+                                <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                            }
+                        }
+
+                        <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                            <a class="page-link" asp-action="Announcements" 
+                               asp-route-page="@(Model.CurrentPage + 1)" 
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-search="@Model.SearchTerm" 
+                               asp-route-type="@Model.TypeFilter"
+                               asp-route-priority="@Model.PriorityFilter"
+                               asp-route-status="@Model.StatusFilter"
+                               asp-route-departmentId="@Model.DepartmentFilter">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    }
 </div>
 
 <!-- =======================================================
-     CREATE ANNOUNCEMENT MODAL
+     PUBLISH NEW ANNOUNCEMENT MODAL
      ======================================================= -->
-<div class="modal fade" id="newAnnouncementModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="newAnnouncementModal" tabindex="-1" aria-labelledby="newAnnouncementModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold"><i class="bi bi-megaphone me-1 text-primary"></i>Publish Campus Announcement & Alerts</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="newAnnouncementModalLabel"><i class="bi bi-megaphone me-2"></i>Publish Campus Announcement</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form asp-controller="Admin" asp-action="AnnouncementCreate" method="post">
                 @Html.AntiForgeryToken()
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Title</label>
-                        <input type="text" name="title" class="form-control form-control-sm" required placeholder="e.g. Campus Wi-Fi Maintenance Window / Graduation Rehearsal Schedule" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold">Announcement Content & Details</label>
-                        <textarea name="content" rows="4" class="form-control form-control-sm" required placeholder="Type full details of the announcement..."></textarea>
+                        <label class="form-label small fw-semibold text-dark">Bulletin Title *</label>
+                        <input type="text" name="title" class="form-control form-control-sm" required placeholder="e.g. End of Semester Examination Schedule Released" />
                     </div>
 
                     <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Target Audience</label>
-                            <select name="targetAudience" class="form-select form-select-sm" id="annAudienceSelect" onchange="toggleAnnDeptSelect(this.value)">
-                                <option value="ALL">All Campus Members (Broadcast)</option>
-                                <option value="STUDENTS">Students Only</option>
-                                <option value="FACULTY">Faculty & Staff Only</option>
-                                <option value="ORGANIZERS">Club Leaders & Organizers</option>
-                                <option value="DEPARTMENT">Specific Academic Department</option>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Announcement Type</label>
+                            <select name="announcementType" class="form-select form-select-sm">
+                                <option value="GENERAL">General Notice</option>
+                                <option value="ACADEMIC">Academic Announcement</option>
+                                <option value="NEWS">Campus News</option>
+                                <option value="ALERT">Emergency Alert</option>
+                                <option value="CLOSURE">Facility Closure</option>
+                                <option value="CAREER">Career & Internship</option>
                             </select>
                         </div>
-                        <div class="col-md-6" id="annDeptGroup" style="display: none;">
-                            <label class="form-label small fw-semibold">Specific Department</label>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Priority Level</label>
+                            <select name="priority" class="form-select form-select-sm">
+                                <option value="NORMAL">Normal</option>
+                                <option value="HIGH">⚡ High Priority</option>
+                                <option value="URGENT">🚨 Urgent Alert</option>
+                                <option value="LOW">Low</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Target Scope</label>
                             <select name="departmentId" class="form-select form-select-sm">
-                                <option value="">-- Choose Target Department --</option>
-                                @foreach (var d in Model.Departments)
+                                <option value="">🌐 Entire University (All)</option>
+                                @foreach (var dept in Model.Departments)
                                 {
-                                    <option value="@d.id">@d.name</option>
+                                    <option value="@dept.id">@dept.name</option>
                                 }
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Announcement Type</label>
-                            <select name="announcementType" class="form-select form-select-sm">
-                                <option value="GENERAL">General Notice</option>
-                                <option value="NEWS">Campus News</option>
-                                <option value="ALERT">Safety / Urgent Alert</option>
-                                <option value="ACADEMIC">Academic Bulletin</option>
-                                <option value="CLOSURE">Facility Closure</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Priority</label>
-                            <select name="priority" class="form-select form-select-sm">
-                                <option value="NORMAL">Normal Priority</option>
-                                <option value="HIGH">High Priority</option>
-                                <option value="URGENT">Urgent Priority (Critical)</option>
-                            </select>
-                        </div>
                     </div>
 
-                    <div class="p-3 bg-light rounded-3 border">
-                        <div class="form-check form-switch mb-2">
-                            <input class="form-check-input" type="checkbox" name="sendNotificationAlert" value="true" id="sendAlertCheck" checked />
-                            <label class="form-check-label small fw-semibold text-dark" for="sendAlertCheck">
-                                <i class="bi bi-bell-fill text-warning me-1"></i> Send Instant In-App Notification Alert to All Target Users
-                            </label>
-                            <div class="text-muted" style="font-size: 11px;">Targeted recipients will receive an alert popup and in-app notification in their personal Notification Center.</div>
-                        </div>
-
-                        <div class="form-check">
-                            <input type="checkbox" name="isPinned" value="true" class="form-check-input" id="isPinnedCheck" />
-                            <label class="form-check-label small fw-semibold" for="isPinnedCheck">
-                                <i class="bi bi-pin-angle-fill text-warning me-1"></i> Pin Bulletin to Top of Feeds
-                            </label>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Content Body *</label>
+                        <textarea name="content" class="form-control form-control-sm" rows="5" required placeholder="Write full details of the notice..."></textarea>
                     </div>
 
+                    <div class="p-3 bg-light rounded border d-flex flex-wrap gap-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="isPinned" id="isPinnedCheck" value="true" />
+                            <label class="form-check-label small fw-semibold text-dark" for="isPinnedCheck">Pin to Top of Student Feed</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="sendNotificationAlert" id="sendNotifCheck" value="true" checked />
+                            <label class="form-check-label small fw-semibold text-dark" for="sendNotifCheck">Send In-App Notification to Target Users</label>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-primary px-3">
-                        <i class="bi bi-send me-1"></i> Publish & Dispatch Alerts
-                    </button>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3 fw-semibold">Publish Notice</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<script>
-    function toggleAnnDeptSelect(val) {
-        var group = document.getElementById('annDeptGroup');
-        if (group) {
-            group.style.display = val === 'DEPARTMENT' ? 'block' : 'none';
+<!-- =======================================================
+     SHARED EDIT ANNOUNCEMENT MODAL
+     ======================================================= -->
+<div class="modal fade" id="editAnnouncementModal" tabindex="-1" aria-labelledby="editAnnouncementModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="editAnnouncementModalLabel"><i class="bi bi-pencil-square me-2"></i>Edit Bulletin</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-controller="Admin" asp-action="AnnouncementEdit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editAnnId" />
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Title *</label>
+                        <input type="text" name="title" id="editAnnTitle" class="form-control form-control-sm" required />
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Type</label>
+                            <select name="type" id="editAnnType" class="form-select form-select-sm">
+                                <option value="GENERAL">General Notice</option>
+                                <option value="ACADEMIC">Academic Announcement</option>
+                                <option value="NEWS">Campus News</option>
+                                <option value="ALERT">Emergency Alert</option>
+                                <option value="CLOSURE">Facility Closure</option>
+                                <option value="CAREER">Career & Internship</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Priority</label>
+                            <select name="priority" id="editAnnPriority" class="form-select form-select-sm">
+                                <option value="NORMAL">Normal</option>
+                                <option value="HIGH">⚡ High Priority</option>
+                                <option value="URGENT">🚨 Urgent Alert</option>
+                                <option value="LOW">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Content Body *</label>
+                        <textarea name="content" id="editAnnContent" class="form-control form-control-sm" rows="5" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3 fw-semibold">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openEditAnnouncementModal(id, title, content, priority, type) {
+            document.getElementById('editAnnId').value = id;
+            document.getElementById('editAnnTitle').value = title;
+            document.getElementById('editAnnContent').value = content;
+            document.getElementById('editAnnPriority').value = priority || 'NORMAL';
+            document.getElementById('editAnnType').value = type || 'GENERAL';
+
+            var modal = new bootstrap.Modal(document.getElementById('editAnnouncementModal'));
+            modal.show();
         }
-    }
-</script>
+    </script>
+}

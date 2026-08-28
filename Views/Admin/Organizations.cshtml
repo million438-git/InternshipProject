@@ -2,51 +2,159 @@
 
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Organization Management";
+    ViewData["Title"] = "Campus Organizations & Clubs Governance";
 }
 
-<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
+<!-- =======================================================
+     PAGE HEADER & TOP ACTION TOOLBAR
+     ======================================================= -->
+<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
-        <h1 class="h3 fw-bold mb-1">Organization & Club Management</h1>
-        <p class="text-muted small mb-0">Oversee student associations, academic clubs, campus unions, and event organizing bodies.</p>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+                <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Index" class="text-decoration-none">Admin Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Organizations & Clubs</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold text-dark mb-1">🏛️ Campus Organizations & Clubs Governance</h1>
+        <p class="text-muted small mb-0">Oversee university student societies, academic associations, campus unions, and event organizing bodies.</p>
     </div>
-    <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#newOrgModal">
-        <i class="bi bi-plus-lg"></i>
-        <span>Register Organization</span>
-    </button>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#newOrgModal">
+            <i class="bi bi-plus-lg"></i>
+            <span>Register Organization</span>
+        </button>
+        <a asp-controller="Admin" asp-action="ExportOrganizationsCsv" 
+           asp-route-search="@Model.SearchTerm" 
+           asp-route-type="@Model.TypeFilter" 
+           asp-route-status="@Model.StatusFilter"
+           asp-route-departmentId="@Model.DepartmentFilter"
+           class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3"
+           title="Export organization directory to CSV">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+            <span>Export CSV</span>
+        </a>
+        <a asp-controller="Clubs" asp-action="Index" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1" target="_blank">
+            <i class="bi bi-globe me-1"></i>Student Clubs Portal
+        </a>
+    </div>
 </div>
 
 <!-- =======================================================
-     METRICS
+     METRICS CARDS
      ======================================================= -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="admin-stat-card">
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
             <div class="stat-icon-box bg-primary-subtle text-primary"><i class="bi bi-building"></i></div>
             <div>
                 <div class="stat-num">@Model.TotalCount</div>
-                <div class="stat-desc">Total Organizations</div>
+                <div class="stat-desc">Total Campus Orgs</div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="admin-stat-card">
-            <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-check-circle"></i></div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-check2-circle"></i></div>
             <div>
                 <div class="stat-num">@Model.ActiveCount</div>
-                <div class="stat-desc">Active Clubs & Orgs</div>
+                <div class="stat-desc">Active Recognized Clubs</div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="admin-stat-card">
-            <div class="stat-icon-box bg-warning-subtle text-warning"><i class="bi bi-hourglass"></i></div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card border border-warning h-100 @(Model.PendingCount > 0 ? "shadow-sm bg-warning-subtle bg-opacity-25" : "")">
+            <div class="stat-icon-box bg-warning-subtle text-warning"><i class="bi bi-hourglass-split"></i></div>
             <div>
-                <div class="stat-num">@Model.PendingCount</div>
-                <div class="stat-desc">Pending Verification</div>
+                <div class="stat-num text-warning-emphasis">
+                    @Model.PendingCount
+                    @if (Model.PendingCount > 0)
+                    {
+                        <span class="badge bg-danger text-white fs-6 py-0 px-2 align-middle ms-1">Review</span>
+                    }
+                </div>
+                <div class="stat-desc fw-semibold text-warning-emphasis">Pending Verification</div>
             </div>
         </div>
     </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-info-subtle text-info"><i class="bi bi-people-fill"></i></div>
+            <div>
+                <div class="stat-num">@Model.TotalMembersCount</div>
+                <div class="stat-desc">Enrolled Club Members</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =======================================================
+     FILTERS & ADVANCED SEARCH BAR
+     ======================================================= -->
+<div class="admin-card p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2 mb-3 pb-2 border-bottom">
+        <a asp-controller="Admin" asp-action="Organizations" class="btn btn-sm @(string.IsNullOrEmpty(Model.StatusFilter) || Model.StatusFilter == "ALL" ? "btn-dark" : "btn-light border")">
+            All Organizations (@Model.TotalCount)
+        </a>
+        <a asp-controller="Admin" asp-action="Organizations" asp-route-status="ACTIVE" class="btn btn-sm @(Model.StatusFilter == "ACTIVE" ? "btn-success" : "btn-light border")">
+            <i class="bi bi-check-circle me-1"></i>Active (@Model.ActiveCount)
+        </a>
+        <a asp-controller="Admin" asp-action="Organizations" asp-route-status="PENDING" class="btn btn-sm @(Model.StatusFilter == "PENDING" ? "btn-warning text-dark fw-bold" : "btn-light border")">
+            <i class="bi bi-hourglass-split me-1"></i>Pending Review (@Model.PendingCount)
+        </a>
+        <a asp-controller="Admin" asp-action="Organizations" asp-route-type="CLUB" class="btn btn-sm @(Model.TypeFilter == "CLUB" ? "btn-primary" : "btn-light border")">
+            <i class="bi bi-mortarboard me-1"></i>Student Clubs
+        </a>
+    </div>
+
+    <form method="get" class="row g-2 align-items-center">
+        <input type="hidden" name="status" value="@Model.StatusFilter" />
+
+        <div class="col-12 col-md-3">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input type="search" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search org name, acronym, email..." />
+            </div>
+        </div>
+
+        <div class="col-6 col-md-2">
+            <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="ALL" selected="@(Model.TypeFilter == null || Model.TypeFilter == "ALL")">All Types</option>
+                <option value="CLUB" selected="@(Model.TypeFilter == "CLUB")">Student Club</option>
+                <option value="ASSOCIATION" selected="@(Model.TypeFilter == "ASSOCIATION")">Academic Association</option>
+                <option value="STUDENT_UNION" selected="@(Model.TypeFilter == "STUDENT_UNION")">Student Union</option>
+                <option value="DEPARTMENT" selected="@(Model.TypeFilter == "DEPARTMENT")">Academic Dept</option>
+                <option value="OFFICE" selected="@(Model.TypeFilter == "OFFICE")">University Office</option>
+                <option value="OTHER" selected="@(Model.TypeFilter == "OTHER")">Other Group</option>
+            </select>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <select name="departmentId" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Affiliated Departments</option>
+                @foreach (var dept in Model.Departments)
+                {
+                    <option value="@dept.id" selected="@(Model.DepartmentFilter == dept.id)">@dept.name</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-6 col-md-2">
+            <select name="sortBy" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="newest" selected="@(Model.SortBy == "newest" || string.IsNullOrEmpty(Model.SortBy))">Newest Registered</option>
+                <option value="oldest" selected="@(Model.SortBy == "oldest")">Oldest Registered</option>
+                <option value="name_asc" selected="@(Model.SortBy == "name_asc")">Name (A-Z)</option>
+                <option value="members_desc" selected="@(Model.SortBy == "members_desc")">Most Members</option>
+                <option value="events_desc" selected="@(Model.SortBy == "events_desc")">Most Events</option>
+                <option value="type" selected="@(Model.SortBy == "type")">Group by Type</option>
+            </select>
+        </div>
+
+        <div class="col-6 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Filter</button>
+            <a asp-controller="Admin" asp-action="Organizations" class="btn btn-sm btn-light border" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
 </div>
 
 <!-- =======================================================
@@ -54,15 +162,15 @@
      ======================================================= -->
 <div class="admin-card overflow-hidden">
     <div class="table-responsive">
-        <table class="table admin-table" id="organizationsTable">
+        <table class="table admin-table align-middle mb-0" id="organizationsTable">
             <thead>
                 <tr>
-                    <th>Organization Name</th>
-                    <th>Type</th>
-                    <th>Associated Department</th>
-                    <th>Contact</th>
-                    <th>Engagement</th>
-                    <th>Status</th>
+                    <th>Organization & Identity</th>
+                    <th>Classification Type</th>
+                    <th>Department Affiliation</th>
+                    <th>Leadership & Contact</th>
+                    <th>Campus Engagement</th>
+                    <th>Governance Status</th>
                     <th class="text-end">Actions</th>
                 </tr>
             </thead>
@@ -71,209 +179,258 @@
                 {
                     <tr>
                         <td colspan="7" class="text-center py-5 text-muted">
-                            <i class="bi bi-building fs-2 d-block mb-2 text-secondary opacity-50"></i>
-                            <span class="fw-semibold">No campus organizations registered yet.</span>
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#newOrgModal">
-                                    <i class="bi bi-plus-lg me-1"></i>Register First Organization
+                            <i class="bi bi-building-slash fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            <h5 class="fw-bold text-dark mb-1">No Organizations Found</h5>
+                            <p class="small text-muted mb-3">No student clubs or university bodies match your search filters.</p>
+                            <a asp-controller="Admin" asp-action="Organizations" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset All Filters
+                            </a>
+                        </td>
+                    </tr>
+                }
+                @foreach (var org in Model.Organizations)
+                {
+                    var isPending = org.Status == "PENDING";
+                    <tr class="@(isPending ? "table-warning bg-opacity-25" : "")">
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="admin-avatar bg-primary text-white fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; font-size: 13px;">
+                                    @(string.IsNullOrEmpty(org.ShortName) ? (org.Name.Length > 2 ? org.Name.Substring(0, 2).ToUpper() : "HU") : org.ShortName.ToUpper())
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">
+                                        @org.Name
+                                        @if (!string.IsNullOrEmpty(org.ShortName))
+                                        {
+                                            <span class="badge bg-light text-primary border ms-1 font-monospace" style="font-size: 10px;">@org.ShortName</span>
+                                        }
+                                    </div>
+                                    <small class="text-muted">@(org.Email ?? "No official email")</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge @(org.OrganizationType == "CLUB" ? "bg-primary-subtle text-primary" : org.OrganizationType == "ASSOCIATION" ? "bg-success-subtle text-success" : org.OrganizationType == "STUDENT_UNION" ? "bg-warning-subtle text-warning-emphasis" : "bg-secondary-subtle text-secondary") border px-2 py-1 fw-semibold">
+                                @org.OrganizationType
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">@org.DepartmentName</span>
+                        </td>
+                        <td>
+                            <div class="small fw-semibold text-dark">
+                                <i class="bi bi-person-badge me-1 text-primary"></i>@(org.LeaderName ?? "Not Appointed")
+                            </div>
+                            @if (!string.IsNullOrEmpty(org.LeaderEmail))
+                            {
+                                <small class="text-muted">@org.LeaderEmail</small>
+                            }
+                        </td>
+                        <td>
+                            <div class="small text-muted">
+                                <div><i class="bi bi-people me-1 text-primary"></i><strong>@org.MemberCount</strong> Members</div>
+                                <div><i class="bi bi-calendar-event me-1 text-success"></i><strong>@org.EventCount</strong> Events Organized</div>
+                            </div>
+                        </td>
+                        <td>
+                            @if (org.Status == "ACTIVE")
+                            {
+                                <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2 rounded-pill">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Active
+                                </span>
+                            }
+                            else if (isPending)
+                            {
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning py-1 px-2 rounded-pill">
+                                    <i class="bi bi-hourglass-split me-1"></i>Pending Review
+                                </span>
+                            }
+                            else if (org.Status == "SUSPENDED")
+                            {
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-1 px-2 rounded-pill">
+                                    <i class="bi bi-slash-circle me-1"></i>Suspended
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary-subtle text-secondary py-1 px-2 rounded-pill">
+                                    @org.Status
+                                </span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <div class="dropdown d-inline-block">
+                                <button class="btn btn-sm btn-light border dropdown-toggle py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Manage
                                 </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                    <li>
+                                        <a asp-controller="Clubs" asp-action="Details" asp-route-id="@org.Id" class="dropdown-item" target="_blank">
+                                            <i class="bi bi-eye me-2 text-primary"></i>View Public Portal
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li class="dropdown-header">Governance Status</li>
+                                    <li>
+                                        <form asp-controller="Admin" asp-action="OrganizationToggleStatus" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@org.Id" />
+                                            <input type="hidden" name="status" value="ACTIVE" />
+                                            <button type="submit" class="dropdown-item text-success"><i class="bi bi-check-circle me-2"></i>Set Active</button>
+                                        </form>
+                                    </li>
+                                    <li>
+                                        <form asp-controller="Admin" asp-action="OrganizationToggleStatus" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@org.Id" />
+                                            <input type="hidden" name="status" value="SUSPENDED" />
+                                            <button type="submit" class="dropdown-item text-warning"><i class="bi bi-pause-circle me-2"></i>Suspend Organization</button>
+                                        </form>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <form asp-controller="Admin" asp-action="OrganizationDelete" method="post" onsubmit="return confirm('Permanently delete organization @org.Name?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@org.Id" />
+                                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Delete Record</button>
+                                        </form>
+                                    </li>
+                                </ul>
                             </div>
                         </td>
                     </tr>
                 }
-                else
-                {
-                    @foreach (var org in Model.Organizations)
-                    {
-                        <tr>
-                            <td>
-                                <div class="fw-bold">@org.Name</div>
-                                @if (!string.IsNullOrEmpty(org.ShortName))
-                                {
-                                    <small class="badge bg-light text-secondary border">@org.ShortName</small>
-                                }
-                            </td>
-                            <td>
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">@org.OrganizationType</span>
-                            </td>
-                            <td>
-                                <span class="small text-muted">@org.DepartmentName</span>
-                            </td>
-                            <td>
-                                <div class="small">@(org.Email ?? "No email")</div>
-                            </td>
-                            <td>
-                                <small class="d-block text-muted"><i class="bi bi-people me-1"></i>@org.MemberCount members</small>
-                                <small class="d-block text-muted"><i class="bi bi-calendar me-1"></i>@org.EventCount events</small>
-                            </td>
-                            <td>
-                                @if (org.Status == "ACTIVE")
-                                {
-                                    <span class="badge-status badge-active">Active</span>
-                                }
-                                else if (org.Status == "SUSPENDED")
-                                {
-                                    <span class="badge-status badge-suspended">Suspended</span>
-                                }
-                                else
-                                {
-                                    <span class="badge-status badge-pending">@org.Status</span>
-                                }
-                            </td>
-                            <td class="text-end">
-                                <div class="dropdown d-inline-block">
-                                    <button class="btn btn-sm btn-light border dropdown-toggle py-1 px-2" type="button" data-bs-toggle="dropdown" aria-label="Manage organization @org.Name" aria-expanded="false">
-                                        Manage
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                        <li>
-                                            <form asp-controller="Admin" asp-action="OrganizationToggleStatus" method="post">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="id" value="@org.Id" />
-                                                <input type="hidden" name="status" value="ACTIVE" />
-                                                <button type="submit" class="dropdown-item text-success"><i class="bi bi-check-circle me-2"></i>Set Active</button>
-                                            </form>
-                                        </li>
-                                        <li>
-                                            <form asp-controller="Admin" asp-action="OrganizationToggleStatus" method="post">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="id" value="@org.Id" />
-                                                <input type="hidden" name="status" value="SUSPENDED" />
-                                                <button type="submit" class="dropdown-item text-warning"><i class="bi bi-pause-circle me-2"></i>Suspend</button>
-                                            </form>
-                                        </li>
-                                        <li>
-                                            <button type="button" class="dropdown-item text-primary" data-bs-toggle="modal" data-bs-target="#editOrgModal_@org.Id">
-                                                <i class="bi bi-pencil me-2"></i>Edit
-                                            </button>
-                                        </li>
-                                        <li><hr class="dropdown-divider" /></li>
-                                        <li>
-                                            <form asp-controller="Admin" asp-action="OrganizationDelete" method="post"
-                                                  data-confirm="Permanently delete campus organization '@org.Name'? Associated event and membership records will be safely unlinked."
-                                                  data-confirm-title="Confirm Organization Deletion"
-                                                  data-confirm-btn="Delete Organization">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="id" value="@org.Id" />
-                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Delete</button>
-                                            </form>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                }
             </tbody>
         </table>
     </div>
+
+    <!-- =======================================================
+         PAGINATION & RANGE SUMMARY
+         ======================================================= -->
+    @if (Model.TotalFilteredCount > 0)
+    {
+        <div class="p-3 bg-light border-top d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="small text-muted">
+                Showing <strong>@(((Model.CurrentPage - 1) * Model.PageSize) + 1)</strong> to <strong>@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalFilteredCount))</strong> of <strong>@Model.TotalFilteredCount</strong> organizations
+            </div>
+            
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Organizations Page navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                            <a class="page-link" asp-action="Organizations" 
+                               asp-route-page="@(Model.CurrentPage - 1)" 
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-search="@Model.SearchTerm" 
+                               asp-route-type="@Model.TypeFilter" 
+                               asp-route-status="@Model.StatusFilter"
+                               asp-route-departmentId="@Model.DepartmentFilter"
+                               asp-route-sortBy="@Model.SortBy">Previous</a>
+                        </li>
+
+                        @for (int p = 1; p <= Model.TotalPages; p++)
+                        {
+                            if (p == 1 || p == Model.TotalPages || (p >= Model.CurrentPage - 2 && p <= Model.CurrentPage + 2))
+                            {
+                                <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                    <a class="page-link" asp-action="Organizations" 
+                                       asp-route-page="@p" 
+                                       asp-route-pageSize="@Model.PageSize"
+                                       asp-route-search="@Model.SearchTerm" 
+                                       asp-route-type="@Model.TypeFilter" 
+                                       asp-route-status="@Model.StatusFilter"
+                                       asp-route-departmentId="@Model.DepartmentFilter"
+                                       asp-route-sortBy="@Model.SortBy">@p</a>
+                                </li>
+                            }
+                            else if (p == Model.CurrentPage - 3 || p == Model.CurrentPage + 3)
+                            {
+                                <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                            }
+                        }
+
+                        <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                            <a class="page-link" asp-action="Organizations" 
+                               asp-route-page="@(Model.CurrentPage + 1)" 
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-search="@Model.SearchTerm" 
+                               asp-route-type="@Model.TypeFilter" 
+                               asp-route-status="@Model.StatusFilter"
+                               asp-route-departmentId="@Model.DepartmentFilter"
+                               asp-route-sortBy="@Model.SortBy">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    }
 </div>
 
 <!-- =======================================================
-     EDIT ORGANIZATION MODALS (SEMANTIC CONTAINER OUTSIDE TABLE)
+     NEW ORGANIZATION MODAL
      ======================================================= -->
-@foreach (var org in Model.Organizations)
-{
-    <div class="modal fade text-start" id="editOrgModal_@org.Id" tabindex="-1" aria-labelledby="editOrgModalTitle_@org.Id" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold" id="editOrgModalTitle_@org.Id"><i class="bi bi-pencil me-1 text-primary"></i>Edit Campus Organization</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close dialog"></button>
-                </div>
-                <form asp-controller="Admin" asp-action="OrganizationEdit" method="post">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="id" value="@org.Id" />
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="edit_org_name_@org.Id" class="form-label small fw-semibold">Organization Name</label>
-                            <input type="text" id="edit_org_name_@org.Id" name="name" class="form-control form-control-sm" required value="@org.Name" />
-                        </div>
-                        <div class="row g-2 mb-3">
-                            <div class="col-6">
-                                <label for="edit_org_short_@org.Id" class="form-label small fw-semibold">Short Name / Acronym</label>
-                                <input type="text" id="edit_org_short_@org.Id" name="shortName" class="form-control form-control-sm" value="@org.ShortName" />
-                            </div>
-                            <div class="col-6">
-                                <label for="edit_org_type_@org.Id" class="form-label small fw-semibold">Organization Type</label>
-                                <select id="edit_org_type_@org.Id" name="organizationType" class="form-select form-select-sm">
-                                    <option value="CLUB" selected="@(org.OrganizationType == "CLUB")">Student Club</option>
-                                    <option value="SOCIETY" selected="@(org.OrganizationType == "SOCIETY")">Academic Society</option>
-                                    <option value="ASSOCIATION" selected="@(org.OrganizationType == "ASSOCIATION")">Student Association</option>
-                                    <option value="DEPARTMENT" selected="@(org.OrganizationType == "DEPARTMENT")">Department Board</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row g-2 mb-3">
-                            <div class="col-6">
-                                <label for="edit_org_email_@org.Id" class="form-label small fw-semibold">Contact Email</label>
-                                <input type="email" id="edit_org_email_@org.Id" name="email" class="form-control form-control-sm" value="@org.Email" />
-                            </div>
-                            <div class="col-6">
-                                <label for="edit_org_status_@org.Id" class="form-label small fw-semibold">Status</label>
-                                <select id="edit_org_status_@org.Id" name="status" class="form-select form-select-sm">
-                                    <option value="ACTIVE" selected="@(org.Status == "ACTIVE")">Active</option>
-                                    <option value="SUSPENDED" selected="@(org.Status == "SUSPENDED")">Suspended</option>
-                                    <option value="PENDING" selected="@(org.Status == "PENDING")">Pending Review</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-sm btn-primary px-3">Save Changes</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-}
-
-<!-- =======================================================
-     REGISTER ORGANIZATION MODAL
-     ======================================================= -->
-<div class="modal fade" id="newOrgModal" tabindex="-1" aria-labelledby="newOrgModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="newOrgModalTitle"><i class="bi bi-building me-1 text-primary"></i>Register Campus Organization</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close dialog"></button>
+<div class="modal fade" id="newOrgModal" tabindex="-1" aria-labelledby="newOrgModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="newOrgModalLabel">
+                    <i class="bi bi-building-add me-2"></i>Register Campus Club / Organization
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form asp-controller="Admin" asp-action="OrganizationCreate" method="post">
                 @Html.AntiForgeryToken()
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="new_org_name" class="form-label small fw-semibold">Organization Name</label>
-                        <input type="text" id="new_org_name" name="name" class="form-control form-control-sm" required placeholder="e.g. Hawassa Tech & Innovation Club" />
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label for="new_org_short" class="form-label small fw-semibold">Short Acronym</label>
-                            <input type="text" id="new_org_short" name="shortName" class="form-control form-control-sm" placeholder="e.g. HTIC" />
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold text-dark">Organization Name *</label>
+                            <input type="text" name="name" class="form-control form-control-sm" required placeholder="e.g. Hawassa Computing & Robotics Society" />
                         </div>
-                        <div class="col-6">
-                            <label for="new_org_type" class="form-label small fw-semibold">Organization Type</label>
-                            <select id="new_org_type" name="organizationType" class="form-select form-select-sm">
-                                <option value="CLUB">Club</option>
-                                <option value="ASSOCIATION">Association</option>
-                                <option value="STUDENT_UNION">Student Union</option>
-                                <option value="OFFICE">Office</option>
-                                <option value="OTHER">Other</option>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-dark">Short Name / Acronym</label>
+                            <input type="text" name="shortName" class="form-control form-control-sm font-monospace" placeholder="e.g. HCRS" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Organization Type *</label>
+                            <select name="organizationType" class="form-select form-select-sm" required>
+                                <option value="CLUB">Student Club</option>
+                                <option value="ASSOCIATION">Academic Association</option>
+                                <option value="STUDENT_UNION">Student Union Body</option>
+                                <option value="DEPARTMENT">Academic Department</option>
+                                <option value="OFFICE">University Administrative Office</option>
+                                <option value="OTHER">Other Campus Body</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="new_org_email" class="form-label small fw-semibold">Official Contact Email</label>
-                        <input type="email" id="new_org_email" name="email" class="form-control form-control-sm" placeholder="club@hawassa.edu.et" />
-                    </div>
-                    <div class="mb-3">
-                        <label for="new_org_phone" class="form-label small fw-semibold">Contact Phone Number</label>
-                        <input type="tel" id="new_org_phone" name="phone" class="form-control form-control-sm" placeholder="+251 9XX XXX XXX" />
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Affiliated Department</label>
+                            <select name="departmentId" class="form-select form-select-sm">
+                                <option value="">-- General Campus Body --</option>
+                                @foreach (var dept in Model.Departments)
+                                {
+                                    <option value="@dept.id">@dept.name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Official Contact Email</label>
+                            <input type="email" name="email" class="form-control form-control-sm" placeholder="org@hawassa.edu.et" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-dark">Contact Phone</label>
+                            <input type="tel" name="phone" class="form-control form-control-sm" placeholder="+251 91 234 5678" />
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label small fw-semibold text-dark">Purpose & Description</label>
+                            <textarea name="description" class="form-control form-control-sm" rows="3" placeholder="Mission, activities, and campus charter description..."></textarea>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-primary px-3">Register Organization</button>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3 fw-semibold">
+                        Register Organization
+                    </button>
                 </div>
             </form>
         </div>

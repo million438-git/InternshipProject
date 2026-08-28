@@ -2,102 +2,185 @@
 
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Categories & Tags";
+    ViewData["Title"] = "Event Categories & Taxonomy";
 }
 
-<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
+<!-- =======================================================
+     PAGE HEADER & TOP ACTION TOOLBAR
+     ======================================================= -->
+<div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
-        <h1 class="h3 fw-bold text-dark mb-1">Event Categories & Tags</h1>
-        <p class="text-muted small mb-0">Manage event classification taxonomies, color badges, and search discovery tags.</p>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+                <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Index" class="text-decoration-none">Admin Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Categories & Tags</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold text-dark mb-1">🏷️ Event Categories & Discovery Taxonomy</h1>
+        <p class="text-muted small mb-0">Manage campus event classification taxonomies, icon badges, and student discovery search tags.</p>
     </div>
-    <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#newCategoryModal">
-        <i class="bi bi-plus-lg"></i>
-        <span>New Category</span>
-    </button>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#newCategoryModal">
+            <i class="bi bi-plus-lg"></i>
+            <span>New Category</span>
+        </button>
+        <button type="button" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#newTagModal">
+            <i class="bi bi-tag-fill"></i>
+            <span>Add Tag</span>
+        </button>
+        <a asp-controller="Admin" asp-action="ExportCategoriesCsv" 
+           asp-route-search="@Model.SearchTerm"
+           class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3"
+           title="Export category taxonomy to CSV">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+            <span>Export CSV</span>
+        </a>
+    </div>
 </div>
 
+<!-- =======================================================
+     METRICS CARDS
+     ======================================================= -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-primary-subtle text-primary"><i class="bi bi-grid-fill"></i></div>
+            <div>
+                <div class="stat-num">@Model.TotalCategoriesCount</div>
+                <div class="stat-desc">Event Categories</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-check-circle"></i></div>
+            <div>
+                <div class="stat-num">@Model.ActiveCategoriesCount</div>
+                <div class="stat-desc">Active Taxonomies</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-info-subtle text-info"><i class="bi bi-tags-fill"></i></div>
+            <div>
+                <div class="stat-num">@Model.TotalTagsCount</div>
+                <div class="stat-desc">Discovery Tags</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="admin-stat-card h-100">
+            <div class="stat-icon-box bg-warning-subtle text-warning-emphasis"><i class="bi bi-calendar-check-fill"></i></div>
+            <div>
+                <div class="stat-num">@Model.TotalCategorizedEventsCount</div>
+                <div class="stat-desc">Categorized Events</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =======================================================
+     SEARCH & FILTER BAR
+     ======================================================= -->
+<div class="admin-card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-center">
+        <div class="col-12 col-md-6">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input type="search" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search categories, slugs, descriptions, or tags..." />
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="ALL" selected="@(Model.StatusFilter == null || Model.StatusFilter == "ALL")">All Statuses</option>
+                <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">🟢 Active Only</option>
+                <option value="INACTIVE" selected="@(Model.StatusFilter == "INACTIVE")">⚪ Inactive Only</option>
+            </select>
+        </div>
+
+        <div class="col-6 col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Filter</button>
+            <a asp-controller="Admin" asp-action="Categories" class="btn btn-sm btn-light border" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- =======================================================
+     DUAL PANEL: CATEGORIES & DISCOVERY TAGS
+     ======================================================= -->
 <div class="row g-4">
-    <!-- CATEGORIES -->
+    <!-- LEFT PANEL: CATEGORIES TABLE -->
     <div class="col-lg-8">
-        <div class="admin-card p-4">
-            <h2 class="h6 fw-bold text-dark mb-3"><i class="bi bi-grid me-2 text-primary"></i>Event Categories</h2>
+        <div class="admin-card p-0 overflow-hidden h-100">
+            <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+                <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-grid me-2 text-primary"></i>Event Categories (@Model.Categories.Count)</h2>
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newCategoryModal">
+                    <i class="bi bi-plus-lg me-1"></i>Add Category
+                </button>
+            </div>
             <div class="table-responsive">
-                <table class="table admin-table">
+                <table class="table admin-table align-middle mb-0" id="categoriesTable">
                     <thead>
                         <tr>
-                            <th>Category</th>
-                            <th>Slug</th>
+                            <th>Category Taxonomy</th>
+                            <th>Slug Identifier</th>
                             <th>Description</th>
-                            <th>Events</th>
+                            <th>Tagged Events</th>
+                            <th>Status</th>
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
+                        @if (!Model.Categories.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="bi bi-grid fs-2 d-block mb-1 text-secondary opacity-50"></i>
+                                    <span>No categories match your search.</span>
+                                </td>
+                            </tr>
+                        }
                         @foreach (var cat in Model.Categories)
                         {
                             <tr>
                                 <td>
-                                    <span class="badge bg-primary-subtle text-primary border">
-                                        <i class="bi @(cat.icon ?? "bi-calendar-event") me-1"></i>@cat.name
+                                    <span class="badge bg-primary-subtle text-primary border px-2 py-1 fs-6 fw-semibold">
+                                        <i class="bi @(string.IsNullOrEmpty(cat.icon) ? "bi-calendar-event" : cat.icon) me-1"></i>@cat.name
                                     </span>
                                 </td>
-                                <td><code class="text-muted">@cat.slug</code></td>
-                                <td class="small text-muted">@(cat.description ?? "General category")</td>
-                                <td><span class="badge bg-light text-dark border">@cat._events.Count Events</span></td>
+                                <td><code class="text-secondary small">@cat.slug</code></td>
+                                <td class="small text-muted" style="max-width: 220px;">@(cat.description ?? "General campus category")</td>
+                                <td>
+                                    <a asp-controller="Admin" asp-action="Events" asp-route-categoryId="@cat.id" class="badge bg-light text-dark border text-decoration-none py-1 px-2" title="View matching events">
+                                        <i class="bi bi-calendar-event me-1 text-primary"></i>@cat._events.Count Events
+                                    </a>
+                                </td>
+                                <td>
+                                    @if (cat.is_active == null || cat.is_active == true)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2 rounded-pill" style="font-size: 10px;">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border py-1 px-2 rounded-pill" style="font-size: 10px;">Inactive</span>
+                                    }
+                                </td>
                                 <td class="text-end">
-                                    <button type="button" 
-                                            class="btn btn-sm btn-light border text-primary py-1 px-2 me-1" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#editCatModal_@cat.id" 
-                                            title="Edit Category">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <form asp-controller="Admin" asp-action="CategoryDelete" asp-route-id="@cat.id" method="post" class="d-inline" onsubmit="return confirm('Delete category \'@cat.name\'? Linked events will be safely reassigned.');">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-sm btn-light border text-danger py-1 px-2" title="Delete">
-                                            <i class="bi bi-trash"></i>
+                                    <div class="d-inline-flex gap-1">
+                                        <button type="button" 
+                                                class="btn btn-sm btn-light border text-primary py-1 px-2" 
+                                                onclick="openEditCategoryModal('@cat.id', '@cat.name', '@(cat.description ?? "")', '@(cat.icon ?? "bi-calendar-event")', '@(cat.is_active ?? true)')" 
+                                                title="Edit Category">
+                                            <i class="bi bi-pencil"></i>
                                         </button>
-                                    </form>
-
-                                    <!-- EDIT CATEGORY MODAL -->
-                                    <div class="modal fade text-start" id="editCatModal_@cat.id" tabindex="-1" aria-hidden="true">
-                                        <div class="modal-dialog modal-dialog-centered">
-                                            <div class="modal-content border-0 shadow">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title fw-bold"><i class="bi bi-pencil me-1 text-primary"></i>Edit Event Category</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <form asp-controller="Admin" asp-action="CategoryEdit" method="post">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="id" value="@cat.id" />
-                                                    <div class="modal-body">
-                                                        <div class="mb-3">
-                                                            <label class="form-label small fw-semibold">Category Name</label>
-                                                            <input type="text" name="name" class="form-control form-control-sm" required value="@cat.name" />
-                                                        </div>
-                                                        <div class="mb-3">
-                                                            <label class="form-label small fw-semibold">Icon CSS Class</label>
-                                                            <input type="text" name="icon" class="form-control form-control-sm" value="@cat.icon" placeholder="bi-calendar-event" />
-                                                        </div>
-                                                        <div class="mb-3">
-                                                            <label class="form-label small fw-semibold">Description</label>
-                                                            <textarea name="description" class="form-control form-control-sm" rows="2">@cat.description</textarea>
-                                                        </div>
-                                                        <div class="mb-3">
-                                                            <label class="form-label small fw-semibold">Status</label>
-                                                            <select name="isActive" class="form-select form-select-sm">
-                                                                <option value="true" selected="@(cat.is_active == true)">Active</option>
-                                                                <option value="false" selected="@(cat.is_active != true)">Inactive</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
-                                                        <button type="submit" class="btn btn-sm btn-primary px-3">Save Changes</button>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
+                                        <form asp-controller="Admin" asp-action="CategoryDelete" asp-route-id="@cat.id" method="post" class="d-inline" onsubmit="return confirm('Delete category \'@cat.name\'? Linked events will be safely reassigned to fallback category.');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-light border text-danger py-1 px-2" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
@@ -108,27 +191,36 @@
         </div>
     </div>
 
-    <!-- TAGS -->
+    <!-- RIGHT PANEL: DISCOVERY TAGS -->
     <div class="col-lg-4">
-        <div class="admin-card p-4">
-            <h2 class="h6 fw-bold text-dark mb-3"><i class="bi bi-tags me-2 text-success"></i>Search Discovery Tags</h2>
+        <div class="admin-card p-4 h-100">
+            <h2 class="h6 fw-bold text-dark mb-3"><i class="bi bi-tags me-2 text-info"></i>Discovery Tags (@Model.Tags.Count)</h2>
+            <p class="text-muted small mb-3">Keywords used by campus organizers to highlight topics and empower instant attendee search discovery.</p>
+            
+            <!-- INLINE QUICK TAG CREATION -->
+            <form asp-controller="Admin" asp-action="TagCreate" method="post" class="mb-4">
+                @Html.AntiForgeryToken()
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light"><i class="bi bi-hash"></i></span>
+                    <input type="text" name="name" class="form-control" placeholder="New tag name (e.g. AI, Hackathon)" required />
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+
             <div class="d-flex flex-wrap gap-2">
-                @foreach (var tag in Model.Tags)
-                {
-                    <span class="badge bg-secondary-subtle text-secondary border px-3 py-2">
-                        #@tag.name
-                    </span>
-                }
                 @if (!Model.Tags.Any())
                 {
-                    <span class="badge bg-secondary-subtle text-secondary border px-3 py-2">#AI</span>
-                    <span class="badge bg-secondary-subtle text-secondary border px-3 py-2">#Cybersecurity</span>
-                    <span class="badge bg-secondary-subtle text-secondary border px-3 py-2">#Programming</span>
-                    <span class="badge bg-secondary-subtle text-secondary border px-3 py-2">#Football</span>
-                    <span class="badge bg-secondary-subtle text-secondary border px-3 py-2">#Research</span>
-                    <span class="badge bg-secondary-subtle text-secondary border px-3 py-2">#Business</span>
-                    <span class="badge bg-secondary-subtle text-secondary border px-3 py-2">#Health</span>
-                    <span class="badge bg-secondary-subtle text-secondary border px-3 py-2">#Music</span>
+                    <p class="text-muted small">No tags created yet.</p>
+                }
+                @foreach (var tag in Model.Tags)
+                {
+                    <span class="badge bg-light text-dark border px-2 py-2 d-inline-flex align-items-center gap-1 shadow-sm">
+                        <i class="bi bi-hash text-muted"></i>@tag.name
+                        <form asp-controller="Admin" asp-action="TagDelete" asp-route-id="@tag.id" method="post" class="d-inline ms-1" onsubmit="return confirm('Delete tag #@tag.name?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn-close" style="font-size: 8px;" aria-label="Delete tag"></button>
+                        </form>
+                    </span>
                 }
             </div>
         </div>
@@ -138,41 +230,126 @@
 <!-- =======================================================
      ADD CATEGORY MODAL
      ======================================================= -->
-<div class="modal fade" id="newCategoryModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="newCategoryModal" tabindex="-1" aria-labelledby="newCategoryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold"><i class="bi bi-tags me-1 text-primary"></i>Add Event Category</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="newCategoryModalLabel"><i class="bi bi-grid-fill me-2"></i>Create Event Category</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form asp-controller="Admin" asp-action="CategoryCreate" method="post">
                 @Html.AntiForgeryToken()
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Category Name</label>
-                        <input type="text" name="name" class="form-control form-control-sm" required placeholder="e.g. Science & Innovation" />
+                        <label class="form-label small fw-semibold text-dark">Category Name *</label>
+                        <input type="text" name="name" class="form-control form-control-sm" required placeholder="e.g. Technology & Innovation" />
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Description</label>
-                        <textarea name="description" rows="2" class="form-control form-control-sm" placeholder="Description of this event type..."></textarea>
+                        <label class="form-label small fw-semibold text-dark">Bootstrap Icon Class</label>
+                        <input type="text" name="icon" id="newCatIconInput" class="form-control form-control-sm font-monospace" value="bi-calendar-event" placeholder="e.g. bi-code-slash" />
+                        <div class="d-flex flex-wrap gap-1 mt-2">
+                            <span class="badge bg-light text-dark border cursor-pointer" onclick="document.getElementById('newCatIconInput').value='bi-mortarboard'"><i class="bi bi-mortarboard me-1"></i>Academic</span>
+                            <span class="badge bg-light text-dark border cursor-pointer" onclick="document.getElementById('newCatIconInput').value='bi-code-slash'"><i class="bi bi-code-slash me-1"></i>Tech</span>
+                            <span class="badge bg-light text-dark border cursor-pointer" onclick="document.getElementById('newCatIconInput').value='bi-trophy'"><i class="bi bi-trophy me-1"></i>Sports</span>
+                            <span class="badge bg-light text-dark border cursor-pointer" onclick="document.getElementById('newCatIconInput').value='bi-palette'"><i class="bi bi-palette me-1"></i>Arts</span>
+                            <span class="badge bg-light text-dark border cursor-pointer" onclick="document.getElementById('newCatIconInput').value='bi-briefcase'"><i class="bi bi-briefcase me-1"></i>Career</span>
+                        </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Icon Style</label>
-                        <select name="icon" class="form-select form-select-sm">
-                            <option value="bi-calendar-event">Calendar</option>
-                            <option value="bi-laptop">Technology / Laptop</option>
-                            <option value="bi-trophy">Sports / Trophy</option>
-                            <option value="bi-palette">Culture / Art</option>
-                            <option value="bi-briefcase">Career / Business</option>
-                            <option value="bi-book">Academic / Book</option>
-                        </select>
+                        <label class="form-label small fw-semibold text-dark">Description</label>
+                        <textarea name="description" class="form-control form-control-sm" rows="2" placeholder="Brief summary of events under this classification..."></textarea>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-primary px-3">Create Category</button>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3 fw-semibold">Save Category</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- =======================================================
+     ADD TAG MODAL
+     ======================================================= -->
+<div class="modal fade" id="newTagModal" tabindex="-1" aria-labelledby="newTagModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title fw-bold" id="newTagModalLabel"><i class="bi bi-tag-fill me-2"></i>Add Discovery Tag</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-controller="Admin" asp-action="TagCreate" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Tag Keyword *</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">#</span>
+                            <input type="text" name="name" class="form-control" required placeholder="e.g. Robotics" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info text-white btn-sm px-3 fw-semibold">Add Tag</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- =======================================================
+     EDIT CATEGORY MODAL
+     ======================================================= -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1" aria-labelledby="editCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="editCategoryModalLabel"><i class="bi bi-pencil-square me-2"></i>Edit Category</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-controller="Admin" asp-action="CategoryEdit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editCatId" />
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Category Name *</label>
+                        <input type="text" name="name" id="editCatName" class="form-control form-control-sm" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Bootstrap Icon Class</label>
+                        <input type="text" name="icon" id="editCatIcon" class="form-control form-control-sm font-monospace" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Description</label>
+                        <textarea name="description" id="editCatDescription" class="form-control form-control-sm" rows="2"></textarea>
+                    </div>
+                    <div class="form-check form-switch mt-3">
+                        <input class="form-check-input" type="checkbox" name="isActive" id="editCatActive" value="true" />
+                        <label class="form-check-label small fw-semibold text-dark" for="editCatActive">Category is Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3 fw-semibold">Update Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openEditCategoryModal(id, name, description, icon, isActive) {
+            document.getElementById('editCatId').value = id;
+            document.getElementById('editCatName').value = name;
+            document.getElementById('editCatDescription').value = description;
+            document.getElementById('editCatIcon').value = icon;
+            document.getElementById('editCatActive').checked = isActive === 'True' || isActive === true;
+
+            var modal = new bootstrap.Modal(document.getElementById('editCategoryModal'));
+            modal.show();
+        }
+    </script>
+}
