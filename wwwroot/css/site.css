@@ -85,6 +85,145 @@
     --modal-bg: #1e293b;
 }
 
+/* =========================================================
+   BOOTSTRAP DARK THEME NORMALIZATION
+   ========================================================= */
+
+[data-theme="dark"] .text-dark,
+.dark-theme .text-dark,
+[data-theme="dark"] .text-body,
+.dark-theme .text-body {
+    color: var(--text-main, #f8fafc) !important;
+}
+
+[data-theme="dark"] .text-muted,
+.dark-theme .text-muted {
+    color: var(--text-muted, #94a3b8) !important;
+}
+
+[data-theme="dark"] .text-secondary,
+.dark-theme .text-secondary {
+    color: var(--text-secondary, #cbd5e1) !important;
+}
+
+[data-theme="dark"] .bg-light,
+.dark-theme .bg-light {
+    background-color: var(--bg-elevated, #334155) !important;
+    color: var(--text-main, #f8fafc) !important;
+}
+
+[data-theme="dark"] .bg-white,
+.dark-theme .bg-white {
+    background-color: var(--bg-card, #1e293b) !important;
+    color: var(--text-main, #f8fafc) !important;
+}
+
+[data-theme="dark"] .bg-body,
+.dark-theme .bg-body {
+    background-color: var(--bg-body, #0f172a) !important;
+    color: var(--text-main, #f8fafc) !important;
+}
+
+[data-theme="dark"] .border,
+.dark-theme .border,
+[data-theme="dark"] .border-bottom,
+.dark-theme .border-bottom,
+[data-theme="dark"] .border-top,
+.dark-theme .border-top,
+[data-theme="dark"] .border-start,
+.dark-theme .border-start,
+[data-theme="dark"] .border-end,
+.dark-theme .border-end {
+    border-color: var(--border-color, #334155) !important;
+}
+
+[data-theme="dark"] .card,
+.dark-theme .card {
+    background-color: var(--bg-card, #1e293b);
+    border-color: var(--border-color, #334155);
+    color: var(--text-main, #f8fafc);
+}
+
+[data-theme="dark"] .card-header,
+.dark-theme .card-header {
+    background-color: var(--bg-card, #1e293b);
+    border-bottom-color: var(--border-color, #334155);
+    color: var(--text-main, #f8fafc);
+}
+
+[data-theme="dark"] .card-footer,
+.dark-theme .card-footer {
+    background-color: var(--bg-card, #1e293b);
+    border-top-color: var(--border-color, #334155);
+    color: var(--text-main, #f8fafc);
+}
+
+[data-theme="dark"] .table,
+.dark-theme .table {
+    color: var(--text-main, #f8fafc);
+    border-color: var(--border-color, #334155);
+}
+
+[data-theme="dark"] .table thead th,
+.dark-theme .table thead th {
+    color: var(--text-main, #f8fafc);
+    background-color: var(--bg-elevated, #334155);
+    border-bottom-color: var(--border-color, #334155);
+}
+
+[data-theme="dark"] .table td,
+.dark-theme .table td {
+    color: var(--text-main, #f8fafc);
+    border-color: var(--border-color, #334155);
+}
+
+[data-theme="dark"] .list-group-item,
+.dark-theme .list-group-item {
+    background-color: var(--bg-card, #1e293b);
+    border-color: var(--border-color, #334155);
+    color: var(--text-main, #f8fafc);
+}
+
+[data-theme="dark"] .modal-content,
+.dark-theme .modal-content {
+    background-color: var(--bg-card, #1e293b);
+    color: var(--text-main, #f8fafc);
+    border: 1px solid var(--border-color, #334155);
+}
+
+[data-theme="dark"] .modal-header,
+.dark-theme .modal-header {
+    border-bottom-color: var(--border-color, #334155);
+}
+
+[data-theme="dark"] .modal-footer,
+.dark-theme .modal-footer {
+    border-top-color: var(--border-color, #334155);
+}
+
+[data-theme="dark"] .form-control,
+.dark-theme .form-control,
+[data-theme="dark"] .form-select,
+.dark-theme .form-select {
+    background-color: var(--bg-input, #1e293b);
+    border-color: var(--border-color, #334155);
+    color: var(--text-main, #f8fafc);
+}
+
+[data-theme="dark"] .form-control:focus,
+.dark-theme .form-control:focus,
+[data-theme="dark"] .form-select:focus,
+.dark-theme .form-select:focus {
+    background-color: var(--bg-input, #1e293b);
+    border-color: var(--primary, #3b82f6);
+    color: var(--text-main, #f8fafc);
+}
+
+[data-theme="dark"] .form-label,
+.dark-theme .form-label {
+    color: var(--text-main, #f8fafc);
+}
+
 
 /* =========================================================
    GLOBAL RESET
@@ -329,26 +468,66 @@ h6 {
 }
 
 /* Ensure navbar density fits cleanly on standard 13-15 inch laptops */
-@media (min-width: 992px) and (max-width: 1320px) {
+@media (min-width: 992px) and (max-width: 1360px) {
+    .navbar .navbar-nav {
+        gap: 2px !important;
+    }
     .navbar .navbar-nav .nav-link {
-        padding-left: 0.45rem !important;
-        padding-right: 0.45rem !important;
-        font-size: 0.88rem !important;
+        padding-left: 0.4rem !important;
+        padding-right: 0.4rem !important;
+        font-size: 0.86rem !important;
     }
     .navbar .navbar-brand {
-        margin-right: 0.5rem !important;
+        margin-right: 0.4rem !important;
     }
     .user-name-display {
-        max-width: 90px !important;
+        max-width: 80px !important;
+    }
+    .user-role-pill {
+        font-size: 9px !important;
+        padding: 2px 6px !important;
     }
     .navbar-nav .btn {
-        padding-left: 0.6rem !important;
-        padding-right: 0.6rem !important;
-        font-size: 0.85rem !important;
+        padding-left: 0.55rem !important;
+        padding-right: 0.55rem !important;
+        font-size: 0.82rem !important;
+    }
+    .user-profile-btn {
+        padding-left: 0.4rem !important;
+        padding-right: 0.5rem !important;
     }
 }
 
 @media (max-width: 991.98px) {
+    .navbar-collapse {
+        margin-top: 10px;
+        padding: 16px;
+        border-radius: var(--radius-md, 14px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .navbar-nav {
+        align-items: stretch !important;
+        gap: 4px !important;
+    }
+
+    .navbar-nav .nav-link {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        padding: 10px 14px !important;
+        font-size: 0.95rem;
+    }
+
+    .navbar-nav.ms-auto {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border-color, #e2e8f0);
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 8px !important;
+    }
+
     .navbar .dropdown-menu-end,
     .user-profile-dropdown {
         position: static !important;

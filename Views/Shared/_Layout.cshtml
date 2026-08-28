@@ -110,6 +110,10 @@
 
 
 <body>
+    <!-- Skip to main content link for keyboard accessibility -->
+    <a href="#main-content" class="visually-hidden-focusable btn btn-primary position-fixed top-0 start-0 m-3 z-3 shadow">
+        Skip to main content
+    </a>
 
 @if (isAuthPage)
 {
@@ -192,7 +196,7 @@ else
                             <a class="nav-link @(currentController == "Events" && currentAction == "Index" ? "active" : "")"
                                asp-controller="Events"
                                asp-action="Index">
-                                Explore Events
+                                <span class="d-none d-xl-inline">Explore </span>Events
                             </a>
                         </li>
 
@@ -210,7 +214,7 @@ else
                             <a class="nav-link @(currentController == "Calendar" ? "active" : "")"
                                asp-controller="Calendar"
                                asp-action="Index">
-                                Event Calendar
+                                <span class="d-none d-xl-inline">Event </span>Calendar
                             </a>
                         </li>
 
@@ -241,7 +245,7 @@ else
                                     <a class="nav-link @(currentController == "Admin" ? "active" : "")"
                                        asp-controller="Admin"
                                        asp-action="Index">
-                                        Admin Console
+                                        Admin<span class="d-none d-xxl-inline"> Console</span>
                                     </a>
                                 </li>
                             }
@@ -551,7 +555,7 @@ else
          MAIN CONTENT
          ===================================================== -->
 
-    <main role="main">
+    <main id="main-content" role="main">
 
         @RenderBody()
 
@@ -763,6 +767,30 @@ else
             });
         </script>
     }
+
+    <!-- Global Interactive Confirmation Modal -->
+    <div class="modal fade" id="hucemsConfirmModal" tabindex="-1" aria-labelledby="hucemsConfirmModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 420px;">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-bottom py-3">
+                    <h6 class="modal-title fw-bold text-danger d-flex align-items-center gap-2 mb-0" id="hucemsConfirmModalTitle">
+                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                        <span>Confirm Action</span>
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close dialog"></button>
+                </div>
+                <div class="modal-body py-4 text-center">
+                    <div class="modal-body-content text-muted small" style="line-height: 1.6;">
+                        Are you sure you want to proceed?
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-sm btn-light border px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-danger px-3 shadow-sm fw-semibold" id="hucemsConfirmModalActionBtn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     @await RenderSectionAsync(
         "Scripts",

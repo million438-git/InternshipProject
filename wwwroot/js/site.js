@@ -468,11 +468,83 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    window.addEventListener('resize', function () {
-        var openMenus = document.querySelectorAll('.dropdown-menu.show');
-        openMenus.forEach(function (m) {
-            adjustDropdownPosition(m);
+    /* =====================================================
+       GLOBAL CONFIRMATION DIALOG (data-confirm)
+       ===================================================== */
+    var pendingConfirmForm = null;
+
+    document.addEventListener("submit", function (e) {
+        var form = e.target;
+        var confirmMsg = form.getAttribute("data-confirm");
+        if (confirmMsg && !form.dataset.confirmed) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var confirmTitle = form.getAttribute("data-confirm-title") || "Confirm Action";
+            var confirmBtnText = form.getAttribute("data-confirm-btn") || "Confirm";
+            var isDanger = form.getAttribute("data-confirm-danger") !== "false";
+
+            var modalEl = document.getElementById("hucemsConfirmModal");
+            if (!modalEl) {
+                if (window.confirm(confirmMsg)) {
+                    form.dataset.confirmed = "true";
+                    form.submit();
+                }
+                return;
+            }
+
+            pendingConfirmForm = form;
+
+            var modalTitleEl = modalEl.querySelector(".modal-title");
+            var modalBodyEl = modalEl.querySelector(".modal-body-content");
+            var confirmBtn = modalEl.querySelector("#hucemsConfirmModalActionBtn");
+
+            if (modalTitleEl) modalTitleEl.textContent = confirmTitle;
+            if (modalBodyEl) modalBodyEl.textContent = confirmMsg;
+            if (confirmBtn) {
+                confirmBtn.textContent = confirmBtnText;
+                confirmBtn.className = isDanger ? "btn btn-danger px-3 shadow-sm fw-semibold" : "btn btn-primary px-3 shadow-sm fw-semibold";
+            }
+
+            var modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modalInstance.show();
+        }
+    });
+
+    var confirmModalActionBtn = document.getElementById("hucemsConfirmModalActionBtn");
+    if (confirmModalActionBtn) {
+        confirmModalActionBtn.addEventListener("click", function () {
+            if (pendingConfirmForm) {
+                var form = pendingConfirmForm;
+                pendingConfirmForm = null;
+                var modalEl = document.getElementById("hucemsConfirmModal");
+                if (modalEl) {
+                    var modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+                }
+                form.dataset.confirmed = "true";
+                form.submit();
+            }
         });
+    }
+
+    /* =====================================================
+       AUTOMATIC SUBMIT BUTTON SPINNER & DEBOUNCE
+       ===================================================== */
+    document.addEventListener("submit", function (e) {
+        var form = e.target;
+        if (form.getAttribute("data-no-spinner") === "true") return;
+        if (form.getAttribute("data-confirm") && !form.dataset.confirmed) return;
+
+        var submitBtn = form.querySelector("button[type='submit']:not(.no-spin)");
+        if (submitBtn && !submitBtn.disabled) {
+            setTimeout(function () {
+                submitBtn.disabled = true;
+                var originalHtml = submitBtn.innerHTML;
+                submitBtn.setAttribute("data-original-html", originalHtml);
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Processing...';
+            }, 10);
+        }
     });
 
 });

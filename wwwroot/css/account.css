@@ -4,20 +4,32 @@
    ========================================================= */
 
 :root {
-    --account-primary: #6f42c1;
-    --account-primary-dark: #56319a;
-    --account-secondary: #0d6efd;
-    --account-success: #198754;
-    --account-danger: #dc3545;
-    --account-warning: #ffc107;
-    --account-dark: #212529;
-    --account-text: #343a40;
-    --account-muted: #6c757d;
-    --account-light: #f8f9fa;
-    --account-border: #dee2e6;
+    --account-primary: #1e40af;
+    --account-primary-dark: #0f2d59;
+    --account-secondary: #0284c7;
+    --account-success: #16a34a;
+    --account-danger: #dc2626;
+    --account-warning: #d97706;
+    --account-dark: #0f172a;
+    --account-text: #0f172a;
+    --account-muted: #64748b;
+    --account-light: #f8fafc;
+    --account-border: #e2e8f0;
     --account-white: #ffffff;
-    --account-shadow: 0 15px 40px rgba(0, 0, 0, 0.10);
+    --account-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
     --account-radius: 18px;
+}
+
+[data-theme="dark"], .dark-theme {
+    --account-primary: #3b82f6;
+    --account-primary-dark: #2563eb;
+    --account-dark: #f8fafc;
+    --account-text: #f8fafc;
+    --account-muted: #94a3b8;
+    --account-light: #1e293b;
+    --account-border: #334155;
+    --account-white: #1e293b;
+    --account-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
 }
 
 /* =========================================================
@@ -27,7 +39,7 @@
 .account-page {
     min-height: calc(100vh - 70px);
     padding: 50px 20px;
-    background: radial-gradient(circle at top left, rgba(111, 66, 193, 0.10), transparent 35%), radial-gradient(circle at bottom right, rgba(13, 110, 253, 0.08), transparent 35%), #f6f7fb;
+    background: radial-gradient(circle at top left, rgba(30, 64, 175, 0.08), transparent 35%), radial-gradient(circle at bottom right, rgba(2, 132, 199, 0.06), transparent 35%), var(--bg-body, #f8fafc);
 }
 
 .account-container {
@@ -110,8 +122,8 @@
     border: 1px solid var(--account-border);
     border-radius: 10px;
     outline: none;
-    background: #fff;
-    color: var(--account-text);
+    background: var(--account-white, #ffffff);
+    color: var(--account-text, #0f172a);
     font-size: 1rem;
     transition: all 0.2s ease;
     box-sizing: border-box;
@@ -119,7 +131,7 @@
 
     .account-input:focus {
         border-color: var(--account-primary);
-        box-shadow: 0 0 0 4px rgba(111, 66, 193, 0.10);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
     }
 
     .account-input::placeholder {

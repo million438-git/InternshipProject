@@ -86,10 +86,10 @@
 
 /* STATS BAR */
 .stats-banner {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
     border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--card-shadow, 0 4px 6px -1px rgba(0, 0, 0, 0.05));
     margin-top: -30px;
     position: relative;
     z-index: 10;
@@ -104,14 +104,14 @@
 .stat-number {
     font-size: 2rem;
     font-weight: 800;
-    color: #0f2d59;
+    color: var(--primary, #1e40af);
     line-height: 1;
     margin-bottom: 4px;
 }
 
 .stat-label {
     font-size: 0.85rem;
-    color: #64748b;
+    color: var(--text-muted, #64748b);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -124,7 +124,7 @@
 }
 
 .section-tag {
-    color: #1e40af;
+    color: var(--primary, #1e40af);
     font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -136,13 +136,13 @@
 .section-title {
     font-size: 2rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text-main, #0f172a);
     letter-spacing: -0.5px;
     margin-bottom: 8px;
 }
 
 .section-subtitle {
-    color: #64748b;
+    color: var(--text-muted, #64748b);
     font-size: 1rem;
     max-width: 600px;
     margin-bottom: 0;
@@ -150,23 +150,23 @@
 
 /* CATEGORY CARDS */
 .category-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
     border-radius: 12px;
     padding: 24px;
     text-align: center;
     text-decoration: none;
     display: block;
-    color: inherit;
+    color: var(--text-main, #0f172a);
     transition: all 0.2s ease;
     height: 100%;
 }
 
 .category-card:hover {
-    border-color: #2563eb;
+    border-color: var(--primary, #2563eb);
     transform: translateY(-3px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
-    color: inherit;
+    box-shadow: var(--card-shadow-hover, 0 10px 15px -3px rgba(0, 0, 0, 0.08));
+    color: var(--text-main, #0f172a);
 }
 
 .category-icon-box {
@@ -183,20 +183,20 @@
 .category-title {
     font-size: 1.05rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text-main, #0f172a);
     margin-bottom: 4px;
 }
 
 .category-count {
     font-size: 0.8rem;
-    color: #64748b;
+    color: var(--text-muted, #64748b);
     margin: 0;
 }
 
 /* EVENT CARD */
 .event-item-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
     border-radius: 12px;
     overflow: hidden;
     transition: all 0.2s ease;
@@ -206,15 +206,15 @@
 }
 
 .event-item-card:hover {
-    border-color: #cbd5e1;
-    box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary, #2563eb);
+    box-shadow: var(--card-shadow-hover, 0 10px 20px -3px rgba(0, 0, 0, 0.08));
     transform: translateY(-2px);
 }
 
 .event-img-container {
     height: 180px;
     width: 100%;
-    background-color: #f1f5f9;
+    background-color: var(--bg-elevated, #f1f5f9);
     position: relative;
     overflow: hidden;
 }
@@ -229,12 +229,13 @@
     position: absolute;
     top: 12px;
     left: 12px;
-    background: #ffffff;
-    color: #0f172a;
+    background: var(--bg-card, #ffffff);
+    color: var(--text-main, #0f172a);
+    border: 1px solid var(--border-color, #e2e8f0);
     border-radius: 8px;
     padding: 6px 10px;
     text-align: center;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--card-shadow, 0 2px 6px rgba(0, 0, 0, 0.15));
     line-height: 1;
 }
 
@@ -242,7 +243,7 @@
     font-size: 1.1rem;
     font-weight: 800;
     display: block;
-    color: #1e40af;
+    color: var(--primary, #1e40af);
 }
 
 .event-date-badge .month {
@@ -250,7 +251,7 @@
     font-weight: 700;
     text-transform: uppercase;
     display: block;
-    color: #64748b;
+    color: var(--text-muted, #64748b);
     margin-top: 2px;
 }
 
@@ -264,21 +265,21 @@
 .event-title {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text-main, #0f172a);
     margin-bottom: 8px;
     line-height: 1.4;
 }
 
 .event-meta {
     font-size: 0.85rem;
-    color: #64748b;
+    color: var(--text-muted, #64748b);
     margin-bottom: 14px;
 }
 
 .event-footer {
     margin-top: auto;
     padding-top: 12px;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--border-color, #f1f5f9);
     display: flex;
     align-items: center;
     justify-content: space-between;

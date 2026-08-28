@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="HawassaUnifiedCampusEventManagementSystem.csproj" />
+  <Project Path="HawassaUnifiedCampusEventManagementSystem.Tests/HawassaUnifiedCampusEventManagementSystem.Tests.csproj" />
 </Solution>

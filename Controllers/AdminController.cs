@@ -22,12 +22,18 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         private readonly ApplicationDbContext _db;
         private readonly ILogger<AdminController> _logger;
         private readonly IEmailSender _emailSender;
+        private readonly IAuditLogService _auditLogService;
 
-        public AdminController(ApplicationDbContext db, ILogger<AdminController> logger, IEmailSender emailSender)
+        public AdminController(
+            ApplicationDbContext db, 
+            ILogger<AdminController> logger, 
+            IEmailSender emailSender,
+            IAuditLogService auditLogService)
         {
             _db = db;
             _logger = logger;
             _emailSender = emailSender;
+            _auditLogService = auditLogService;
         }
 
         private ulong? GetCurrentUserId()
@@ -49,26 +55,14 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
         private async Task LogAuditAsync(string action, string? entityType = null, ulong? entityId = null, string? description = null)
         {
-            try
-            {
-                var audit = new audit_log
-                {
-                    user_id = GetCurrentUserId(),
-                    action = action,
-                    entity_type = entityType,
-                    entity_id = entityId,
-                    description = description,
-                    ip_address = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
-                    user_agent = Request.Headers["User-Agent"].ToString(),
-                    created_at = DateTime.UtcNow
-                };
-                _db.audit_logs.Add(audit);
-                await _db.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to write audit log for action: {Action}", action);
-            }
+            await _auditLogService.LogAsync(
+                GetCurrentUserId(),
+                action,
+                entityType,
+                entityId,
+                description,
+                HttpContext.Connection.RemoteIpAddress?.ToString(),
+                Request.Headers["User-Agent"].ToString());
         }
 
         // =========================================================

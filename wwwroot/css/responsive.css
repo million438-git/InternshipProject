@@ -54,9 +54,20 @@ img, svg, video, canvas, audio, iframe, embed, object {
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color, #cbd5e1) transparent;
     margin-bottom: 1.25rem;
     border-radius: var(--radius-md, 12px);
     border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background-color: var(--border-color, #cbd5e1);
+    border-radius: 4px;
 }
 
 .table-responsive table {

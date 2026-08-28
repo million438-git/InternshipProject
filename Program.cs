@@ -11,9 +11,11 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 // ======================================================
-// 1. SERVICES & EMAIL SENDER
+// 1. SERVICES & APPLICATION HELPERS
 // ======================================================
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IEmailSender, CampusEmailSender>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
 // ======================================================
 // 2. DATABASE & CONNECTION RESILIENCY

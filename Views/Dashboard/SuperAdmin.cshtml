@@ -69,7 +69,11 @@
                     </div>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <form asp-controller="Admin" asp-action="ApproveAllPending" method="post" class="d-inline" onsubmit="return confirm('Approve and activate ALL @Model.PendingUserApprovalsCount pending accounts at once?');">
+                    <form asp-controller="Admin" asp-action="ApproveAllPending" method="post" class="d-inline" 
+                          data-confirm="Approve and activate ALL @Model.PendingUserApprovalsCount pending accounts at once? This will grant immediate system access to all waiting campus users."
+                          data-confirm-title="Confirm Mass User Activation"
+                          data-confirm-btn="Approve All Now"
+                          data-confirm-danger="false">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
                         <button type="submit" class="btn btn-success fw-semibold shadow-sm d-inline-flex align-items-center gap-1">
