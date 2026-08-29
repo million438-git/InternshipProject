@@ -23,17 +23,20 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         private readonly ILogger<AdminController> _logger;
         private readonly IEmailSender _emailSender;
         private readonly IAuditLogService _auditLogService;
+        private readonly IPasswordService _passwords;
 
         public AdminController(
             ApplicationDbContext db, 
             ILogger<AdminController> logger, 
             IEmailSender emailSender,
-            IAuditLogService auditLogService)
+            IAuditLogService auditLogService,
+            IPasswordService passwords)
         {
             _db = db;
             _logger = logger;
             _emailSender = emailSender;
             _auditLogService = auditLogService;
+            _passwords = passwords;
         }
 
         private ulong? GetCurrentUserId()
@@ -50,7 +53,21 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
         private bool IsSuperAdmin()
         {
-            return User.IsInRole("SuperAdmin") || User.IsInRole("SUPERADMIN");
+            return RoleClaims.IsSuperAdmin(User);
+        }
+
+        private IActionResult? DenyUnlessSuperAdminPage()
+        {
+            if (IsSuperAdmin()) return null;
+            TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin accounts can access the database records vault.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        private IActionResult? DenyUnlessSuperAdminJson()
+        {
+            if (IsSuperAdmin()) return null;
+            Response.StatusCode = 403;
+            return Json(new DatabaseCrudResult { Success = false, Message = "Only SuperAdmin accounts can inspect or mutate database records." });
         }
 
         private async Task LogAuditAsync(string action, string? entityType = null, ulong? entityId = null, string? description = null)
@@ -553,7 +570,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
                 // Generate temporary password if not provided
                 var tempPassword = string.IsNullOrWhiteSpace(newPassword) ? $"Hawassa@{RandomNumberGenerator.GetInt32(100000, 999999)}" : newPassword.Trim();
-                user.password_hash = AccountController.HashPassword(tempPassword);
+                user.password_hash = _passwords.HashPassword(tempPassword);
                 user.updated_at = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
 
@@ -910,7 +927,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     username = username,
                     email = email,
                     phone = phone?.Trim(),
-                    password_hash = AccountController.HashPassword(password),
+                    password_hash = _passwords.HashPassword(password),
                     first_name = finalFirst,
                     middle_name = finalMiddle,
                     last_name = finalLast,
@@ -5455,7 +5472,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             if (currentUserId.HasValue)
             {
                 var user = await _db.users.FindAsync(currentUserId.Value);
-                if (user == null || !AccountController.VerifyPassword(user, superAdminPassword, user.password_hash))
+                if (user == null || !_passwords.VerifyPassword(user, superAdminPassword, user.password_hash))
                 {
                     TempData["ErrorMessage"] = "Authentication Failed: Incorrect SuperAdmin security clearance password.";
                     return RedirectToAction(nameof(DatabaseManagement));
@@ -5493,6 +5510,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> DatabaseRecords(string table = "events", int page = 1, int pageSize = 25, string? search = null)
         {
+            if (DenyUnlessSuperAdminPage() is { } denied) return denied;
             var vm = await BuildDatabaseRecordsViewModelAsync(table, page, pageSize, search);
             return View(vm);
         }
@@ -5500,6 +5518,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> GetTableRecords(string table = "events", int page = 1, int pageSize = 25, string? search = null)
         {
+            if (DenyUnlessSuperAdminJson() is { } denied) return denied;
             var vm = await BuildDatabaseRecordsViewModelAsync(table, page, pageSize, search);
             return Json(new
             {
@@ -5519,6 +5538,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> GetRecord(string table, ulong id)
         {
+            if (DenyUnlessSuperAdminJson() is { } denied) return denied;
             try
             {
                 var normTable = (table ?? "events").ToLowerInvariant().Trim();
@@ -5537,8 +5557,10 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateRecord([FromBody] DatabaseRecordMutationModel model)
         {
+            if (DenyUnlessSuperAdminJson() is { } denied) return denied;
             if (model == null || string.IsNullOrWhiteSpace(model.Table) || model.Fields == null)
             {
                 return Json(new DatabaseCrudResult { Success = false, Message = "Invalid mutation payload supplied." });
@@ -5562,8 +5584,10 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateRecord([FromBody] DatabaseRecordMutationModel model)
         {
+            if (DenyUnlessSuperAdminJson() is { } denied) return denied;
             if (model == null || string.IsNullOrWhiteSpace(model.Table) || !model.Id.HasValue || model.Fields == null)
             {
                 return Json(new DatabaseCrudResult { Success = false, Message = "Invalid update payload supplied (ID is required)." });
@@ -5587,8 +5611,10 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteRecord([FromBody] DatabaseRecordDeleteModel model)
         {
+            if (DenyUnlessSuperAdminJson() is { } denied) return denied;
             if (model == null || string.IsNullOrWhiteSpace(model.Table) || model.Id == 0)
             {
                 return Json(new DatabaseCrudResult { Success = false, Message = "Invalid delete payload supplied (Valid ID is required)." });
@@ -5612,8 +5638,10 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> BatchApplyRecords([FromBody] DatabaseBatchMutationModel model)
         {
+            if (DenyUnlessSuperAdminJson() is { } denied) return denied;
             if (model == null || string.IsNullOrWhiteSpace(model.Table))
             {
                 return Json(new DatabaseCrudResult { Success = false, Message = "Invalid batch payload supplied." });
@@ -5812,7 +5840,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     new() { Name = "last_name", DisplayName = "Last Name", DataType = "string", IsRequired = true },
                     new() { Name = "phone", DisplayName = "Phone", DataType = "string" },
                     new() { Name = "account_type", DisplayName = "Role Type", DataType = "enum", EnumOptions = new() { "STUDENT", "FACULTY", "STAFF", "ORGANIZER", "ADMIN", "SUPERADMIN" }, DefaultValue = "STUDENT" },
-                    new() { Name = "account_status", DisplayName = "Status", DataType = "enum", EnumOptions = new() { "ACTIVE", "PENDING_VERIFICATION", "SUSPENDED", "DEACTIVATED" }, DefaultValue = "ACTIVE" },
+                    new() { Name = "account_status", DisplayName = "Status", DataType = "enum", EnumOptions = new() { "ACTIVE", "PENDING", "PENDING_VERIFICATION", "SUSPENDED", "DEACTIVATED" }, DefaultValue = "PENDING" },
                     new() { Name = "student_id", DisplayName = "Student ID", DataType = "string" },
                     new() { Name = "employee_id", DisplayName = "Employee ID", DataType = "string" },
                     new() { Name = "created_at", DisplayName = "Created At", DataType = "datetime", IsReadOnly = true }
@@ -6357,6 +6385,20 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         var email = fields.GetValueOrDefault("email") ?? $"{username}@hawassa.edu.et";
                         var first = fields.GetValueOrDefault("first_name") ?? "Campus";
                         var last = fields.GetValueOrDefault("last_name") ?? "User";
+                        var providedPassword = fields.GetValueOrDefault("password");
+                        string passwordHash;
+                        var status = fields.GetValueOrDefault("account_status") ?? "PENDING";
+
+                        if (!string.IsNullOrWhiteSpace(providedPassword) && providedPassword.Length >= 8)
+                        {
+                            passwordHash = _passwords.HashPassword(providedPassword);
+                        }
+                        else
+                        {
+                            var unusableSecret = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+                            passwordHash = _passwords.HashPassword(unusableSecret);
+                            status = "PENDING";
+                        }
 
                         var entity = new User
                         {
@@ -6366,16 +6408,16 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                             last_name = last,
                             phone = fields.GetValueOrDefault("phone"),
                             account_type = fields.GetValueOrDefault("account_type") ?? "STUDENT",
-                            account_status = fields.GetValueOrDefault("account_status") ?? "ACTIVE",
+                            account_status = status,
                             student_id = fields.GetValueOrDefault("student_id"),
                             employee_id = fields.GetValueOrDefault("employee_id"),
-                            password_hash = AccountController.HashPassword("User@2026"),
+                            password_hash = passwordHash,
                             created_at = DateTime.UtcNow,
                             updated_at = DateTime.UtcNow
                         };
                         _db.users.Add(entity);
                         if (saveChanges) await _db.SaveChangesAsync();
-                        return new DatabaseCrudResult { Success = true, RecordId = entity.id, Message = $"User '{username}' created successfully (ID: #{entity.id})." };
+                        return new DatabaseCrudResult { Success = true, RecordId = entity.id, Message = $"User '{username}' created successfully (ID: #{entity.id}). Account is {status}; a password reset is required unless an explicit password was supplied." };
                     }
 
                 case "venues":

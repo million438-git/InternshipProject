@@ -5,6 +5,8 @@
     Layout = "_AdminLayout";
 }
 
+@Html.AntiForgeryToken()
+
 @section Styles {
     <style>
         .crud-grid-container {
@@ -829,11 +831,13 @@
             };
 
             var endpoint = isEdit ? '/Admin/UpdateRecord' : '/Admin/CreateRecord';
+            var antiForgery = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
 
             fetch(endpoint, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': antiForgery
                 },
                 body: JSON.stringify(payload)
             })
@@ -879,7 +883,8 @@
             fetch('/Admin/DeleteRecord', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
                 },
                 body: JSON.stringify({ table: currentActiveTable, id: parseInt(targetDeleteId) })
             })

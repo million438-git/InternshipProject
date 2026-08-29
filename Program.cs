@@ -16,13 +16,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IEmailSender, CampusEmailSender>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddSingleton<IPasswordService, PasswordService>();
 
 // ======================================================
 // 2. DATABASE & CONNECTION RESILIENCY
 // ======================================================
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING")
-    ?? "Server=localhost;Port=3306;Database=university_event_management;User=root;Password=@root;";
+    ?? Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING");
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "Database connection is not configured. Set ConnectionStrings:DefaultConnection " +
+        "(Development: appsettings.Development.json or user secrets) or DATABASE_CONNECTION_STRING.");
+}
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
@@ -33,9 +40,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // 3. AUTHENTICATION & AUTHORIZATION (DUAL COOKIE + JWT)
 // ======================================================
 var jwtConfig = builder.Configuration.GetSection("Jwt");
-var jwtSecret = jwtConfig["SecretKey"] 
-    ?? Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
-    ?? "HawassaUnifiedCampusEventManagementSystem_SecretKey_2026_Secure_JWT_Token_Key!";
+var jwtSecret = jwtConfig["SecretKey"]
+    ?? Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
+
+if (string.IsNullOrWhiteSpace(jwtSecret) || jwtSecret.Length < 32)
+{
+    throw new InvalidOperationException(
+        "JWT signing key is not configured. Set Jwt:SecretKey (Development) or JWT_SECRET_KEY. " +
+        "The key must be at least 32 characters.");
+}
 var jwtIssuer = jwtConfig["Issuer"] ?? "HawassaUnifiedCampusEventManagementSystem";
 var jwtAudience = jwtConfig["Audience"] ?? "HawassaUnifiedCampusEventManagementSystem_Clients";
 

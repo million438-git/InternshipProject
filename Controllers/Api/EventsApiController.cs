@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using HawassaUnifiedCampusEventManagementSystem.Data;
 using HawassaUnifiedCampusEventManagementSystem.Models;
+using HawassaUnifiedCampusEventManagementSystem.Services;
 
 namespace HawassaUnifiedCampusEventManagementSystem.Controllers.Api
 {
@@ -38,8 +39,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers.Api
 
         private bool IsAdminOrSuperAdmin()
         {
-            return User.IsInRole("Admin") || User.IsInRole("SuperAdmin") ||
-                   User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN");
+            return RoleClaims.IsAdmin(User);
         }
 
         // =====================================================================
@@ -395,9 +395,16 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers.Api
                 .Include(r => r._event)
                 .FirstOrDefaultAsync(r => r.qr_token == token || r.registration_code == token);
 
-            if (reg == null)
+            if (reg == null || reg._event == null)
             {
                 return NotFound(new { success = false, isValid = false, message = "Invalid ticket code or QR token." });
+            }
+
+            var currentUserId = GetCurrentUserId();
+            var isOrganizer = currentUserId.HasValue && reg._event.organizer_id == currentUserId.Value;
+            if (!IsAdminOrSuperAdmin() && !isOrganizer)
+            {
+                return StatusCode(403, new { success = false, isValid = false, message = "You are not authorized to check in tickets for this event." });
             }
 
             if (reg.status == "CANCELLED")

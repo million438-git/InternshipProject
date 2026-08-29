@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
@@ -25,18 +24,20 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         private readonly ILogger<AccountController> _logger;
         private readonly IEmailSender _emailSender;
         private readonly IWebHostEnvironment _env;
-        private static readonly PasswordHasher<User> _passwordHasher = new();
+        private readonly IPasswordService _passwords;
 
         public AccountController(
             ApplicationDbContext db, 
             ILogger<AccountController> logger,
             IEmailSender emailSender,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            IPasswordService passwords)
         {
             _db = db;
             _logger = logger;
             _emailSender = emailSender;
             _env = env;
+            _passwords = passwords;
         }
 
         private static string GenerateSecureToken()
@@ -52,62 +53,6 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             using var sha256 = SHA256.Create();
             var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(token.Trim()));
             return Convert.ToHexString(hashBytes).ToLowerInvariant();
-        }
-
-        // =====================================================
-        // SECURE PASSWORD HASHING & VERIFICATION
-        // =====================================================
-
-        public static string HashPassword(string password)
-        {
-            var dummyUser = new User();
-            return _passwordHasher.HashPassword(dummyUser, password);
-        }
-
-        public static bool VerifyPassword(User dbUser, string inputPassword, string storedHash)
-        {
-            if (string.IsNullOrWhiteSpace(storedHash) || string.IsNullOrWhiteSpace(inputPassword))
-                return false;
-
-            // 1. Try modern ASP.NET Core Identity PBKDF2 verification
-            try
-            {
-                var result = _passwordHasher.VerifyHashedPassword(dbUser, storedHash, inputPassword);
-                if (result == PasswordVerificationResult.Success || result == PasswordVerificationResult.SuccessRehashNeeded)
-                {
-                    return true;
-                }
-            }
-            catch
-            {
-                // Fall back to legacy hashing checks below
-            }
-
-            // 2. Legacy SHA-256 with static salt verification (for seed/migration support)
-            using var sha256 = SHA256.Create();
-            var saltedBytes = Encoding.UTF8.GetBytes(inputPassword + "HUCEMS_SALT_2026");
-            var computedSaltedHash = Convert.ToHexString(sha256.ComputeHash(saltedBytes)).ToLower();
-            if (string.Equals(computedSaltedHash, storedHash, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            // 3. Plain SHA-256 verification (for raw SQL seed compatibility)
-            var rawBytes = Encoding.UTF8.GetBytes(inputPassword);
-            var computedRawHash = Convert.ToHexString(sha256.ComputeHash(rawBytes)).ToLower();
-            if (string.Equals(computedRawHash, storedHash, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            // 4. Fallback for test password against seed hash
-            if (storedHash == "b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1" &&
-                (inputPassword == "SuperAdmin@2026!" || inputPassword == "Admin@2026!" || inputPassword == "Admin@2026" || inputPassword == "123456"))
-            {
-                return true;
-            }
-
-            return false;
         }
 
         // =====================================================
@@ -162,7 +107,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 return View();
             }
 
-            if (dbUser == null || !VerifyPassword(dbUser, password, dbUser.password_hash))
+            if (dbUser == null || !_passwords.VerifyPassword(dbUser, password, dbUser.password_hash))
             {
                 ViewBag.Error = "Invalid email/username or password. Please verify your credentials.";
                 return View();
@@ -190,9 +135,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             try
             {
                 dbUser.last_login_at = DateTime.UtcNow;
-                if (!dbUser.password_hash.StartsWith("AQAAAA"))
+                if (_passwords.IsLegacyHash(dbUser.password_hash))
                 {
-                    dbUser.password_hash = HashPassword(password);
+                    dbUser.password_hash = _passwords.HashPassword(password);
                 }
                 await _db.SaveChangesAsync();
             }
@@ -452,13 +397,13 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var user = await _db.users.FindAsync(uid);
             if (user == null) return NotFound();
 
-            if (!VerifyPassword(user, currentPassword, user.password_hash))
+            if (!_passwords.VerifyPassword(user, currentPassword, user.password_hash))
             {
                 TempData["ErrorMessage"] = "Current password is incorrect.";
                 return RedirectToAction(nameof(Profile));
             }
 
-            user.password_hash = HashPassword(newPassword);
+            user.password_hash = _passwords.HashPassword(newPassword);
             user.updated_at = DateTime.UtcNow;
             await _db.SaveChangesAsync();
 
@@ -687,7 +632,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             tokenRecord.used_at = DateTime.UtcNow;
 
             // Hash new password with PBKDF2
-            user.password_hash = HashPassword(password);
+            user.password_hash = _passwords.HashPassword(password);
             user.updated_at = DateTime.UtcNow;
 
             try

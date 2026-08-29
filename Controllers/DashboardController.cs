@@ -49,6 +49,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> Student()
         {
+            if (await RestrictDashboardAsync("Student") is { } denied) return denied;
             var (userId, userName, userEmail, userRole, userDept, formattedId, studentId, empId, bio) = await GetUserInfoAsync();
 
             int realRegisteredCount = 0;
@@ -292,6 +293,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> Staff()
         {
+            if (await RestrictDashboardAsync("Staff") is { } denied) return denied;
             var (userId, userName, userEmail, userRole, userDept, formattedId, studentId, empId, bio) = await GetUserInfoAsync();
 
             int deptEvents = 0;
@@ -382,6 +384,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> Faculty()
         {
+            if (await RestrictDashboardAsync("Faculty") is { } denied) return denied;
             var (userId, userName, userEmail, userRole, userDept, formattedId, studentId, empId, bio) = await GetUserInfoAsync();
 
             int confCount = 0;
@@ -475,6 +478,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> Organization()
         {
+            if (await RestrictDashboardAsync("Organization") is { } denied) return denied;
             var (userId, userName, userEmail, userRole, userDept, formattedId, studentId, empId, bio) = await GetUserInfoAsync();
 
             int hostedCount = 0;
@@ -788,6 +792,23 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =====================================================================
         // HELPER METHODS
         // =====================================================================
+
+        private async Task<IActionResult?> RestrictDashboardAsync(params string[] allowedRoles)
+        {
+            var userRole = await GetCurrentNormalizedRoleAsync();
+            if (string.Equals(userRole, "SuperAdmin", StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            if (allowedRoles.Any(r => string.Equals(r, userRole, StringComparison.Ordinal)))
+            {
+                return null;
+            }
+
+            TempData["ErrorMessage"] = "Access Restricted: You are not authorized to view this dashboard.";
+            return RedirectToAction(nameof(Index));
+        }
 
         private async Task<string> GetCurrentNormalizedRoleAsync()
         {

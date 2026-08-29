@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -17,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using HawassaUnifiedCampusEventManagementSystem.Data;
 using HawassaUnifiedCampusEventManagementSystem.Models;
+using HawassaUnifiedCampusEventManagementSystem.Services;
 
 namespace HawassaUnifiedCampusEventManagementSystem.Controllers.Api
 {
@@ -28,13 +28,18 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers.Api
         private readonly ApplicationDbContext _db;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthApiController> _logger;
-        private static readonly PasswordHasher<User> _passwordHasher = new();
+        private readonly IPasswordService _passwords;
 
-        public AuthApiController(ApplicationDbContext db, IConfiguration configuration, ILogger<AuthApiController> logger)
+        public AuthApiController(
+            ApplicationDbContext db,
+            IConfiguration configuration,
+            ILogger<AuthApiController> logger,
+            IPasswordService passwords)
         {
             _db = db;
             _configuration = configuration;
             _logger = logger;
+            _passwords = passwords;
         }
 
         // =====================================================================
@@ -62,7 +67,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers.Api
                 return BadRequest(new { success = false, message = "Email/Username and Password are required." });
             }
 
-            var identifier = request.Email.Trim().ToLower();
+            var identifier = request.Email.Trim();
 
             try
             {
@@ -70,31 +75,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers.Api
                     .Include(u => u.user_roleusers)
                         .ThenInclude(ur => ur.role)
                     .Include(u => u.department)
-                    .FirstOrDefaultAsync(u => u.email == identifier || u.username == identifier);
+                    .FirstOrDefaultAsync(u => u.email.ToLower() == identifier.ToLower() || u.username.ToLower() == identifier.ToLower());
 
-                if (dbUser == null)
-                {
-                    return Unauthorized(new { success = false, message = "Invalid email/username or password." });
-                }
-
-                // Verify password against secure hash
-                var isPasswordValid = false;
-                try
-                {
-                    var result = _passwordHasher.VerifyHashedPassword(dbUser, dbUser.password_hash, request.Password);
-                    isPasswordValid = result == PasswordVerificationResult.Success || result == PasswordVerificationResult.SuccessRehashNeeded;
-                }
-                catch
-                {
-                    // Fallback to legacy check
-                    if (dbUser.password_hash == "b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1" &&
-                        (request.Password == "Admin@2026" || request.Password == "123456"))
-                    {
-                        isPasswordValid = true;
-                    }
-                }
-
-                if (!isPasswordValid)
+                if (dbUser == null || !_passwords.VerifyPassword(dbUser, request.Password, dbUser.password_hash))
                 {
                     return Unauthorized(new { success = false, message = "Invalid email/username or password." });
                 }
@@ -112,6 +95,20 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers.Api
                 if (dbUser.account_status != "ACTIVE")
                 {
                     return StatusCode(403, new { success = false, message = "Account is not active." });
+                }
+
+                dbUser.last_login_at = DateTime.UtcNow;
+                if (_passwords.IsLegacyHash(dbUser.password_hash))
+                {
+                    dbUser.password_hash = _passwords.HashPassword(request.Password);
+                }
+                try
+                {
+                    await _db.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "API Auth: Could not update last login or rehash password.");
                 }
 
                 // Resolve user role
@@ -167,7 +164,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers.Api
         private string GenerateJwtToken(User user, string role, out DateTime expiresAt)
         {
             var jwtConfig = _configuration.GetSection("Jwt");
-            var secretKey = jwtConfig["SecretKey"] ?? "HawassaUnifiedCampusEventManagementSystem_SecretKey_2026_Secure_JWT_Token_Key!";
+            var secretKey = jwtConfig["SecretKey"] ?? Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
+            if (string.IsNullOrWhiteSpace(secretKey) || secretKey.Length < 32)
+            {
+                throw new InvalidOperationException("Jwt:SecretKey or JWT_SECRET_KEY must be configured and at least 32 characters.");
+            }
             var issuer = jwtConfig["Issuer"] ?? "HawassaUnifiedCampusEventManagementSystem";
             var audience = jwtConfig["Audience"] ?? "HawassaUnifiedCampusEventManagementSystem_Clients";
             var expiryMinutes = int.TryParse(jwtConfig["ExpiryMinutes"], out int exp) ? exp : 1440;

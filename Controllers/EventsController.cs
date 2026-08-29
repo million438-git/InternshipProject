@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using HawassaUnifiedCampusEventManagementSystem.Data;
 using HawassaUnifiedCampusEventManagementSystem.Models;
+using HawassaUnifiedCampusEventManagementSystem.Services;
 
 namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 {
@@ -122,8 +123,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
         private bool IsAdminOrSuperAdmin()
         {
-            return User.IsInRole("Admin") || User.IsInRole("SuperAdmin") ||
-                   User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN");
+            return RoleClaims.IsAdmin(User);
         }
 
         // Map EF entity to view model
@@ -300,8 +300,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var organizerId = GetCurrentUserId();
             if (!organizerId.HasValue)
             {
-                var firstUser = await _db.users.FirstOrDefaultAsync();
-                organizerId = firstUser?.id ?? 1;
+                return Unauthorized();
             }
 
             var isAdmin = IsAdminOrSuperAdmin();
