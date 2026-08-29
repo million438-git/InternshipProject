@@ -1,10 +1,12 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using HawassaUnifiedCampusEventManagementSystem.Data;
 using HawassaUnifiedCampusEventManagementSystem.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -63,6 +65,9 @@ builder.Services.AddAuthentication(options =>
         options.Cookie.Name = "HUCEMS.AuthSession";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
         options.LoginPath = "/Account/Login";
         options.LogoutPath = "/Account/Logout";
         options.AccessDeniedPath = "/Account/Login";
@@ -114,19 +119,65 @@ builder.Services.AddAntiforgery(options =>
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
 });
 
 // ======================================================
-// 6. MVC & API CONTROLLERS
+// 6. LOGIN RATE LIMIT (MVC POST + API login/token)
+// ======================================================
+builder.Services.AddRateLimiter(options =>
+{
+    var permitLimit = builder.Environment.IsDevelopment() ? 30 : 8;
+    var window = TimeSpan.FromMinutes(5);
+
+    options.AddPolicy("login", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = permitLimit,
+                Window = window,
+                QueueLimit = 0
+            }));
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        var http = context.HttpContext;
+        http.Response.Headers.RetryAfter = ((int)window.TotalSeconds).ToString();
+
+        if (http.Request.Path.StartsWithSegments("/api"))
+        {
+            http.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            await http.Response.WriteAsJsonAsync(new
+            {
+                success = false,
+                message = "Too many login attempts. Please wait a few minutes and try again."
+            }, cancellationToken);
+            return;
+        }
+
+        var returnUrl = http.Request.HasFormContentType
+            ? http.Request.Form["returnUrl"].ToString()
+            : http.Request.Query["returnUrl"].ToString();
+
+        var redirect = "/Account/Login?tooManyAttempts=1";
+        if (!string.IsNullOrWhiteSpace(returnUrl))
+        {
+            redirect += "&returnUrl=" + Uri.EscapeDataString(returnUrl);
+        }
+
+        http.Response.Redirect(redirect);
+    };
+});
+
+// ======================================================
+// 7. MVC & API CONTROLLERS
 // ======================================================
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
 // ======================================================
-// 7. HTTP REQUEST PIPELINE & SECURITY HEADERS
+// 8. HTTP REQUEST PIPELINE & SECURITY HEADERS
 // ======================================================
 app.UseForwardedHeaders();
 
@@ -152,18 +203,19 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseRouting();
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
 // ======================================================
-// 8. ROUTING CONFIGURATION
+// 9. ROUTING CONFIGURATION
 // ======================================================
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 // ======================================================
-// 9. AUTOMATIC DATABASE SEEDING
+// 10. AUTOMATIC DATABASE SEEDING
 // ======================================================
 await DbInitializer.InitializeAsync(app.Services);
 

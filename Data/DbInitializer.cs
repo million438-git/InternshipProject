@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using HawassaUnifiedCampusEventManagementSystem.Models;
-using Microsoft.AspNetCore.Identity;
+using HawassaUnifiedCampusEventManagementSystem.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -11,13 +11,12 @@ namespace HawassaUnifiedCampusEventManagementSystem.Data
 {
     public static class DbInitializer
     {
-        private static readonly PasswordHasher<User> _hasher = new();
-
         public static async Task InitializeAsync(IServiceProvider serviceProvider)
         {
             using var scope = serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<ApplicationDbContext>>();
+            var passwords = scope.ServiceProvider.GetRequiredService<IPasswordService>();
 
             try
             {
@@ -71,7 +70,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Data
                         created_at = DateTime.UtcNow,
                         updated_at = DateTime.UtcNow
                     };
-                    superAdminUser.password_hash = _hasher.HashPassword(superAdminUser, "SuperAdmin@2026!");
+                    superAdminUser.password_hash = passwords.HashPassword("SuperAdmin@2026!");
                     db.users.Add(superAdminUser);
                     await db.SaveChangesAsync();
 
@@ -104,7 +103,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Data
                         created_at = DateTime.UtcNow,
                         updated_at = DateTime.UtcNow
                     };
-                    adminUser.password_hash = _hasher.HashPassword(adminUser, "Admin@2026!");
+                    adminUser.password_hash = passwords.HashPassword("Admin@2026!");
                     db.users.Add(adminUser);
                     await db.SaveChangesAsync();
 

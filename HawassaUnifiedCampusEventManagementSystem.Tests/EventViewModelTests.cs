@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using HawassaUnifiedCampusEventManagementSystem.Models;
 using Xunit;
 
@@ -63,6 +64,42 @@ namespace HawassaUnifiedCampusEventManagementSystem.Tests
             Assert.Equal(55ul, comment.UserId);
             Assert.Equal("Hiwot Tadesse", comment.UserName);
             Assert.True(comment.CanDelete);
+        }
+
+        [Fact]
+        public void EventViewModel_WithoutTitle_ShouldFailValidation()
+        {
+            var ev = new Event
+            {
+                Category = "Academic",
+                EventDate = DateTime.Today.AddDays(3),
+                StartTime = TimeSpan.FromHours(9)
+            };
+            var context = new ValidationContext(ev);
+            var results = new List<ValidationResult>();
+
+            bool isValid = Validator.TryValidateObject(ev, context, results, validateAllProperties: true);
+
+            Assert.False(isValid);
+            Assert.Contains(results, r => r.MemberNames.Contains(nameof(Event.Title)));
+        }
+
+        [Fact]
+        public void EventViewModel_WithRequiredFields_ShouldPassValidation()
+        {
+            var ev = new Event
+            {
+                Title = "Campus Symposium",
+                Category = "Academic",
+                EventDate = DateTime.Today.AddDays(3),
+                StartTime = TimeSpan.FromHours(9)
+            };
+            var context = new ValidationContext(ev);
+            var results = new List<ValidationResult>();
+
+            bool isValid = Validator.TryValidateObject(ev, context, results, validateAllProperties: true);
+
+            Assert.True(isValid);
         }
     }
 }

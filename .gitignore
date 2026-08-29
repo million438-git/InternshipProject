@@ -1,3 +1,10 @@
+## Local environment (Docker / secrets)
+.env
+.env.local
+
+## User-uploaded media
+wwwroot/uploads/
+
 ## Build and Binary Output
 [Bb]in/
 [Oo]bj/

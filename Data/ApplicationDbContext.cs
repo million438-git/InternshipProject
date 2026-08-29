@@ -93,6 +93,7 @@ public partial class ApplicationDbContext : DbContext
         if (!optionsBuilder.IsConfigured)
         {
             var connStr = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING")
                 ?? Environment.GetEnvironmentVariable("DEFAULT_CONNECTION");
 
             if (!string.IsNullOrWhiteSpace(connStr))

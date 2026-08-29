@@ -12,11 +12,15 @@ The fastest and most reliable way to run HUCEMS in production is using Docker Co
 # 1. Clone or copy project to production server
 cd HawassaUnifiedCampusEventManagementSystem
 
-# 2. Start HUCEMS and MySQL 8.0 in isolated network
-docker-compose up -d --build
+# 2. Create local secrets (do not commit .env)
+cp .env.example .env
+# Edit .env: MYSQL_ROOT_PASSWORD, DATABASE_CONNECTION_STRING, JWT_SECRET_KEY (32+ chars)
 
-# 3. Verify running containers
-docker-compose ps
+# 3. Start HUCEMS and MySQL 8.0 in isolated network
+docker compose up -d --build
+
+# 4. Verify running containers
+docker compose ps
 ```
 
 The system will be live and active at: `http://<your-server-ip>:5000`
@@ -104,4 +108,4 @@ sudo nginx -t && sudo systemctl reload nginx
 
 1. **Environment Variables**: Never commit production passwords into version control. Supply `DATABASE_CONNECTION_STRING` and `JWT_SECRET_KEY` via server environment variables.
 2. **HTTPS / SSL**: Install a Let's Encrypt SSL certificate using `certbot --nginx` on Linux or via IIS Certificate Manager on Windows.
-3. **Database Snapshots**: Use the built-in SuperAdmin Database Management Vault (`/Admin/DatabaseManagement`) to take regular pre-maintenance snapshots.
+3. **Database Snapshots**: SuperAdmin can download SQL snapshots from `/Admin/DatabaseManagement`. Restore is not executed in-app; apply a snapshot with MySQL tools on the server.

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -63,6 +64,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
+            if (Request.Query.ContainsKey("tooManyAttempts"))
+            {
+                ViewBag.Error = "Too many login attempts. Please wait a few minutes and try again.";
+            }
+
             if (User.Identity?.IsAuthenticated == true)
             {
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -79,6 +85,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // POST: /Account/Login
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("login")]
         public async Task<IActionResult> Login(string email, string password, string? returnUrl = null)
         {
             ViewBag.ReturnUrl = returnUrl;
@@ -302,7 +309,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         ViewData["DepartmentId"] = dbUser.department_id;
                         ViewData["Email"] = dbUser.email;
                         ViewData["Role"] = dbUser.account_type ?? "Student";
-                        ViewData["Department"] = dbUser.department?.name ?? "Computer Cyber Security";
+                        ViewData["Department"] = dbUser.department?.name ?? "Not assigned";
                         ViewData["University"] = "Hawassa University";
                         ViewData["UserId"] = $"HUCEMS-{dbUser.id:D4}";
 
@@ -327,11 +334,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             ViewData["UserName"] = User.Identity?.Name ?? "Campus Member";
             ViewData["FirstName"] = "Campus";
             ViewData["LastName"] = "Member";
-            ViewData["Email"] = userEmail ?? "student@hawassauniversity.edu.et";
+            ViewData["Email"] = userEmail ?? string.Empty;
             ViewData["Role"] = User.FindFirstValue(ClaimTypes.Role) ?? "Student";
-            ViewData["Department"] = "Computer Cyber Security";
+            ViewData["Department"] = "Not assigned";
             ViewData["University"] = "Hawassa University";
-            ViewData["UserId"] = "HUCEMS-2026-001";
+            ViewData["UserId"] = string.IsNullOrEmpty(userIdStr) ? string.Empty : $"HUCEMS-{userIdStr}";
 
             return View();
         }
@@ -382,9 +389,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 return RedirectToAction(nameof(Profile));
             }
 
-            if (newPassword.Length < 6)
+            if (newPassword.Length < 8)
             {
-                TempData["ErrorMessage"] = "New password must be at least 6 characters long.";
+                TempData["ErrorMessage"] = "New password must be at least 8 characters long.";
                 return RedirectToAction(nameof(Profile));
             }
 
@@ -575,9 +582,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 return View();
             }
 
-            if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
+            if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
             {
-                ViewBag.Error = "New password must be at least 6 characters long.";
+                ViewBag.Error = "New password must be at least 8 characters long.";
                 ViewBag.Email = email;
                 ViewBag.Token = token;
                 return View();

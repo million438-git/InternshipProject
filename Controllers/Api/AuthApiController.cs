@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -46,6 +47,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers.Api
         // 1. POST /api/auth/login - JSON API Login (Issues JWT & optional Cookie)
         // =====================================================================
         [HttpPost("login")]
+        [EnableRateLimiting("login")]
         public async Task<IActionResult> Login([FromBody] ApiLoginRequest request)
         {
             return await AuthenticateAndIssueTokenAsync(request, issueCookie: true);
@@ -55,6 +57,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers.Api
         // 2. POST /api/auth/token - Dedicated JWT Bearer Token Endpoint
         // =====================================================================
         [HttpPost("token")]
+        [EnableRateLimiting("login")]
         public async Task<IActionResult> Token([FromBody] ApiLoginRequest request)
         {
             return await AuthenticateAndIssueTokenAsync(request, issueCookie: false);

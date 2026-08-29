@@ -2,12 +2,12 @@
     ViewData["Title"] = "My Profile";
     Layout = "_Layout";
 
-    var userName = ViewData["UserName"]?.ToString() ?? "Million Teshome";
-    var email = ViewData["Email"]?.ToString() ?? "student@hawassauniversity.edu.et";
+    var userName = ViewData["UserName"]?.ToString() ?? "Campus Member";
+    var email = ViewData["Email"]?.ToString() ?? string.Empty;
     var role = ViewData["Role"]?.ToString() ?? "Student";
-    var department = ViewData["Department"]?.ToString() ?? "Computer Cyber Security";
+    var department = ViewData["Department"]?.ToString() ?? "Not assigned";
     var university = ViewData["University"]?.ToString() ?? "Hawassa University";
-    var userId = ViewData["UserId"]?.ToString() ?? "HUCEMS-2026-001";
+    var userId = ViewData["UserId"]?.ToString() ?? string.Empty;
 }
 
 @section Styles {

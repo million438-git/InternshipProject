@@ -232,8 +232,13 @@
                                     </button>
                                 </form>
                                 <button type="button" 
-                                        class="btn btn-sm btn-light border text-primary py-1 px-2" 
-                                        onclick="openEditAnnouncementModal('@ann.Id', '@(Html.Raw(ann.Title.Replace("'", "\\'")))', '@(Html.Raw(ann.Content.Replace("'", "\\'").Replace("\n", "\\n").Replace("\r", "")))', '@ann.Priority', '@ann.AnnouncementType')" 
+                                        class="btn btn-sm btn-light border text-primary py-1 px-2"
+                                        data-ann-id="@ann.Id"
+                                        data-ann-title="@ann.Title"
+                                        data-ann-content="@ann.Content"
+                                        data-ann-priority="@ann.Priority"
+                                        data-ann-type="@ann.AnnouncementType"
+                                        onclick="openEditAnnouncementModalFromButton(this)"
                                         title="Edit Announcement">
                                     <i class="bi bi-pencil"></i>
                                 </button>
@@ -446,6 +451,16 @@
 
 @section Scripts {
     <script>
+        function openEditAnnouncementModalFromButton(button) {
+            openEditAnnouncementModal(
+                button.dataset.annId,
+                button.dataset.annTitle || '',
+                button.dataset.annContent || '',
+                button.dataset.annPriority,
+                button.dataset.annType
+            );
+        }
+
         function openEditAnnouncementModal(id, title, content, priority, type) {
             document.getElementById('editAnnId').value = id;
             document.getElementById('editAnnTitle').value = title;

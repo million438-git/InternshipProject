@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace HawassaUnifiedCampusEventManagementSystem.Models
 {
     /// <summary>
@@ -7,12 +9,26 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     public class Event
     {
         public ulong Id { get; set; }
+
+        [Required(ErrorMessage = "Please enter an event title.")]
+        [StringLength(255, ErrorMessage = "Title cannot exceed 255 characters.")]
         public string? Title { get; set; }
+
+        [Required(ErrorMessage = "Please select a category.")]
         public string? Category { get; set; }
+
+        [Range(1, 100000, ErrorMessage = "Capacity must be between 1 and 100000.")]
         public int? Capacity { get; set; }
+
+        [StringLength(8000)]
         public string? Description { get; set; }
+
+        [Required(ErrorMessage = "Please enter the event date.")]
         public DateTime EventDate { get; set; }
+
         public string? Venue { get; set; }
+
+        [Required(ErrorMessage = "Please enter a start time.")]
         public TimeSpan StartTime { get; set; }
         public TimeSpan? EndTime { get; set; }
         public ulong? OrganizerId { get; set; }

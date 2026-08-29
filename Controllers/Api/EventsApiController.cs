@@ -332,7 +332,18 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers.Api
                 };
 
                 _db.registrations.Add(newReg);
-                await _db.SaveChangesAsync();
+                try
+                {
+                    await _db.SaveChangesAsync();
+                }
+                catch (DbUpdateException)
+                {
+                    return Ok(new
+                    {
+                        success = true,
+                        message = "You are already registered for this event."
+                    });
+                }
 
                 return Ok(new
                 {

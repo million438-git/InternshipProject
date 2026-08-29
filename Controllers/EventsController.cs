@@ -719,7 +719,15 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             };
 
             _db.registrations.Add(newReg);
-            await _db.SaveChangesAsync();
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                TempData["InfoMessage"] = "You are already registered for this event!";
+                return RedirectToAction(nameof(Details), new { id });
+            }
 
             // Dispatch in-app attendee notification & ticket confirmation
             try

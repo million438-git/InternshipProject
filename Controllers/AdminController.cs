@@ -82,6 +82,12 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 Request.Headers["User-Agent"].ToString());
         }
 
+        private string GetPortalLoginUrl()
+        {
+            return Url.Action("Login", "Account", values: null, protocol: Request.Scheme)
+                ?? $"{Request.Scheme}://{Request.Host}/Account/Login";
+        }
+
         // =========================================================
         // CLUBS & STUDENT SOCIETIES ACCESS
         // =========================================================
@@ -585,7 +591,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         <p>An administrator has reset your password for the Hawassa University Portal account: <strong>{user.username}</strong>.</p>
                         <p>Your temporary password is: <strong style='font-family: monospace; font-size: 16px; color: #1e3a8a;'>{tempPassword}</strong></p>
                         <p>Please log in immediately and change your password in your Account Settings.</p>
-                        <p><a href='http://localhost:5110/Account/Login'>Sign In Here</a></p>";
+                        <p><a href='{GetPortalLoginUrl()}'>Sign In Here</a></p>";
 
                     await _emailSender.SendEmailAsync(user.email, emailSubject, emailBody);
                 }
@@ -867,9 +873,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 }
 
                 // 4. Validate Password
-                if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
+                if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
                 {
-                    TempData["ErrorMessage"] = "Password must be at least 6 characters long.";
+                    TempData["ErrorMessage"] = "Password must be at least 8 characters long.";
                     return RedirectToAction(nameof(RegisterUser), new { role = accountType });
                 }
 
@@ -1055,7 +1061,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                                <p><strong>Username:</strong> {username}<br/>
                                <strong>Temporary Password:</strong> <code>{password}</code><br/>
                                <strong>Role:</strong> {roleName}</p>
-                               <p>You can sign in immediately at: <a href='http://localhost:5110/Account/Login'>http://localhost:5110/Account/Login</a></p>
+                               <p>You can sign in immediately at: <a href='{GetPortalLoginUrl()}'>{GetPortalLoginUrl()}</a></p>
                                <p>Hawassa Unified Campus Event Management System</p>";
 
                         await _emailSender.SendEmailAsync(email, emailSubject, emailBody);
@@ -1190,7 +1196,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     string emailBody = $@"<h3>Account Approved!</h3>
                         <p>Hello {user.first_name} {user.last_name},</p>
                         <p>Great news! Your Hawassa University portal account (<strong>{user.username}</strong>) has been approved and activated by the SuperAdmin.</p>
-                        <p>You can now sign in immediately at: <a href='http://localhost:5110/Account/Login'>http://localhost:5110/Account/Login</a></p>
+                        <p>You can now sign in immediately at: <a href='{GetPortalLoginUrl()}'>{GetPortalLoginUrl()}</a></p>
                         <p>Hawassa Unified Campus Event Management System</p>";
 
                     await _emailSender.SendEmailAsync(user.email, emailSubject, emailBody);
@@ -5469,14 +5475,17 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             }
 
             var currentUserId = GetCurrentUserId();
-            if (currentUserId.HasValue)
+            if (!currentUserId.HasValue)
             {
-                var user = await _db.users.FindAsync(currentUserId.Value);
-                if (user == null || !_passwords.VerifyPassword(user, superAdminPassword, user.password_hash))
-                {
-                    TempData["ErrorMessage"] = "Authentication Failed: Incorrect SuperAdmin security clearance password.";
-                    return RedirectToAction(nameof(DatabaseManagement));
-                }
+                TempData["ErrorMessage"] = "Authentication Failed: SuperAdmin session is required to restore snapshots.";
+                return RedirectToAction(nameof(DatabaseManagement));
+            }
+
+            var user = await _db.users.FindAsync(currentUserId.Value);
+            if (user == null || !_passwords.VerifyPassword(user, superAdminPassword, user.password_hash))
+            {
+                TempData["ErrorMessage"] = "Authentication Failed: Incorrect SuperAdmin security clearance password.";
+                return RedirectToAction(nameof(DatabaseManagement));
             }
 
             try
@@ -5491,8 +5500,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     return RedirectToAction(nameof(DatabaseManagement));
                 }
 
-                await LogAuditAsync("DATABASE_RESTORE_TRIGGERED", "DATABASE", null, $"SuperAdmin initiated disaster recovery from snapshot: {safeFileName}");
-                TempData["SuccessMessage"] = $"Database disaster recovery validation completed for '{safeFileName}'. Telemetry and table integrity verified.";
+                await LogAuditAsync("DATABASE_RESTORE_VALIDATED", "DATABASE", null, $"SuperAdmin validated snapshot '{safeFileName}'. Automatic SQL apply is not implemented.");
+                TempData["SuccessMessage"] = $"Snapshot '{safeFileName}' exists and SuperAdmin identity was verified. This action does not execute SQL or overwrite the live database. Restore the file with the MySQL client if you intend to recover data.";
             }
             catch (Exception ex)
             {

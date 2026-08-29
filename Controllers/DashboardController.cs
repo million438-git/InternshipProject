@@ -115,7 +115,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             await PopulateSharedStatsAsync(vm);
             await PopulateUpcomingEventsAsync(vm);
             await PopulateAnnouncementsAsync(vm);
-            await PopulateNotificationsAsync(vm, userId, "Student");
+            await PopulateNotificationsAsync(vm, userId);
 
             // Student-specific data
             vm.MyRegisteredEvents = studentRegisteredEvents;
@@ -323,13 +323,13 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 VenueReservationsCount = venueCount,
                 PendingTasksCount = 0,
                 StaffNoticesCount = noticesCount,
-                ManagedEquipmentsCount = venueCount * 5
+                ManagedEquipmentsCount = 0
             };
 
             await PopulateSharedStatsAsync(vm);
             await PopulateUpcomingEventsAsync(vm);
             await PopulateAnnouncementsAsync(vm);
-            await PopulateNotificationsAsync(vm, userId, "Staff");
+            await PopulateNotificationsAsync(vm, userId);
 
             vm.DepartmentEvents = vm.UpcomingEvents.Where(e => e.CategoryName == "Academic" || e.CategoryName == "Career").Take(4).ToList();
 
@@ -418,7 +418,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             await PopulateSharedStatsAsync(vm);
             await PopulateUpcomingEventsAsync(vm);
             await PopulateAnnouncementsAsync(vm);
-            await PopulateNotificationsAsync(vm, userId, "Faculty");
+            await PopulateNotificationsAsync(vm, userId);
 
             vm.AcademicSeminars = vm.UpcomingEvents.Where(e => e.CategoryName == "Academic" || e.CategoryName == "Technology").Take(4).ToList();
 
@@ -516,7 +516,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             await PopulateSharedStatsAsync(vm);
             await PopulateUpcomingEventsAsync(vm);
             await PopulateAnnouncementsAsync(vm);
-            await PopulateNotificationsAsync(vm, userId, "Organization");
+            await PopulateNotificationsAsync(vm, userId);
 
             try
             {
@@ -613,7 +613,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             await PopulateSharedStatsAsync(vm);
             await PopulateUpcomingEventsAsync(vm);
             await PopulateAnnouncementsAsync(vm);
-            await PopulateNotificationsAsync(vm, userId, "Admin");
+            await PopulateNotificationsAsync(vm, userId);
 
             try
             {
@@ -784,7 +784,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             await PopulateSharedStatsAsync(vm);
             await PopulateUpcomingEventsAsync(vm);
             await PopulateAnnouncementsAsync(vm);
-            await PopulateNotificationsAsync(vm, userId, "SuperAdmin");
+            await PopulateNotificationsAsync(vm, userId);
 
             return View("SuperAdmin", vm);
         }
@@ -869,11 +869,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         private async Task<(ulong? UserId, string UserName, string UserEmail, string UserRole, string UserDept, string FormattedId, string? StudentId, string? EmployeeId, string? Bio)> GetUserInfoAsync()
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? "user@hawassauniversity.edu.et";
+            var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
             var userName = User.Identity?.Name ?? "Campus Member";
             var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "Student";
-            var userDept = "Computer Science & Cyber Security";
-            var formattedUserId = "HUCEMS-2026-001";
+            var userDept = "Not assigned";
+            var formattedUserId = string.IsNullOrEmpty(userIdStr) ? string.Empty : $"HUCEMS-{userIdStr}";
             string? studentId = null;
             string? employeeId = null;
             string? bio = null;
@@ -892,7 +892,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     {
                         userName = $"{dbUser.first_name} {dbUser.last_name}".Trim();
                         userEmail = dbUser.email;
-                        userDept = dbUser.department?.name ?? "Computer Science & Cyber Security";
+                        userDept = dbUser.department?.name ?? "Not assigned";
                         formattedUserId = $"HUCEMS-{dbUser.id:D4}";
                         studentId = dbUser.student_id;
                         employeeId = dbUser.employee_id;
@@ -921,11 +921,6 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             {
                 _logger.LogWarning(ex, "Failed to fetch counts from database.");
             }
-
-            if (vm.UpcomingEventsCount == 0) vm.UpcomingEventsCount = 8;
-            if (vm.TodayEventsCount == 0) vm.TodayEventsCount = 2;
-            if (vm.AnnouncementCount == 0) vm.AnnouncementCount = 5;
-            if (vm.RegistrationCount == 0) vm.RegistrationCount = 42;
         }
 
         private async Task PopulateUpcomingEventsAsync(DashboardViewModel vm)
@@ -952,57 +947,14 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         VenueName = e.venue?.name ?? "Main Auditorium",
                         CategoryName = e.category?.name ?? "Academic",
                         OrganizerName = e.organizer != null ? $"{e.organizer.first_name} {e.organizer.last_name}".Trim() : "University Staff",
-                        AttendeeCount = 45,
-                        Capacity = (int)(e.capacity ?? 150)
+                        AttendeeCount = 0,
+                        Capacity = (int)(e.capacity ?? 0)
                     }).ToList();
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to fetch events for dashboard.");
-            }
-
-            if (!vm.UpcomingEvents.Any())
-            {
-                vm.UpcomingEvents = new List<DashboardEventItem>
-                {
-                    new()
-                    {
-                        Id = 1,
-                        Title = "Annual University Tech & Innovation Expo",
-                        ShortDescription = "Showcase student robotics, AI software, and cybersecurity solutions.",
-                        StartDate = DateTime.Now.AddDays(2).Date.AddHours(9),
-                        VenueName = "Main Auditorium Hall A",
-                        CategoryName = "Technology",
-                        OrganizerName = "Tech Club HU",
-                        AttendeeCount = 180,
-                        Capacity = 300
-                    },
-                    new()
-                    {
-                        Id = 2,
-                        Title = "Campus Cyber Defense & Hackathon Workshop",
-                        ShortDescription = "Hands-on penetration testing and digital defense workshop.",
-                        StartDate = DateTime.Now.AddDays(4).Date.AddHours(14),
-                        VenueName = "IT Complex Lab 3",
-                        CategoryName = "Cybersecurity",
-                        OrganizerName = "Department of CS",
-                        AttendeeCount = 75,
-                        Capacity = 80
-                    },
-                    new()
-                    {
-                        Id = 3,
-                        Title = "Inter-Department Football Championship",
-                        ShortDescription = "Quarter finals between Engineering and Computer Science.",
-                        StartDate = DateTime.Now.AddDays(6).Date.AddHours(16),
-                        VenueName = "Main University Stadium",
-                        CategoryName = "Sports",
-                        OrganizerName = "Sports Directorate",
-                        AttendeeCount = 450,
-                        Capacity = 1000
-                    }
-                };
             }
         }
 
@@ -1033,113 +985,37 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             {
                 _logger.LogWarning(ex, "Failed to load announcements for dashboard.");
             }
-
-            if (!vm.RecentAnnouncements.Any())
-            {
-                vm.RecentAnnouncements = new List<DashboardAnnouncementItem>
-                {
-                    new()
-                    {
-                        Id = 1,
-                        Title = "Registration Open for Semester Hackathon 2026",
-                        Content = "Teams of up to 4 students can register online starting this week.",
-                        AuthorName = "Student Affairs Directorate",
-                        DepartmentName = "College of Informatics",
-                        Priority = "High",
-                        CreatedAt = DateTime.Now.AddHours(-3)
-                    },
-                    new()
-                    {
-                        Id = 2,
-                        Title = "Main Campus Library Extended Hours for Finals",
-                        Content = "Main campus library will remain open 24/7 during the upcoming exam period.",
-                        AuthorName = "Library Administration",
-                        DepartmentName = "University Library",
-                        Priority = "Normal",
-                        CreatedAt = DateTime.Now.AddDays(-1)
-                    },
-                    new()
-                    {
-                        Id = 3,
-                        Title = "Call for Volunteer Campus Event Coordinators",
-                        Content = "Join the organizing committee for the upcoming Hawassa University Cultural Gala.",
-                        AuthorName = "Events Council",
-                        DepartmentName = "Student Union",
-                        Priority = "Normal",
-                        CreatedAt = DateTime.Now.AddDays(-2)
-                    }
-                };
-            }
         }
 
-        private async Task PopulateNotificationsAsync(DashboardViewModel vm, ulong? userId, string role)
+        private async Task PopulateNotificationsAsync(DashboardViewModel vm, ulong? userId)
         {
-            if (userId.HasValue)
+            if (!userId.HasValue)
             {
-                try
-                {
-                    var dbNotifs = await _db.notifications
-                        .AsNoTracking()
-                        .Where(n => n.user_id == userId.Value)
-                        .OrderByDescending(n => n.created_at)
-                        .Take(6)
-                        .ToListAsync();
-
-                    if (dbNotifs.Any())
-                    {
-                        vm.Notifications = dbNotifs.Select(n => new DashboardNotificationItem
-                        {
-                            Id = n.id,
-                            Message = $"[{n.title}] {n.message}",
-                            Type = n.notification_type == "ANNOUNCEMENT" ? "Warning" : n.notification_type == "EVENT" ? "Info" : n.notification_type == "REGISTRATION" ? "Success" : "Primary",
-                            CreatedAt = n.created_at,
-                            IsRead = n.is_read
-                        }).ToList();
-                        return;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to query notifications for user {UserId}", userId.Value);
-                }
+                return;
             }
 
-            // Fallback onboarding alerts if user has 0 notifications yet
-            vm.Notifications = role switch
+            try
             {
-                "SuperAdmin" => new List<DashboardNotificationItem>
+                var dbNotifs = await _db.notifications
+                    .AsNoTracking()
+                    .Where(n => n.user_id == userId.Value)
+                    .OrderByDescending(n => n.created_at)
+                    .Take(6)
+                    .ToListAsync();
+
+                vm.Notifications = dbNotifs.Select(n => new DashboardNotificationItem
                 {
-                    new() { Id = 1, Message = "[SECURITY] Platform Security Audit passed with 0 vulnerabilities detected.", CreatedAt = DateTime.Now.AddMinutes(-20), IsRead = false, Type = "Success" },
-                    new() { Id = 2, Message = "[SYSTEM] Nightly database snapshot verified and archived to cloud vault.", CreatedAt = DateTime.Now.AddHours(-4), IsRead = true, Type = "Info" },
-                    new() { Id = 3, Message = "[ROLES] Admin provisioning and governance active across all faculties.", CreatedAt = DateTime.Now.AddDays(-1), IsRead = true, Type = "Warning" }
-                },
-                "Admin" => new List<DashboardNotificationItem>
-                {
-                    new() { Id = 1, Message = "[APPROVALS] Campus event approval queue is operational.", CreatedAt = DateTime.Now.AddMinutes(-15), IsRead = false, Type = "Warning" },
-                    new() { Id = 2, Message = "[NOTIFICATIONS] Push alert broadcasting and targeted messaging enabled.", CreatedAt = DateTime.Now.AddHours(-3), IsRead = false, Type = "Info" },
-                    new() { Id = 3, Message = "[METRICS] Weekly attendee reports and system analytics synced.", CreatedAt = DateTime.Now.AddDays(-1), IsRead = true, Type = "Success" }
-                },
-                "Faculty" => new List<DashboardNotificationItem>
-                {
-                    new() { Id = 1, Message = "[ACADEMIC] Academic Colloquium reminder: Friday in Senate Hall.", CreatedAt = DateTime.Now.AddMinutes(-40), IsRead = false, Type = "Warning" },
-                    new() { Id = 2, Message = "[EVENTS] Department events and symposium schedules published.", CreatedAt = DateTime.Now.AddHours(-5), IsRead = false, Type = "Info" }
-                },
-                "Staff" => new List<DashboardNotificationItem>
-                {
-                    new() { Id = 1, Message = "[LOGISTICS] Auditorium audio/visual equipment check confirmed.", CreatedAt = DateTime.Now.AddMinutes(-30), IsRead = false, Type = "Success" },
-                    new() { Id = 2, Message = "[SAFETY] Campus logistics memo finalized.", CreatedAt = DateTime.Now.AddHours(-4), IsRead = false, Type = "Warning" }
-                },
-                "Organization" => new List<DashboardNotificationItem>
-                {
-                    new() { Id = 1, Message = "[CLUB] Your club event management portal is fully active.", CreatedAt = DateTime.Now.AddMinutes(-10), IsRead = false, Type = "Success" },
-                    new() { Id = 2, Message = "[ATTENDEES] Live registration tracking active for your sessions.", CreatedAt = DateTime.Now.AddHours(-2), IsRead = false, Type = "Info" }
-                },
-                _ => new List<DashboardNotificationItem>
-                {
-                    new() { Id = 1, Message = "[WELCOME] Welcome to Hawassa University Unified Campus Event Management System!", CreatedAt = DateTime.Now.AddMinutes(-15), IsRead = false, Type = "Success" },
-                    new() { Id = 2, Message = "[PREFERENCES] Follow your academic department to receive instant event push alerts.", CreatedAt = DateTime.Now.AddHours(-2), IsRead = false, Type = "Info" }
-                }
-            };
+                    Id = n.id,
+                    Message = $"[{n.title}] {n.message}",
+                    Type = n.notification_type == "ANNOUNCEMENT" ? "Warning" : n.notification_type == "EVENT" ? "Info" : n.notification_type == "REGISTRATION" ? "Success" : "Primary",
+                    CreatedAt = n.created_at,
+                    IsRead = n.is_read
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to query notifications for user {UserId}", userId.Value);
+            }
         }
     }
 }

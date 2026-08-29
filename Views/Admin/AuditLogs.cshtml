@@ -210,8 +210,20 @@
                         </td>
                         <td class="text-end">
                             <button type="button" 
-                                    class="btn btn-sm btn-light border py-1 px-2 text-primary" 
-                                    onclick="openLogDetailsModal('@log.Id', '@log.Action', '@log.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss UTC")', '@log.UserName', '@(log.UserEmail ?? "N/A")', '@(log.EntityType ?? "SYSTEM")', '@(log.EntityId?.ToString() ?? "N/A")', '@(log.IpAddress ?? "127.0.0.1")', '@(Html.Raw(log.UserAgent?.Replace("'", "\\'") ?? "N/A"))', '@(Html.Raw(log.Description?.Replace("'", "\\'") ?? ""))', '@(Html.Raw(log.OldValues?.Replace("'", "\\'") ?? ""))', '@(Html.Raw(log.NewValues?.Replace("'", "\\'") ?? ""))')" 
+                                    class="btn btn-sm btn-light border py-1 px-2 text-primary"
+                                    data-log-id="@log.Id"
+                                    data-log-action="@log.Action"
+                                    data-log-timestamp="@log.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss UTC")"
+                                    data-log-actor="@log.UserName"
+                                    data-log-email="@(log.UserEmail ?? "N/A")"
+                                    data-log-entity="@(log.EntityType ?? "SYSTEM")"
+                                    data-log-entity-id="@(log.EntityId?.ToString() ?? "N/A")"
+                                    data-log-ip="@(log.IpAddress ?? "127.0.0.1")"
+                                    data-log-user-agent="@(log.UserAgent ?? "N/A")"
+                                    data-log-description="@(log.Description ?? "")"
+                                    data-log-old-values="@(log.OldValues ?? "")"
+                                    data-log-new-values="@(log.NewValues ?? "")"
+                                    onclick="openLogDetailsModalFromButton(this)"
                                     title="View Forensic Payload">
                                 <i class="bi bi-search"></i>
                             </button>
@@ -348,6 +360,23 @@
 
 @section Scripts {
     <script>
+        function openLogDetailsModalFromButton(button) {
+            openLogDetailsModal(
+                button.dataset.logId,
+                button.dataset.logAction,
+                button.dataset.logTimestamp,
+                button.dataset.logActor,
+                button.dataset.logEmail,
+                button.dataset.logEntity,
+                button.dataset.logEntityId,
+                button.dataset.logIp,
+                button.dataset.logUserAgent,
+                button.dataset.logDescription,
+                button.dataset.logOldValues,
+                button.dataset.logNewValues
+            );
+        }
+
         function openLogDetailsModal(id, action, timestamp, actor, email, entity, entityId, ip, userAgent, description, oldValues, newValues) {
             document.getElementById('modalLogAction').innerText = action;
             document.getElementById('modalLogTimestamp').innerText = timestamp;
