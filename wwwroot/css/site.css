@@ -771,17 +771,47 @@ textarea.form-control {
     border-radius: 2px;
 }
 
+.footer-nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
 .footer-nav-link {
     color: #94a3b8;
     font-size: 0.875rem;
     font-weight: 400;
     text-decoration: none;
-    transition: all 0.2s ease-in-out;
+    display: inline-block;
+    transition: color 0.2s ease-in-out;
 }
 
-.footer-nav-link:hover {
-    color: #ffffff !important;
-    transform: translateX(3px);
+.footer-nav-link:hover,
+.footer-nav-link:focus-visible {
+    color: #ffffff;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.footer-legal-link {
+    color: #94a3b8;
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.footer-legal-link:hover,
+.footer-legal-link:focus-visible {
+    color: #ffffff;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.footer-top-link {
+    color: #60a5fa;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
 }
 
 .footer-social-btn {
