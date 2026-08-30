@@ -217,6 +217,14 @@ app.MapControllerRoute(
 // ======================================================
 // 10. AUTOMATIC DATABASE SEEDING
 // ======================================================
-await DbInitializer.InitializeAsync(app.Services);
+try
+{
+    await DbInitializer.InitializeAsync(app.Services);
+}
+catch (Exception ex)
+{
+    var startupLogger = app.Services.GetService<ILogger<Program>>();
+    startupLogger?.LogWarning(ex, "Database initialization warning: MySQL might be starting up or initializing.");
+}
 
 app.Run();

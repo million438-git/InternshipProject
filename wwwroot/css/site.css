@@ -1686,3 +1686,23 @@ textarea.form-control {
     border-top: 1px solid var(--navbar-border) !important;
     color: var(--footer-text) !important;
 }
+
+/* --- High-Density Table Truncation & Mobile UX Helpers --- */
+.table-truncate-id {
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.table-truncate-text {
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    vertical-align: middle;
+}
+

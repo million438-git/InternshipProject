@@ -174,24 +174,35 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     Timestamp = l.created_at
                 }).ToList();
 
-                // Chart Categories
+                // Chart Categories (Real Database Data)
                 var categories = await _db.event_categories.Include(c => c._events).ToListAsync();
                 vm.ChartCategories = categories.Select(c => c.name).ToList();
                 vm.ChartCategoryCounts = categories.Select(c => c._events.Count).ToList();
 
-                if (!vm.ChartCategories.Any())
-                {
-                    vm.ChartCategories = new List<string> { "Academic", "Technology", "Sports", "Culture", "Career", "Workshop" };
-                    vm.ChartCategoryCounts = new List<int> { 12, 18, 9, 7, 14, 11 };
-                }
+                // Dynamic 6-Month Attendee Registrations
+                var sixMonthsAgo = DateTime.UtcNow.AddMonths(-5);
+                var startOfMonth = new DateTime(sixMonthsAgo.Year, sixMonthsAgo.Month, 1);
+                var monthlyRegs = await _db.registrations
+                    .Where(r => r.registered_at >= startOfMonth)
+                    .GroupBy(r => new { r.registered_at.Year, r.registered_at.Month })
+                    .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
+                    .ToListAsync();
 
-                vm.ChartMonths = new List<string> { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug" };
-                vm.ChartMonthlyRegistrations = new List<int> { 45, 82, 120, 165, 210, 190, 240, 310 };
+                var monthsList = new List<string>();
+                var regCountsList = new List<int>();
+                for (int i = 5; i >= 0; i--)
+                {
+                    var dt = DateTime.UtcNow.AddMonths(-i);
+                    monthsList.Add(dt.ToString("MMM"));
+                    var match = monthlyRegs.FirstOrDefault(m => m.Year == dt.Year && m.Month == dt.Month);
+                    regCountsList.Add(match?.Count ?? 0);
+                }
+                vm.ChartMonths = monthsList;
+                vm.ChartMonthlyRegistrations = regCountsList;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading admin overview");
-                PopulateOverviewFallbacks(vm);
+                _logger.LogError(ex, "Error loading admin overview from database");
             }
 
             return View(vm);
@@ -321,39 +332,6 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             }
 
             return View(vm);
-        }
-
-        private void PopulateOverviewFallbacks(AdminOverviewViewModel vm)
-        {
-            vm.TotalUsers = 1245;
-            vm.ActiveUsers = 1180;
-            vm.TotalEvents = 86;
-            vm.UpcomingEvents = 24;
-            vm.TodayEvents = 5;
-            vm.PendingApprovals = 3;
-            vm.TotalOrganizations = 42;
-            vm.TotalRegistrations = 3450;
-            vm.TotalAnnouncements = 38;
-            vm.TotalVenues = 15;
-
-            vm.RecentUsers = new List<AdminRecentUserItem>
-            {
-                new() { Id = 1, FullName = "Abebe Bekele", Email = "abebe@hawassa.edu.et", AccountType = "STUDENT", Status = "ACTIVE", CreatedAt = DateTime.UtcNow.AddHours(-2) },
-                new() { Id = 2, FullName = "Dr. Martha Tadesse", Email = "martha@hawassa.edu.et", AccountType = "FACULTY", Status = "ACTIVE", CreatedAt = DateTime.UtcNow.AddHours(-5) },
-                new() { Id = 3, FullName = "Chala Gemeda", Email = "chala@hawassa.edu.et", AccountType = "STUDENT", Status = "ACTIVE", CreatedAt = DateTime.UtcNow.AddDays(-1) }
-            };
-
-            vm.RecentActivities = new List<AdminRecentActivityItem>
-            {
-                new() { Id = 1, Action = "EVENT_CREATED", UserName = "Abebe Bekele", Description = "Created 'Annual Tech Hackathon 2026'", Timestamp = DateTime.UtcNow.AddMinutes(-30) },
-                new() { Id = 2, Action = "USER_REGISTERED", UserName = "System", Description = "New student registered from Technology Faculty", Timestamp = DateTime.UtcNow.AddHours(-1) },
-                new() { Id = 3, Action = "EVENT_APPROVED", UserName = "Admin", Description = "Approved 'Campus Health & Blood Drive'", Timestamp = DateTime.UtcNow.AddHours(-3) }
-            };
-
-            vm.ChartCategories = new List<string> { "Academic", "Technology", "Sports", "Culture", "Career", "Workshop" };
-            vm.ChartCategoryCounts = new List<int> { 15, 24, 12, 8, 16, 11 };
-            vm.ChartMonths = new List<string> { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug" };
-            vm.ChartMonthlyRegistrations = new List<int> { 45, 82, 120, 165, 210, 190, 240, 310 };
         }
 
         // =========================================================
@@ -4933,6 +4911,12 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =========================================================
         public async Task<IActionResult> Sessions()
         {
+            if (!IsSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Access Restricted: Active Session Inspection is exclusive to Super Administrator accounts.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var vm = new AdminSessionsViewModel();
             try
             {
@@ -4954,20 +4938,10 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 }).ToList();
 
                 vm.TotalActive = vm.ActiveSessions.Count;
-
-                if (!vm.ActiveSessions.Any())
-                {
-                    vm.ActiveSessions = new List<AdminSessionRow>
-                    {
-                        new() { Id = 1, UserName = GetCurrentUserName(), IpAddress = "127.0.0.1 (Localhost)", UserAgent = "Chrome Windows 11 Desktop", CreatedAt = DateTime.UtcNow.AddHours(-1), IsCurrent = true },
-                        new() { Id = 2, UserName = "Martha Tadesse", IpAddress = "192.168.1.105", UserAgent = "Safari macOS Sonoma", CreatedAt = DateTime.UtcNow.AddHours(-4), IsCurrent = false }
-                    };
-                    vm.TotalActive = vm.ActiveSessions.Count;
-                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error querying sessions");
+                _logger.LogError(ex, "Error querying sessions from database");
             }
             return View(vm);
         }

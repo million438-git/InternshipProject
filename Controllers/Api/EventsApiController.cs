@@ -71,6 +71,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers.Api
 
                 var list = await query
                     .OrderBy(e => e.start_at)
+                    .Take(250)
                     .Select(e => new
                     {
                         id = e.id,

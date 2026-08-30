@@ -215,7 +215,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =========================================================
         // GET: /Events
         // =========================================================
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? search, string? category, ulong? venueId)
         {
             var currentUserId = GetCurrentUserId();
             var isAdmin = IsAdminOrSuperAdmin();
@@ -241,8 +241,40 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 }
             }
 
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                query = query.Where(x => x.title.ToLower().Contains(s) ||
+                                         (x.description != null && x.description.ToLower().Contains(s)) ||
+                                         (x.venue != null && x.venue.name.ToLower().Contains(s)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(category))
+            {
+                var cat = category.Trim().ToLower();
+                query = query.Where(x => x.category != null && (x.category.name.ToLower() == cat || x.category.slug.ToLower() == cat));
+            }
+
+            if (venueId.HasValue && venueId.Value > 0)
+            {
+                query = query.Where(x => x.venue_id == venueId.Value);
+            }
+
             var items = await query.OrderByDescending(x => x.start_at).ToListAsync();
             var vm = items.Select(e => ToViewModel(e, currentUserId));
+
+            ViewBag.Search = search;
+            ViewBag.SelectedCategory = category;
+            ViewBag.SelectedVenueId = venueId;
+            try
+            {
+                ViewBag.Categories = await _db.event_categories.Where(c => c.is_active == true).OrderBy(c => c.name).ToListAsync();
+            }
+            catch
+            {
+                ViewBag.Categories = new List<event_category>();
+            }
+
             return View(vm);
         }
 

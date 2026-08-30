@@ -60,12 +60,15 @@
             <div class="col-md-3">
                 <select name="category" class="form-select">
                     <option value="">All Categories</option>
-                    <option value="Academic">Academic & Conferences</option>
-                    <option value="Technology">Technology & Innovation</option>
-                    <option value="Cultural">Cultural & Arts</option>
-                    <option value="Sports">Sports & Athletics</option>
-                    <option value="Workshop">Workshops & Training</option>
-                    <option value="Social">Social & Community</option>
+                    @if (ViewBag.Categories != null)
+                    {
+                        foreach (var cat in (IEnumerable<HawassaUnifiedCampusEventManagementSystem.Models.event_category>)ViewBag.Categories)
+                        {
+                            var isSelected = string.Equals(ViewBag.SelectedCategory as string, cat.slug, StringComparison.OrdinalIgnoreCase) ||
+                                             string.Equals(ViewBag.SelectedCategory as string, cat.name, StringComparison.OrdinalIgnoreCase);
+                            <option value="@cat.slug" selected="@(isSelected ? "selected" : null)">@cat.name</option>
+                        }
+                    }
                 </select>
             </div>
 

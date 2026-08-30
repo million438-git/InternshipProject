@@ -1,5 +1,5 @@
 /**
- * HUCEMS Login Interactivity Script
+ * HUCEMS Authentication Portal Interactivity Script
  */
 document.addEventListener("DOMContentLoaded", function () {
     const passwordInput = document.getElementById("password");
@@ -8,27 +8,33 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("loginForm");
     const loginBtn = document.getElementById("loginButton");
     const btnText = document.getElementById("btnText");
-    const btnArrow = document.getElementById("btnArrow");
     const btnSpinner = document.getElementById("btnSpinner");
 
-    // Toggle Password Visibility
+    // Accessible Password Visibility Toggle
     if (toggleBtn && passwordInput && toggleIcon) {
         toggleBtn.addEventListener("click", function () {
             const isPassword = passwordInput.type === "password";
             passwordInput.type = isPassword ? "text" : "password";
             toggleIcon.className = isPassword ? "bi bi-eye-slash" : "bi bi-eye";
+            toggleBtn.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
+            toggleBtn.setAttribute("title", isPassword ? "Hide password" : "Show password");
         });
     }
 
-    // Submit Animation
-    if (form) {
-        form.addEventListener("submit", function () {
-            if (loginBtn) {
-                loginBtn.disabled = true;
-                if (btnText) btnText.textContent = "Authenticating with HU Portal...";
-                if (btnArrow) btnArrow.classList.add("d-none");
-                if (btnSpinner) btnSpinner.classList.remove("d-none");
+    // Accessible Form Submission Feedback
+    if (form && loginBtn) {
+        form.addEventListener("submit", function (e) {
+            const emailInput = document.getElementById("email");
+            if (!emailInput || !passwordInput) return;
+
+            // Simple validation check before disabling button
+            if (emailInput.value.trim() === "" || passwordInput.value.trim() === "") {
+                return;
             }
+
+            loginBtn.disabled = true;
+            if (btnText) btnText.textContent = "Signing In...";
+            if (btnSpinner) btnSpinner.classList.remove("d-none");
         });
     }
 });

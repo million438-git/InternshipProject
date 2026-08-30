@@ -928,28 +928,27 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             try
             {
                 var dbEvents = await _db.events
-                    .Include(e => e.category)
-                    .Include(e => e.venue)
-                    .Include(e => e.organizer)
+                    .Where(e => (e.is_public == true && e.approval_status == "APPROVED") || e.status == "PUBLISHED")
                     .OrderBy(e => e.start_at)
                     .Take(6)
-                    .ToListAsync();
-
-                if (dbEvents.Any())
-                {
-                    vm.UpcomingEvents = dbEvents.Select(e => new DashboardEventItem
+                    .Select(e => new DashboardEventItem
                     {
                         Id = e.id,
                         Title = e.title,
                         ShortDescription = e.short_description ?? (e.description != null && e.description.Length > 90 ? e.description.Substring(0, 90) + "..." : e.description),
                         ImageUrl = e.image_url,
                         StartDate = e.start_at,
-                        VenueName = e.venue?.name ?? "Main Auditorium",
-                        CategoryName = e.category?.name ?? "Academic",
-                        OrganizerName = e.organizer != null ? $"{e.organizer.first_name} {e.organizer.last_name}".Trim() : "University Staff",
-                        AttendeeCount = 0,
+                        VenueName = e.venue != null ? e.venue.name : "Main Auditorium",
+                        CategoryName = e.category != null ? e.category.name : "Academic",
+                        OrganizerName = e.organizer != null ? (e.organizer.first_name + " " + e.organizer.last_name).Trim() : "University Staff",
+                        AttendeeCount = e.registrations.Count(r => r.status == "REGISTERED" || r.status == "ATTENDED"),
                         Capacity = (int)(e.capacity ?? 0)
-                    }).ToList();
+                    })
+                    .ToListAsync();
+
+                if (dbEvents.Any())
+                {
+                    vm.UpcomingEvents = dbEvents;
                 }
             }
             catch (Exception ex)
@@ -964,6 +963,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             {
                 var dbAnnouncements = await _db.announcements
                     .Include(a => a.author)
+                    .Where(a => a.status == "PUBLISHED")
                     .OrderByDescending(a => a.created_at)
                     .Take(4)
                     .ToListAsync();
@@ -977,7 +977,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         Content = a.content,
                         AuthorName = a.author != null ? $"{a.author.first_name} {a.author.last_name}".Trim() : "Campus Administration",
                         CreatedAt = a.created_at,
-                        Priority = "Normal"
+                        Priority = a.priority ?? "Normal"
                     }).ToList();
                 }
             }

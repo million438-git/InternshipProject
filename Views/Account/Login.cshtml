@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Verified Campus Login | HUCEMS";
+    ViewData["Title"] = "Sign In | Hawassa University HUCEMS";
 }
 
 @section Styles {
@@ -8,169 +8,141 @@
 
 <div class="auth-page-container">
 
-    <div class="auth-split-card">
+    <div class="auth-card-centered">
 
-        <!-- =====================================================
-             LEFT SHOWCASE SIDEBAR
-             ===================================================== -->
-        <div class="auth-showcase-panel">
-
-            <div class="auth-showcase-content">
-                <div class="auth-brand-badge">
-                    <img src="~/images/hawassa-logo.png" alt="Hawassa University Crest" class="auth-brand-logo" />
-                    <div>
-                        <h6 class="fw-bold mb-0 text-white">HAWASSA UNIVERSITY</h6>
-                        <small class="text-white-50">Campus Event Portal</small>
-                    </div>
-                </div>
-
-                <h1 class="auth-showcase-heading">
-                    Campus Life & Event Management
-                </h1>
-
-                <p class="auth-showcase-desc">
-                    Sign in to your authenticated account to manage academic seminars, reserve auditoriums, and access official university announcements.
-                </p>
-
-                <ul class="auth-feature-list">
-                    <li>
-                        <i class="bi bi-calendar2-check"></i>
-                        <span>Campus Event RSVPs & Ticket Passes</span>
-                    </li>
-                    <li>
-                        <i class="bi bi-building"></i>
-                        <span>Auditorium & Venue Bookings</span>
-                    </li>
-                    <li>
-                        <i class="bi bi-shield-check"></i>
-                        <span>Role-Based Access for Students & Faculty</span>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="small text-white-50 pt-4 border-top border-white border-opacity-15 d-flex justify-content-between">
-                <span>Hawassa University</span>
-                <span>Main Campus Desk</span>
-            </div>
-
+        <!-- UNIVERSITY BRANDING -->
+        <div class="auth-brand-header">
+            <img src="~/images/hawassa-logo.png" alt="Hawassa University Crest" class="auth-logo-img" />
+            <h2 class="auth-university-title">Hawassa University</h2>
+            <p class="auth-system-subtitle">Unified Campus Event Management System</p>
         </div>
 
-        <!-- =====================================================
-             RIGHT INTERACTIVE LOGIN FORM PANEL
-             ===================================================== -->
-        <div class="auth-form-panel">
+        <div class="auth-divider" role="separator"></div>
 
-            <div class="auth-form-header">
-                <h2>Welcome Back</h2>
-                <p>Sign in with your official university credentials.</p>
+        <!-- FORM HEADING -->
+        <div class="auth-heading-group">
+            <h1>Welcome Back</h1>
+            <p>Sign in to continue to your campus account.</p>
+        </div>
+
+        <!-- NOTIFICATION ALERTS -->
+        @if (TempData["InfoMessage"] != null)
+        {
+            <div class="alert alert-info py-2 px-3 mb-3 small rounded-3 border-0 d-flex align-items-center gap-2" role="alert" style="background-color: #eff6ff; color: #1e40af; border: 1px solid #dbeafe;">
+                <i class="bi bi-info-circle-fill fs-5 text-primary flex-shrink-0" aria-hidden="true"></i>
+                <div>@TempData["InfoMessage"]</div>
+            </div>
+        }
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success py-2 px-3 mb-3 small rounded-3 border-0 d-flex align-items-center gap-2" role="alert" style="background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">
+                <i class="bi bi-check-circle-fill fs-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                <div>@TempData["SuccessMessage"]</div>
+            </div>
+        }
+
+        @if (ViewBag.ReturnUrl != null && ((string)ViewBag.ReturnUrl).Contains("Create", StringComparison.OrdinalIgnoreCase))
+        {
+            <div class="alert alert-info py-2 px-3 mb-3 small rounded-3 border-0 d-flex align-items-center gap-2" role="alert" style="background-color: #eff6ff; color: #1e40af; border: 1px solid #dbeafe;">
+                <i class="bi bi-info-circle-fill fs-5 text-primary flex-shrink-0" aria-hidden="true"></i>
+                <div>
+                    <strong>Event Creation:</strong> Please sign in with your university account to submit campus events.
+                </div>
+            </div>
+        }
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger py-2 px-3 mb-3 small rounded-3 border-0 d-flex align-items-center gap-2" role="alert" style="background-color: #fef2f2; color: #991b1b; border: 1px solid #fee2e2;">
+                <i class="bi bi-exclamation-octagon-fill fs-5 text-danger flex-shrink-0" aria-hidden="true"></i>
+                <div>@ViewBag.Error</div>
+            </div>
+        }
+
+        <!-- SIGN IN FORM -->
+        <form asp-controller="Account"
+              asp-action="Login"
+              method="post"
+              id="loginForm"
+              autocomplete="on"
+              novalidate>
+
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+
+            <!-- EMAIL / USERNAME -->
+            <div class="auth-input-group">
+                <label for="email">Campus Email or Username</label>
+                <div class="auth-input-box">
+                    <i class="bi bi-envelope-at auth-input-icon" aria-hidden="true"></i>
+                    <input type="text"
+                           id="email"
+                           name="email"
+                           placeholder="Enter your university email or username"
+                           autocomplete="username"
+                           required
+                           aria-required="true" />
+                </div>
             </div>
 
-            @if (TempData["InfoMessage"] != null)
-            {
-                <div class="alert alert-info py-2 px-3 mb-3 small rounded-3 border-0 d-flex align-items-center gap-2" style="background-color: #eff6ff; color: #1e40af; border: 1px solid #dbeafe;">
-                    <i class="bi bi-info-circle-fill fs-5 text-primary flex-shrink-0"></i>
-                    <div>@TempData["InfoMessage"]</div>
+            <!-- PASSWORD -->
+            <div class="auth-input-group">
+                <label for="password">Password</label>
+                <div class="auth-input-box">
+                    <i class="bi bi-lock auth-input-icon" aria-hidden="true"></i>
+                    <input type="password"
+                           id="password"
+                           name="password"
+                           placeholder="Enter your password"
+                           autocomplete="current-password"
+                           required
+                           aria-required="true" />
+                    <button type="button"
+                            class="auth-password-toggle"
+                            id="togglePasswordBtn"
+                            aria-label="Toggle password visibility"
+                            title="Toggle password visibility">
+                        <i class="bi bi-eye" id="togglePasswordIcon" aria-hidden="true"></i>
+                    </button>
                 </div>
-            }
-
-            @if (TempData["SuccessMessage"] != null)
-            {
-                <div class="alert alert-success py-2 px-3 mb-3 small rounded-3 border-0 d-flex align-items-center gap-2" style="background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">
-                    <i class="bi bi-check-circle-fill fs-5 text-success flex-shrink-0"></i>
-                    <div>@TempData["SuccessMessage"]</div>
-                </div>
-            }
-
-            @if (ViewBag.ReturnUrl != null && ((string)ViewBag.ReturnUrl).Contains("Create", StringComparison.OrdinalIgnoreCase))
-            {
-                <div class="alert alert-info py-2 px-3 mb-3 small rounded-3 border-0 d-flex align-items-center gap-2" style="background-color: #eff6ff; color: #1e40af; border: 1px solid #dbeafe;">
-                    <i class="bi bi-info-circle-fill fs-5 text-primary flex-shrink-0"></i>
-                    <div>
-                        <strong>Event Creation:</strong> Please sign in with your official university credentials to submit and host campus events.
-                    </div>
-                </div>
-            }
-
-            @if (ViewBag.Error != null)
-            {
-                <div class="alert alert-danger py-2 px-3 mb-3 small rounded-3 border-0 d-flex align-items-center gap-2" style="background-color: #fef2f2; color: #991b1b; border: 1px solid #fee2e2;">
-                    <i class="bi bi-exclamation-octagon-fill fs-5 text-danger flex-shrink-0"></i>
-                    <div>@ViewBag.Error</div>
-                </div>
-            }
-
-            <form asp-controller="Account"
-                  asp-action="Login"
-                  method="post"
-                  id="loginForm"
-                  autocomplete="on">
-
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
-
-                <!-- EMAIL / USERNAME INPUT -->
-                <div class="auth-input-group">
-                    <label for="email">Campus Email or Username</label>
-                    <div class="auth-input-box">
-                        <i class="bi bi-envelope-at auth-input-icon"></i>
-                        <input type="text"
-                               id="email"
-                               name="email"
-                               placeholder="e.g. student@hawassa.edu.et or username"
-                               autocomplete="username"
-                               required />
-                    </div>
-                </div>
-
-                <!-- PASSWORD INPUT -->
-                <div class="auth-input-group">
-                    <label for="password">Password</label>
-                    <div class="auth-input-box">
-                        <i class="bi bi-lock auth-input-icon"></i>
-                        <input type="password"
-                               id="password"
-                               name="password"
-                               placeholder="Enter your account password"
-                               autocomplete="current-password"
-                               required />
-                        <button type="button" class="auth-password-toggle" id="togglePasswordBtn" title="Toggle password visibility">
-                            <i class="bi bi-eye" id="togglePasswordIcon"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- REMEMBER & FORGOT PASSWORD ROW -->
-                <div class="auth-options-row">
-                    <label class="auth-remember-label" for="rememberMe">
-                        <input type="checkbox" id="rememberMe" name="rememberMe" />
-                        <span>Keep me signed in</span>
-                    </label>
-
-                    <a asp-action="ForgotPassword" class="auth-forgot-link">
-                        Forgot Password?
-                    </a>
-                </div>
-
-                <!-- SUBMIT BUTTON -->
-                <button type="submit"
-                        class="auth-submit-btn"
-                        id="loginButton">
-                    <span id="btnText">Sign In to Campus Portal</span>
-                    <i class="bi bi-arrow-right" id="btnArrow"></i>
-                    <span class="spinner-border spinner-border-sm d-none" id="btnSpinner" role="status" aria-hidden="true"></span>
-                </button>
-
-            </form>
-
-            <div class="auth-form-footer text-center pt-3">
-                <p class="text-muted small mb-0">
-                    Need an account? 
-                    <a asp-action="Register" class="text-primary fw-semibold text-decoration-none">
-                        Register for Campus Verification &rarr;
-                    </a>
-                </p>
             </div>
 
+            <!-- REMEMBER ME + FORGOT PASSWORD -->
+            <div class="auth-options-row">
+                <label class="auth-remember-label" for="rememberMe">
+                    <input type="checkbox" id="rememberMe" name="rememberMe" value="true" />
+                    <span>Keep me signed in</span>
+                </label>
+
+                <a asp-action="ForgotPassword" class="auth-forgot-link">
+                    Forgot Password?
+                </a>
+            </div>
+
+            <!-- SUBMIT BUTTON -->
+            <button type="submit"
+                    class="auth-submit-btn"
+                    id="loginButton">
+                <span id="btnText">Sign In</span>
+                <span class="spinner-border spinner-border-sm d-none ms-2" id="btnSpinner" role="status" aria-hidden="true"></span>
+            </button>
+
+        </form>
+
+        <!-- CREATE ACCOUNT LINK -->
+        <div class="auth-card-footer">
+            <p class="mb-0">
+                Don't have an account? 
+                <a asp-action="Register">
+                    Create an Account
+                </a>
+            </p>
+        </div>
+
+        <!-- COPYRIGHT FOOTER -->
+        <div class="auth-page-copyright">
+            &copy; @DateTime.UtcNow.Year Hawassa University. All rights reserved.
         </div>
 
     </div>

@@ -75,7 +75,16 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 {
                     return Redirect(returnUrl);
                 }
-                return RedirectToAction("Index", "Dashboard");
+
+                var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "Student";
+                return userRole switch
+                {
+                    "SuperAdmin" => RedirectToAction("SuperAdmin", "Admin"),
+                    "Admin" => RedirectToAction("Index", "Admin"),
+                    "Faculty" or "Staff" => RedirectToAction("Staff", "Dashboard"),
+                    "Organization" => RedirectToAction("Organization", "Dashboard"),
+                    _ => RedirectToAction("Student", "Dashboard")
+                };
             }
 
             ViewBag.ReturnUrl = returnUrl;
@@ -86,13 +95,19 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("login")]
-        public async Task<IActionResult> Login(string email, string password, string? returnUrl = null)
+        public async Task<IActionResult> Login(string email, string password, bool rememberMe = false, string? returnUrl = null)
         {
             ViewBag.ReturnUrl = returnUrl;
 
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            if (string.IsNullOrWhiteSpace(email))
             {
-                ViewBag.Error = "Please enter both your username/email and password.";
+                ViewBag.Error = "Please enter your username or email.";
+                return View();
+            }
+
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                ViewBag.Error = "Please enter your password.";
                 return View();
             }
 
@@ -116,25 +131,19 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
             if (dbUser == null || !_passwords.VerifyPassword(dbUser, password, dbUser.password_hash))
             {
-                ViewBag.Error = "Invalid email/username or password. Please verify your credentials.";
+                ViewBag.Error = "Invalid username or password. Please try again.";
                 return View();
             }
 
             if (dbUser.account_status == "PENDING" || dbUser.account_status == "PENDING_APPROVAL")
             {
-                ViewBag.Error = "Your account has been registered by Campus Administration and is currently pending SuperAdmin approval before activation. You will receive access once approved.";
-                return View();
-            }
-
-            if (dbUser.account_status == "SUSPENDED" || dbUser.account_status == "LOCKED" || dbUser.account_status == "INACTIVE")
-            {
-                ViewBag.Error = "Your account is currently inactive, locked, or suspended. Please contact campus security administration.";
+                ViewBag.Error = "Your account registration is pending administrator approval.";
                 return View();
             }
 
             if (dbUser.account_status != "ACTIVE")
             {
-                ViewBag.Error = "Your account is not active. Please contact campus administration.";
+                ViewBag.Error = "Your account is currently unavailable. Please contact an administrator.";
                 return View();
             }
 
@@ -167,13 +176,13 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var authProps = new AuthenticationProperties
             {
-                IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+                IsPersistent = rememberMe,
+                ExpiresUtc = rememberMe ? DateTimeOffset.UtcNow.AddDays(30) : (DateTimeOffset?)null
             };
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProps);
 
-            TempData["SuccessMessage"] = $"Welcome back, {dbUser.first_name}! Logged in as {userRole}.";
+            TempData["SuccessMessage"] = $"Welcome back, {dbUser.first_name}!";
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
@@ -181,7 +190,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             // Direct route based on authenticated role
             return userRole switch
             {
-                "SuperAdmin" or "Admin" => RedirectToAction("Index", "Admin"),
+                "SuperAdmin" => RedirectToAction("SuperAdmin", "Admin"),
+                "Admin" => RedirectToAction("Index", "Admin"),
                 "Faculty" or "Staff" => RedirectToAction("Staff", "Dashboard"),
                 "Organization" => RedirectToAction("Organization", "Dashboard"),
                 _ => RedirectToAction("Student", "Dashboard")

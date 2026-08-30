@@ -21,11 +21,11 @@
                 </div>
                 
                 <h1 class="hero-title">
-                    Connecting Campus Life, Academic Conferences & Student Events
+                    Campus Events &amp; Venue Management
                 </h1>
                 
                 <p class="hero-lead">
-                    The official university platform for discovering upcoming academic symposiums, workshops, student club activities, and campus hall bookings.
+                    The central portal for discovering university events, managing attendee registrations, and scheduling campus venues.
                 </p>
                 
                 <div class="d-flex flex-wrap gap-3">
@@ -45,13 +45,13 @@
                 <div class="p-4 rounded-4 bg-white bg-opacity-10 border border-white border-opacity-15 text-start shadow-sm">
                     <div class="d-flex align-items-center gap-2 mb-3 text-white">
                         <i class="bi bi-info-circle-fill fs-5 text-info"></i>
-                        <span class="fw-bold">Campus Access Notice</span>
+                        <span class="fw-bold">Campus Access</span>
                     </div>
                     <p class="small text-white text-opacity-75 mb-3" style="line-height: 1.5;">
-                        Public event registration is open for campus attendees. Department staff and students can access their personalized schedule using issued university credentials.
+                        Event registration is open to students, staff, and guests. Sign in with university credentials to access schedules and organizer tools.
                     </p>
                     <a asp-controller="Home" asp-action="Contact" class="btn btn-sm btn-light w-100 fw-semibold text-primary">
-                        Contact Administration Desk &rarr;
+                        Contact Admin Desk &rarr;
                     </a>
                 </div>
             </div>
@@ -86,15 +86,14 @@
 </div>
 
 <!-- =======================================================
-     3. UPCOMING FEATURED EVENTS
+     3. UPCOMING EVENTS
      ======================================================= -->
 <section class="py-5 mt-4">
     <div class="container">
         <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
             <div class="section-header mb-0">
-                <span class="section-tag">Campus Activities</span>
-                <h2 class="section-title">Upcoming University Events</h2>
-                <p class="section-subtitle">Discover academic, cultural, and sports events scheduled across Hawassa University campuses.</p>
+                <h2 class="section-title">Upcoming Events</h2>
+                <p class="section-subtitle">Upcoming activities scheduled across Hawassa University campuses.</p>
             </div>
             <a asp-controller="Events" asp-action="Index" class="btn btn-outline-primary btn-sm fw-semibold mt-2 mt-md-0">
                 View All Events &rarr;
@@ -152,9 +151,9 @@
         {
             <div class="p-5 text-center bg-white rounded-4 border shadow-sm">
                 <i class="bi bi-calendar-x text-muted display-4 mb-3 d-block"></i>
-                <h5 class="fw-bold text-dark mb-1">No Upcoming Public Events Scheduled</h5>
-                <p class="text-muted small mb-3">Upcoming university symposiums, student workshops, and activities will appear here once published.</p>
-                <a asp-controller="Events" asp-action="Index" class="btn btn-sm btn-outline-primary rounded-pill px-4">Browse Past & Ongoing Events</a>
+                <h5 class="fw-bold text-dark mb-1">No Upcoming Events</h5>
+                <p class="text-muted small mb-3">There are currently no scheduled public events. Please check back later.</p>
+                <a asp-controller="Events" asp-action="Index" class="btn btn-sm btn-outline-primary rounded-pill px-4">Browse Past &amp; Ongoing Events</a>
             </div>
         }
     </div>
@@ -166,9 +165,8 @@
 <section class="py-5 bg-light border-top border-bottom">
     <div class="container">
         <div class="section-header text-center mx-auto" style="max-width: 600px;">
-            <span class="section-tag">Explore Themes</span>
             <h2 class="section-title">Event Categories</h2>
-            <p class="section-subtitle">Find conferences, workshops, and activities organized by campus departments.</p>
+            <p class="section-subtitle">Browse events by department and topic.</p>
         </div>
 
         <div class="row g-3">
@@ -178,7 +176,6 @@
                         <i class="bi bi-mortarboard"></i>
                     </div>
                     <div class="category-title">Academic</div>
-                    <div class="category-count">Conferences</div>
                 </a>
             </div>
             <div class="col-6 col-md-4 col-lg-2">
@@ -187,7 +184,6 @@
                         <i class="bi bi-laptop"></i>
                     </div>
                     <div class="category-title">Technology</div>
-                    <div class="category-count">Hackathons</div>
                 </a>
             </div>
             <div class="col-6 col-md-4 col-lg-2">
@@ -196,7 +192,6 @@
                         <i class="bi bi-palette"></i>
                     </div>
                     <div class="category-title">Cultural</div>
-                    <div class="category-count">Festivals & Arts</div>
                 </a>
             </div>
             <div class="col-6 col-md-4 col-lg-2">
@@ -205,7 +200,6 @@
                         <i class="bi bi-trophy"></i>
                     </div>
                     <div class="category-title">Sports</div>
-                    <div class="category-count">Tournaments</div>
                 </a>
             </div>
             <div class="col-6 col-md-4 col-lg-2">
@@ -214,7 +208,6 @@
                         <i class="bi bi-journal-text"></i>
                     </div>
                     <div class="category-title">Workshops</div>
-                    <div class="category-count">Skill Training</div>
                 </a>
             </div>
             <div class="col-6 col-md-4 col-lg-2">
@@ -223,7 +216,6 @@
                         <i class="bi bi-grid-3x3-gap"></i>
                     </div>
                     <div class="category-title">All Categories</div>
-                    <div class="category-count">View Catalog</div>
                 </a>
             </div>
         </div>
@@ -237,9 +229,8 @@
     <div class="container">
         <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
             <div class="section-header mb-0">
-                <span class="section-tag">Official Notices</span>
                 <h2 class="section-title">Campus Announcements</h2>
-                <p class="section-subtitle">Stay informed about institutional circulars and administrative notices.</p>
+                <p class="section-subtitle">Official circulars and notices from university departments.</p>
             </div>
             <a asp-controller="Announcements" asp-action="Index" class="btn btn-outline-secondary btn-sm fw-semibold mt-2 mt-md-0">
                 View All Announcements &rarr;
@@ -264,7 +255,7 @@
                                 </p>
                             </div>
                             <a asp-controller="Announcements" asp-action="Details" asp-route-id="@ann.Id" class="text-primary small fw-semibold text-decoration-none">
-                                Read Official Notice &rarr;
+                                Read Notice &rarr;
                             </a>
                         </div>
                     </div>
@@ -274,7 +265,7 @@
         else
         {
             <div class="p-4 text-center bg-white rounded-3 border">
-                <p class="text-muted small mb-0">No active circulars at this moment. All official bulletins will be broadcasted here.</p>
+                <p class="text-muted small mb-0">No active announcements at this time.</p>
             </div>
         }
     </div>
@@ -288,9 +279,9 @@
         <div class="portal-cta-banner">
             <div class="row align-items-center g-4">
                 <div class="col-lg-8">
-                    <h3 class="fw-bold mb-2">Are you an Event Coordinator or Faculty Host?</h3>
+                    <h3 class="fw-bold mb-2">Event Coordination &amp; Facility Scheduling</h3>
                     <p class="mb-0 text-white-50" style="font-size: 1rem; line-height: 1.5;">
-                        Log in with your university credentials to submit event proposals, reserve auditoriums, manage registrations, and broadcast circulars.
+                        Sign in with your university account to submit event proposals, reserve campus venues, and manage registrations.
                     </p>
                 </div>
                 <div class="col-lg-4 text-lg-end">

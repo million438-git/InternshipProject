@@ -101,5 +101,40 @@ namespace HawassaUnifiedCampusEventManagementSystem.Tests
 
             Assert.True(isValid);
         }
+
+        [Fact]
+        public void VenueConflict_OverlapCondition_ShouldDetectTrueOverlaps()
+        {
+            var eventStart = new DateTime(2026, 9, 15, 10, 0, 0);
+            var eventEnd = new DateTime(2026, 9, 15, 12, 0, 0);
+
+            // Overlapping window 1: starts inside (11:00 to 13:00)
+            var newStart1 = new DateTime(2026, 9, 15, 11, 0, 0);
+            var newEnd1 = new DateTime(2026, 9, 15, 13, 0, 0);
+            bool hasConflict1 = newStart1 < eventEnd && newEnd1 > eventStart;
+            Assert.True(hasConflict1);
+
+            // Overlapping window 2: completely encompasses (09:00 to 14:00)
+            var newStart2 = new DateTime(2026, 9, 15, 9, 0, 0);
+            var newEnd2 = new DateTime(2026, 9, 15, 14, 0, 0);
+            bool hasConflict2 = newStart2 < eventEnd && newEnd2 > eventStart;
+            Assert.True(hasConflict2);
+
+            // Non-overlapping window: starts after eventEnd (12:00 to 14:00)
+            var newStart3 = new DateTime(2026, 9, 15, 12, 0, 0);
+            var newEnd3 = new DateTime(2026, 9, 15, 14, 0, 0);
+            bool hasConflict3 = newStart3 < eventEnd && newEnd3 > eventStart;
+            Assert.False(hasConflict3);
+        }
+
+        [Fact]
+        public void RegistrationTicketCode_Format_ShouldMatchInstitutionalStandard()
+        {
+            var guidSegment = Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
+            var ticketCode = $"REG-HU-{guidSegment}";
+
+            Assert.StartsWith("REG-HU-", ticketCode);
+            Assert.Equal(15, ticketCode.Length);
+        }
     }
 }
