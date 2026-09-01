@@ -551,8 +551,22 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     return RedirectToAction(nameof(Users));
                 }
 
-                // Generate temporary password if not provided
-                var tempPassword = string.IsNullOrWhiteSpace(newPassword) ? $"Hawassa@{RandomNumberGenerator.GetInt32(100000, 999999)}" : newPassword.Trim();
+                // Generate temporary password if not provided or validate provided custom password
+                string tempPassword;
+                if (!string.IsNullOrWhiteSpace(newPassword))
+                {
+                    if (!ValidationHelper.IsStrongPassword(newPassword, out string pwdErr))
+                    {
+                        TempData["ErrorMessage"] = pwdErr;
+                        return RedirectToAction(nameof(Users));
+                    }
+                    tempPassword = newPassword.Trim();
+                }
+                else
+                {
+                    tempPassword = $"Hawassa@{RandomNumberGenerator.GetInt32(100, 999)}!{RandomNumberGenerator.GetInt32(100, 999)}aA";
+                }
+
                 user.password_hash = AccountController.HashPassword(tempPassword);
                 user.updated_at = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
@@ -810,15 +824,21 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     }
                 }
 
-                if (string.IsNullOrWhiteSpace(finalFirst) || finalFirst.Length < 2)
+                // 1. Resolve & validate names (Alphabetic characters only, no numbers or special symbols)
+                if (!ValidationHelper.IsValidName(finalFirst, "First name", out string firstErr))
                 {
-                    TempData["ErrorMessage"] = "Please enter a valid first name.";
+                    TempData["ErrorMessage"] = firstErr;
                     return RedirectToAction(nameof(RegisterUser), new { role = accountType });
                 }
 
                 if (string.IsNullOrWhiteSpace(finalLast))
                 {
                     finalLast = finalFirst;
+                }
+                else if (!ValidationHelper.IsValidName(finalLast, "Last name", out string lastErr))
+                {
+                    TempData["ErrorMessage"] = lastErr;
+                    return RedirectToAction(nameof(RegisterUser), new { role = accountType });
                 }
 
                 // 2. Validate Username
@@ -835,10 +855,10 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     return RedirectToAction(nameof(RegisterUser), new { role = accountType });
                 }
 
-                // 3. Validate Email
-                if (string.IsNullOrWhiteSpace(email) || !email.Contains('@') || !email.Contains('.'))
+                // 3. Validate Email (Strict format & valid domain check)
+                if (!ValidationHelper.IsValidEmail(email, out string emailErr))
                 {
-                    TempData["ErrorMessage"] = "Please provide a valid official email address.";
+                    TempData["ErrorMessage"] = emailErr;
                     return RedirectToAction(nameof(RegisterUser), new { role = accountType });
                 }
 
@@ -849,10 +869,10 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     return RedirectToAction(nameof(RegisterUser), new { role = accountType });
                 }
 
-                // 4. Validate Password
-                if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
+                // 4. Validate Password (Strict Strong Password Policy: 8+ chars, upper, lower, digit, special symbol)
+                if (!ValidationHelper.IsStrongPassword(password, out string pwdErr))
                 {
-                    TempData["ErrorMessage"] = "Password must be at least 6 characters long.";
+                    TempData["ErrorMessage"] = pwdErr;
                     return RedirectToAction(nameof(RegisterUser), new { role = accountType });
                 }
 

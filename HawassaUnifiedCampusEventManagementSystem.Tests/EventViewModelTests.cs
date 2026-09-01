@@ -64,5 +64,60 @@ namespace HawassaUnifiedCampusEventManagementSystem.Tests
             Assert.Equal("Hiwot Tadesse", comment.UserName);
             Assert.True(comment.CanDelete);
         }
+
+        [Fact]
+        public void CampusMapViewModel_CalculatesTotalsAccurately()
+        {
+            // Arrange
+            var vm = new CampusMapViewModel
+            {
+                ActiveCampus = "IOT",
+                TotalVenuesCount = 12,
+                AvailableVenuesCount = 10,
+                TotalCapacityCount = 3500
+            };
+
+            // Assert
+            Assert.Equal("IOT", vm.ActiveCampus);
+            Assert.Equal(12, vm.TotalVenuesCount);
+            Assert.Equal(10, vm.AvailableVenuesCount);
+            Assert.Equal(3500, vm.TotalCapacityCount);
+        }
+
+        [Fact]
+        public void CheckInViewModel_CalculatesAttendancePercentageAccurately()
+        {
+            // Arrange
+            var vm = new CheckInViewModel
+            {
+                TotalRegisteredCount = 100,
+                AttendedCount = 75
+            };
+
+            // Assert
+            Assert.Equal(25, vm.PendingCount);
+            Assert.Equal(75.0, vm.AttendancePercentage);
+        }
+
+        [Fact]
+        public void CertificateViewModel_Initialization_RetainsFormattedAttributes()
+        {
+            // Arrange
+            var cert = new CertificateViewModel
+            {
+                RegistrationId = 42,
+                CertificateNumber = "HU-CERT-2026-000042",
+                StudentFullName = "Dawit Yohannes",
+                StudentIdNumber = "UGR/1234/15",
+                EventTitle = "Hawassa AI & Machine Learning Symposium",
+                SecurityHash = "A1B2C3D4E5F67890"
+            };
+
+            // Assert
+            Assert.Equal(42ul, cert.RegistrationId);
+            Assert.Equal("HU-CERT-2026-000042", cert.CertificateNumber);
+            Assert.Equal("Dawit Yohannes", cert.StudentFullName);
+            Assert.Equal("A1B2C3D4E5F67890", cert.SecurityHash);
+        }
     }
 }

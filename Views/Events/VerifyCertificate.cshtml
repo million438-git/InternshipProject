@@ -1,0 +1,68 @@
+@{
+    ViewData["Title"] = "Certificate Verification Portal | Hawassa University";
+    var status = (string?)ViewBag.Status ?? "SEARCH";
+}
+
+<div class="container py-5" style="max-width: 720px;">
+
+    <div class="text-center mb-4">
+        <img src="~/images/hawassa-logo.png" alt="Hawassa University" style="width: 72px; height: 72px; object-fit: contain;" class="mb-2" />
+        <h2 class="fw-bold text-dark">Certificate Verification Portal</h2>
+        <p class="text-muted small">Verify the authenticity of Hawassa University event certificates.</p>
+    </div>
+
+    <!-- SEARCH FORM -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+        <form asp-action="VerifyCertificate" method="get">
+            <label class="form-label small fw-semibold text-dark">Enter Certificate Verification Number</label>
+            <div class="input-group">
+                <input type="text" name="code" class="form-control form-control-lg" placeholder="e.g. HU-CERT-2026-000042" value="@ViewBag.CertificateNumber" required />
+                <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                    <i class="bi bi-search me-1"></i> Verify
+                </button>
+            </div>
+        </form>
+    </div>
+
+    @if (status == "VALID")
+    {
+        <div class="card border-success border-2 shadow-sm rounded-4 p-4 bg-white text-center">
+            <div class="d-inline-flex align-items-center justify-content-center bg-success text-white rounded-circle mb-3 mx-auto" style="width: 56px; height: 56px;">
+                <i class="bi bi-shield-check fs-2"></i>
+            </div>
+            <h4 class="fw-bold text-success mb-1">Authentic Certificate Verified</h4>
+            <p class="small text-muted mb-3">This certificate was officially issued by Hawassa University.</p>
+
+            <div class="p-3 bg-light rounded-3 text-start mb-3">
+                <div class="row g-2 small">
+                    <div class="col-sm-4 text-muted">Certificate No:</div>
+                    <div class="col-sm-8 fw-bold text-dark">@ViewBag.CertificateNumber</div>
+
+                    <div class="col-sm-4 text-muted">Recipient Name:</div>
+                    <div class="col-sm-8 fw-bold text-dark">@ViewBag.StudentName (ID: @ViewBag.StudentId)</div>
+
+                    <div class="col-sm-4 text-muted">Department:</div>
+                    <div class="col-sm-8 text-dark">@ViewBag.Department</div>
+
+                    <div class="col-sm-4 text-muted">Event Title:</div>
+                    <div class="col-sm-8 fw-bold text-primary">@ViewBag.EventTitle</div>
+
+                    <div class="col-sm-4 text-muted">Date & Venue:</div>
+                    <div class="col-sm-8 text-dark">@(((DateTime)ViewBag.EventDate).ToString("MMM dd, yyyy")) • @ViewBag.Venue</div>
+                </div>
+            </div>
+
+            <small class="text-success fw-semibold"><i class="bi bi-patch-check-fill me-1"></i> Verified in University Central Event Registry</small>
+        </div>
+    }
+    else if (status == "INVALID")
+    {
+        <div class="card border-danger border-2 shadow-sm rounded-4 p-4 bg-white text-center">
+            <div class="d-inline-flex align-items-center justify-content-center bg-danger text-white rounded-circle mb-3 mx-auto" style="width: 56px; height: 56px;">
+                <i class="bi bi-x-circle fs-2"></i>
+            </div>
+            <h4 class="fw-bold text-danger mb-1">Certificate Not Found</h4>
+            <p class="small text-muted mb-0">No official record matches the verification code <code>@ViewBag.SearchedCode</code>. Please check the code and try again.</p>
+        </div>
+    }
+</div>

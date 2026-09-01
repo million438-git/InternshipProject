@@ -21,101 +21,149 @@ namespace HawassaUnifiedCampusEventManagementSystem.Data
 
             try
             {
-                // Ensure Roles exist
-                var superAdminRole = await db.roles.FirstOrDefaultAsync(r => r.name == "SuperAdmin" || r.name == "SUPERADMIN");
-                if (superAdminRole == null)
+                // Ensure all 6 System Roles exist
+                var rolesToEnsure = new[]
                 {
-                    superAdminRole = new Role
+                    ("SuperAdmin", "Full Platform Control & Security Governance"),
+                    ("Admin", "Campus Events, Venues, and Departmental Operations Administrator"),
+                    ("Faculty", "Academic Faculty, Professors, and Course Schedule Coordinators"),
+                    ("Staff", "Departmental Staff, Operations Officers, and Equipment Managers"),
+                    ("Organization", "Registered Student Clubs, Associations, and Event Organizers"),
+                    ("Student", "Enrolled University Students and Event Attendees")
+                };
+
+                foreach (var (rName, rDesc) in rolesToEnsure)
+                {
+                    var existingRole = await db.roles.FirstOrDefaultAsync(r => r.name.ToLower() == rName.ToLower());
+                    if (existingRole == null)
                     {
-                        name = "SuperAdmin",
-                        description = "Full System Administrator with root clearance",
-                        is_system_role = true,
-                        created_at = DateTime.UtcNow,
-                        updated_at = DateTime.UtcNow
-                    };
-                    db.roles.Add(superAdminRole);
-                    await db.SaveChangesAsync();
+                        db.roles.Add(new Role
+                        {
+                            name = rName,
+                            description = rDesc,
+                            is_system_role = true,
+                            created_at = DateTime.UtcNow,
+                            updated_at = DateTime.UtcNow
+                        });
+                    }
+                }
+                await db.SaveChangesAsync();
+
+                var roleMap = await db.roles.ToDictionaryAsync(r => r.name.ToLower(), r => r.id);
+
+                // Helper to ensure an account is seeded, activated, and bound to its role
+                async Task EnsureUserAccount(
+                    string username, 
+                    string email, 
+                    string firstName, 
+                    string lastName, 
+                    string password, 
+                    string accountType, 
+                    string roleName,
+                    string? employeeId = null,
+                    string? studentId = null,
+                    string? phone = null,
+                    ulong? deptId = 1)
+                {
+                    var user = await db.users
+                        .Include(u => u.user_roleusers)
+                        .FirstOrDefaultAsync(u => u.username.ToLower() == username.ToLower() || u.email.ToLower() == email.ToLower());
+
+                    if (user == null)
+                    {
+                        user = new User
+                        {
+                            username = username.ToLowerInvariant(),
+                            email = email.ToLowerInvariant(),
+                            first_name = firstName,
+                            last_name = lastName,
+                            employee_id = employeeId,
+                            student_id = studentId,
+                            phone = phone ?? "+251911000000",
+                            account_type = accountType,
+                            account_status = "ACTIVE",
+                            email_verified = true,
+                            phone_verified = true,
+                            department_id = deptId,
+                            created_at = DateTime.UtcNow,
+                            updated_at = DateTime.UtcNow
+                        };
+                        user.password_hash = _hasher.HashPassword(user, password);
+                        db.users.Add(user);
+                        await db.SaveChangesAsync();
+
+                        if (roleMap.TryGetValue(roleName.ToLower(), out var rId))
+                        {
+                            db.user_roles.Add(new user_role
+                            {
+                                user_id = user.id,
+                                role_id = rId,
+                                assigned_at = DateTime.UtcNow
+                            });
+                            await db.SaveChangesAsync();
+                        }
+                        logger.LogInformation("Seeded active {Role} account: {Email} ({Username})", roleName, email, username);
+                    }
+                    else
+                    {
+                        // Ensure account is ACTIVE and has correct role binding
+                        user.account_status = "ACTIVE";
+                        user.email_verified = true;
+                        user.phone_verified = true;
+                        if (roleMap.TryGetValue(roleName.ToLower(), out var rId) && !user.user_roleusers.Any(ur => ur.role_id == rId))
+                        {
+                            db.user_roles.Add(new user_role
+                            {
+                                user_id = user.id,
+                                role_id = rId,
+                                assigned_at = DateTime.UtcNow
+                            });
+                        }
+                        await db.SaveChangesAsync();
+                    }
                 }
 
-                var adminRole = await db.roles.FirstOrDefaultAsync(r => r.name == "Admin" || r.name == "ADMIN");
-                if (adminRole == null)
+                // 1. SUPERADMIN ACCOUNT (Official Master Administrator)
+                await EnsureUserAccount("superadmin", "superadmin@hawassa.edu.et", "Dr. Ermias", "SuperAdmin", "SuperAdmin@2026!", "SUPERADMIN", "SuperAdmin", employeeId: "EMP-SA-001", phone: "+251911223344", deptId: 2);
+
+                // 2. ADMIN ACCOUNT (Official Campus Operations Administrator)
+                await EnsureUserAccount("admin", "admin@hawassa.edu.et", "Abebe", "Administrator", "Admin@2026!", "ADMIN", "Admin", employeeId: "EMP-ADM-002", phone: "+251911556677", deptId: 1);
+
+                // 3. PURGE & PERMANENTLY REMOVE DUMMY TESTING ACCOUNTS
+                var dummyTestUsernames = new[] { "student", "faculty", "staff", "organization", "testuser", "teststudent", "testfaculty", "teststaff" };
+                var dummyUsers = await db.users
+                    .Include(u => u.user_roleusers)
+                    .Where(u => dummyTestUsernames.Contains(u.username.ToLower()) || 
+                                u.email == "student@hawassa.edu.et" || 
+                                u.email == "faculty@hawassa.edu.et" || 
+                                u.email == "staff@hawassa.edu.et" || 
+                                u.email == "organization@hawassa.edu.et")
+                    .ToListAsync();
+
+                if (dummyUsers.Any())
                 {
-                    adminRole = new Role
+                    foreach (var dummy in dummyUsers)
                     {
-                        name = "Admin",
-                        description = "Campus Event & Operations Administrator",
-                        is_system_role = true,
-                        created_at = DateTime.UtcNow,
-                        updated_at = DateTime.UtcNow
-                    };
-                    db.roles.Add(adminRole);
-                    await db.SaveChangesAsync();
-                }
+                        var dummyId = dummy.id;
+                        var uRoles = await db.user_roles.Where(ur => ur.user_id == dummyId).ToListAsync();
+                        if (uRoles.Any()) db.user_roles.RemoveRange(uRoles);
 
-                // 1. SUPERADMIN ACCOUNT
-                var superAdminUser = await db.users.FirstOrDefaultAsync(u => u.username == "superadmin" || u.email == "superadmin@hawassa.edu.et");
-                if (superAdminUser == null)
-                {
-                    superAdminUser = new User
-                    {
-                        username = "superadmin",
-                        email = "superadmin@hawassa.edu.et",
-                        first_name = "Super",
-                        last_name = "Admin",
-                        employee_id = "EMP-SA-001",
-                        phone = "+251911000001",
-                        account_type = "STAFF",
-                        account_status = "ACTIVE",
-                        email_verified = true,
-                        phone_verified = true,
-                        created_at = DateTime.UtcNow,
-                        updated_at = DateTime.UtcNow
-                    };
-                    superAdminUser.password_hash = _hasher.HashPassword(superAdminUser, "SuperAdmin@2026!");
-                    db.users.Add(superAdminUser);
-                    await db.SaveChangesAsync();
+                        var uTokens = await db.auth_tokens.Where(t => t.user_id == dummyId).ToListAsync();
+                        if (uTokens.Any()) db.auth_tokens.RemoveRange(uTokens);
 
-                    db.user_roles.Add(new user_role
-                    {
-                        user_id = superAdminUser.id,
-                        role_id = superAdminRole.id,
-                        assigned_at = DateTime.UtcNow
-                    });
-                    await db.SaveChangesAsync();
-                    logger.LogInformation("Seeded master SuperAdmin account: superadmin@hawassa.edu.et");
-                }
+                        var uSessions = await db.sessions.Where(s => s.user_id == dummyId).ToListAsync();
+                        if (uSessions.Any()) db.sessions.RemoveRange(uSessions);
 
-                // 2. ADMIN ACCOUNT (Campus Operational Administrator)
-                var adminUser = await db.users.FirstOrDefaultAsync(u => u.username == "admin" || u.email == "admin@hawassa.edu.et");
-                if (adminUser == null)
-                {
-                    adminUser = new User
-                    {
-                        username = "admin",
-                        email = "admin@hawassa.edu.et",
-                        first_name = "Campus",
-                        last_name = "Administrator",
-                        employee_id = "EMP-ADM-002",
-                        phone = "+251911000002",
-                        account_type = "STAFF",
-                        account_status = "ACTIVE",
-                        email_verified = true,
-                        phone_verified = true,
-                        created_at = DateTime.UtcNow,
-                        updated_at = DateTime.UtcNow
-                    };
-                    adminUser.password_hash = _hasher.HashPassword(adminUser, "Admin@2026!");
-                    db.users.Add(adminUser);
-                    await db.SaveChangesAsync();
+                        var uNotifs = await db.notifications.Where(n => n.user_id == dummyId).ToListAsync();
+                        if (uNotifs.Any()) db.notifications.RemoveRange(uNotifs);
 
-                    db.user_roles.Add(new user_role
-                    {
-                        user_id = adminUser.id,
-                        role_id = adminRole.id,
-                        assigned_at = DateTime.UtcNow
-                    });
+                        var uRegs = await db.registrations.Where(r => r.user_id == dummyId).ToListAsync();
+                        if (uRegs.Any()) db.registrations.RemoveRange(uRegs);
+
+                        db.users.Remove(dummy);
+                    }
                     await db.SaveChangesAsync();
-                    logger.LogInformation("Seeded campus Admin account: admin@hawassa.edu.et");
+                    logger.LogInformation("Permanently deleted {Count} dummy testing accounts from database.", dummyUsers.Count);
                 }
 
                 // 3. ENSURE CLUB TABLES EXIST IN MYSQL
@@ -238,6 +286,7 @@ CREATE TABLE IF NOT EXISTS club_members (
                     categoryMap.TryGetValue("entrepreneurship-business", out var entCat);
 
                     var csDept = await db.departments.FirstOrDefaultAsync();
+                    var defaultPresident = await db.users.FirstOrDefaultAsync(u => u.username == "admin" || u.username == "superadmin");
 
                     // Club 1: AI & ML Club
                     var aiClub = new Club
@@ -248,7 +297,7 @@ CREATE TABLE IF NOT EXISTS club_members (
                         description = "Hawassa University student community for Artificial Intelligence, Neural Networks, Computer Vision, and Data Science. We host weekly hands-on workshops and hackathons.",
                         logo_url = null,
                         department_id = csDept?.id,
-                        president_id = adminUser?.id,
+                        president_id = defaultPresident?.id,
                         status = "ACTIVE",
                         created_at = DateTime.UtcNow,
                         updated_at = DateTime.UtcNow
@@ -264,7 +313,7 @@ CREATE TABLE IF NOT EXISTS club_members (
                         description = "Dedicated to ethical hacking, Capture The Flag (CTF) competitions, reverse engineering, web security forensics, and cyber defense training across Ethiopian universities.",
                         logo_url = null,
                         department_id = csDept?.id,
-                        president_id = adminUser?.id,
+                        president_id = defaultPresident?.id,
                         status = "ACTIVE",
                         created_at = DateTime.UtcNow,
                         updated_at = DateTime.UtcNow
@@ -280,7 +329,7 @@ CREATE TABLE IF NOT EXISTS club_members (
                         description = "Training students in modern software engineering, web architectures, mobile app development, and open-source contributions with active mentor sessions.",
                         logo_url = null,
                         department_id = csDept?.id,
-                        president_id = adminUser?.id,
+                        president_id = defaultPresident?.id,
                         status = "ACTIVE",
                         created_at = DateTime.UtcNow,
                         updated_at = DateTime.UtcNow
@@ -296,7 +345,7 @@ CREATE TABLE IF NOT EXISTS club_members (
                         description = "Hardware prototyping, Arduino/Raspberry Pi microcontrollers, drone engineering, and industrial automation project labs.",
                         logo_url = null,
                         department_id = csDept?.id,
-                        president_id = adminUser?.id,
+                        president_id = defaultPresident?.id,
                         status = "ACTIVE",
                         created_at = DateTime.UtcNow,
                         updated_at = DateTime.UtcNow
@@ -320,27 +369,27 @@ CREATE TABLE IF NOT EXISTS club_members (
                     if (progCat != null) db.club_interests.Add(new ClubInterest { club_id = robotClub.id, category_id = progCat.id });
 
                     // Add president as approved member
-                    if (adminUser != null)
+                    if (defaultPresident != null)
                     {
                         db.club_members.Add(new ClubMember
                         {
                             club_id = aiClub.id,
-                            user_id = adminUser.id,
+                            user_id = defaultPresident.id,
                             membership_role = "PRESIDENT",
                             status = "APPROVED",
                             applied_at = DateTime.UtcNow,
                             reviewed_at = DateTime.UtcNow,
-                            reviewed_by = adminUser.id
+                            reviewed_by = defaultPresident.id
                         });
                         db.club_members.Add(new ClubMember
                         {
                             club_id = cyberClub.id,
-                            user_id = adminUser.id,
+                            user_id = defaultPresident.id,
                             membership_role = "PRESIDENT",
                             status = "APPROVED",
                             applied_at = DateTime.UtcNow,
                             reviewed_at = DateTime.UtcNow,
-                            reviewed_by = adminUser.id
+                            reviewed_by = defaultPresident.id
                         });
                     }
 

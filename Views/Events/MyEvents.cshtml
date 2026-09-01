@@ -163,9 +163,12 @@
                                             </div>
                                         </div>
 
-                                        <div class="event-card-footer pt-2">
+                                        <div class="event-card-footer pt-2 d-flex gap-1">
                                             <a asp-controller="Events" asp-action="Details" asp-route-id="@item.Id" class="btn btn-primary btn-sm flex-grow-1 rounded-pill">
-                                                <i class="bi bi-ticket-perforated me-1"></i> View Pass
+                                                <i class="bi bi-ticket-perforated me-1"></i> Pass
+                                            </a>
+                                            <a asp-controller="Events" asp-action="Certificate" asp-route-id="@item.Id" class="btn btn-warning btn-sm rounded-pill px-2 fw-semibold text-dark" title="Download Verified Certificate">
+                                                <i class="bi bi-award-fill me-1"></i> Certificate
                                             </a>
                                             <form asp-controller="Events" asp-action="CancelRegistration" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to cancel your registration for this event?');">
                                                 @Html.AntiForgeryToken()
@@ -268,7 +271,10 @@
                                             </div>
                                         </div>
 
-                                        <div class="event-card-footer pt-2">
+                                        <div class="event-card-footer pt-2 d-flex gap-1">
+                                            <a asp-controller="Events" asp-action="CheckIn" asp-route-id="@item.Id" class="btn btn-success btn-sm rounded-pill px-2 fw-semibold" title="Launch Live Door Check-In Scanner">
+                                                <i class="bi bi-qr-code-scan me-1"></i> Check-In
+                                            </a>
                                             <a asp-controller="Events" asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm flex-grow-1 rounded-pill">
                                                 View Page
                                             </a>

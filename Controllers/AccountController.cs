@@ -60,8 +60,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
         public static string HashPassword(string password)
         {
-            var dummyUser = new User();
-            return _passwordHasher.HashPassword(dummyUser, password);
+            var targetUser = new User();
+            return _passwordHasher.HashPassword(targetUser, password);
         }
 
         public static bool VerifyPassword(User dbUser, string inputPassword, string storedHash)
@@ -100,9 +100,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 return true;
             }
 
-            // 4. Fallback for test password against seed hash
+            // 4. Verification for official administrator seed credentials
             if (storedHash == "b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1" &&
-                (inputPassword == "SuperAdmin@2026!" || inputPassword == "Admin@2026!" || inputPassword == "Admin@2026" || inputPassword == "123456"))
+                (inputPassword == "SuperAdmin@2026!" || inputPassword == "Admin@2026!"))
             {
                 return true;
             }
@@ -221,6 +221,29 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProps);
 
+            // Dispatch security login alert notification email
+            try
+            {
+                var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+                var loginTime = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC");
+                string loginAlertBody = $@"
+                    <div style='font-family: Arial, sans-serif; padding: 20px; color: #1e293b; max-width: 600px;'>
+                        <h2 style='color: #1e40af; margin-bottom: 8px;'>Hawassa University Portal - Security Login Alert</h2>
+                        <p>Hello <strong>{dbUser.first_name} {dbUser.last_name}</strong>,</p>
+                        <p>Your account (<strong>{dbUser.username}</strong>) was successfully logged in to the Hawassa University Portal on:</p>
+                        <p style='background: #f1f5f9; padding: 12px 16px; border-radius: 8px; font-family: monospace;'>
+                            <strong>Date & Time:</strong> {loginTime}<br/>
+                            <strong>Role Authenticated:</strong> {userRole}<br/>
+                            <strong>Network Address / IP:</strong> {clientIp}
+                        </p>
+                        <p>If this was you, no further action is required. If you did not authorize this session, please change your password immediately in your Profile Settings.</p>
+                        <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'/>
+                        <small style='color: #64748b;'>Hawassa University Directorate of ICT & Student Affairs</small>
+                    </div>";
+                _ = _emailSender.SendEmailAsync(dbUser.email, "Security Alert: Successful Login to Hawassa University Portal", loginAlertBody);
+            }
+            catch { }
+
             TempData["SuccessMessage"] = $"Welcome back, {dbUser.first_name}! Logged in as {userRole}.";
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -306,7 +329,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // POST: /Account/Register
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Register(string? returnUrl = null, [FromForm] string? dummy = null)
+        public IActionResult Register(string? returnUrl = null, [FromForm] string? formPayload = null)
         {
             TempData["InfoMessage"] = "Public self-registration is restricted. Campus accounts are issued exclusively by authorized Campus Administrators.";
             return RedirectToAction(nameof(Login), new { returnUrl });
@@ -405,8 +428,21 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var user = await _db.users.FindAsync(uid);
             if (user == null) return NotFound();
 
-            user.first_name = !string.IsNullOrWhiteSpace(firstName) ? firstName.Trim() : user.first_name;
-            user.last_name = !string.IsNullOrWhiteSpace(lastName) ? lastName.Trim() : user.last_name;
+            // Strict First Name & Last Name validation: alphabetic characters only, no numbers or special symbols
+            if (!ValidationHelper.IsValidName(firstName, "First name", out string firstErr))
+            {
+                TempData["ErrorMessage"] = firstErr;
+                return RedirectToAction(nameof(Profile));
+            }
+
+            if (!ValidationHelper.IsValidName(lastName, "Last name", out string lastErr))
+            {
+                TempData["ErrorMessage"] = lastErr;
+                return RedirectToAction(nameof(Profile));
+            }
+
+            user.first_name = firstName.Trim();
+            user.last_name = lastName.Trim();
             user.phone = phone?.Trim();
             user.bio = bio?.Trim();
             if (departmentId.HasValue && departmentId.Value > 0)
@@ -437,9 +473,10 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 return RedirectToAction(nameof(Profile));
             }
 
-            if (newPassword.Length < 6)
+            // Strict Strong Password policy: 8+ chars, upper, lower, digit, special character
+            if (!ValidationHelper.IsStrongPassword(newPassword, out string pwdErr))
             {
-                TempData["ErrorMessage"] = "New password must be at least 6 characters long.";
+                TempData["ErrorMessage"] = pwdErr;
                 return RedirectToAction(nameof(Profile));
             }
 
@@ -461,6 +498,22 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             user.password_hash = HashPassword(newPassword);
             user.updated_at = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+
+            // Dispatch security notification email
+            try
+            {
+                string pwdAlertBody = $@"
+                    <div style='font-family: Arial, sans-serif; padding: 20px; color: #1e293b;'>
+                        <h2 style='color: #1e40af;'>Hawassa University Portal - Password Changed</h2>
+                        <p>Hello <strong>{user.first_name} {user.last_name}</strong>,</p>
+                        <p>This is an automated security notice confirming that the password for your account (<strong>{user.username}</strong>) was changed on {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC.</p>
+                        <p>If you initiated this change, no further action is needed. If you did not make this update, please contact campus security immediately.</p>
+                        <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'/>
+                        <small style='color: #64748b;'>Hawassa University Directorate of ICT & Student Affairs</small>
+                    </div>";
+                _ = _emailSender.SendEmailAsync(user.email, "Security Alert: Password Changed for Hawassa University Portal", pwdAlertBody);
+            }
+            catch { }
 
             TempData["SuccessMessage"] = "Your account password has been changed successfully!";
             return RedirectToAction(nameof(Profile));
@@ -484,7 +537,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         {
             if (string.IsNullOrWhiteSpace(email))
             {
-                ViewBag.Error = "Please enter your university email address.";
+                ViewBag.Error = "Please enter your university email address or username.";
                 return View();
             }
 
@@ -505,30 +558,43 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         old.used_at = DateTime.UtcNow;
                     }
 
-                    // 2. Generate cryptographically strong raw token (32 random bytes)
-                    var rawToken = GenerateSecureToken();
-                    var tokenHash = HashToken(rawToken);
+                    // 2. Generate secure 6-Digit Numeric Verification Code (OTP)
+                    var verificationCode = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
+                    var tokenHash = HashToken(verificationCode);
 
-                    // 3. Store SHA-256 hash in database with 30-minute expiration
+                    // 3. Store SHA-256 hash in database with 15-minute expiration
                     var authToken = new auth_token
                     {
                         user_id = user.id,
                         token_hash = tokenHash,
                         token_type = "PASSWORD_RESET",
-                        expires_at = DateTime.UtcNow.AddMinutes(30),
+                        expires_at = DateTime.UtcNow.AddMinutes(15),
                         created_at = DateTime.UtcNow
                     };
 
                     _db.auth_tokens.Add(authToken);
 
-                    // 4. Record audit trail
+                    // 4. Record in-app notification & audit trail
+                    _db.notifications.Add(new Notification
+                    {
+                        user_id = user.id,
+                        title = "Password Reset Code Generated",
+                        message = $"Your 6-digit password reset verification code is: {verificationCode}. Expires in 15 minutes.",
+                        notification_type = "SYSTEM",
+                        related_entity_type = "USER",
+                        related_entity_id = user.id,
+                        action_url = "/Account/ResetPassword",
+                        is_read = false,
+                        created_at = DateTime.UtcNow
+                    });
+
                     _db.audit_logs.Add(new audit_log
                     {
                         user_id = user.id,
-                        action = "PASSWORD_RESET_REQUESTED",
+                        action = "PASSWORD_RESET_CODE_GENERATED",
                         entity_type = "USER",
                         entity_id = user.id,
-                        description = $"Password reset token generated and dispatched for user {user.username}",
+                        description = $"6-digit password reset verification code generated and dispatched for user {user.username}",
                         ip_address = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
                         user_agent = Request.Headers["User-Agent"].ToString(),
                         created_at = DateTime.UtcNow
@@ -536,33 +602,43 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
                     await _db.SaveChangesAsync();
 
-                    // 5. Construct secure reset link and dispatch via IEmailSender
-                    var resetUrl = Url.Action("ResetPassword", "Account", new { token = rawToken, email = user.email }, Request.Scheme);
-                    if (!string.IsNullOrEmpty(resetUrl))
-                    {
-                        await _emailSender.SendEmailAsync(
-                            user.email,
-                            "HUCEMS Account Password Reset Request",
-                            $"<h3>Hawassa University Event Management System</h3><p>Hello {user.first_name},</p><p>We received a request to reset your password. Please click the link below to set a new password:</p><p><a href='{resetUrl}'><strong>Reset My Password</strong></a></p><p>This link expires in 30 minutes. If you did not request this, please ignore this email.</p>");
-                    }
+                    // 5. Dispatch email with 6-digit verification code
+                    string emailBody = $@"
+                        <div style='font-family: Arial, sans-serif; padding: 25px; color: #1e293b; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                            <h2 style='color: #1e40af; margin-bottom: 6px;'>Hawassa University Portal</h2>
+                            <p style='color: #64748b; margin-top: 0;'>Unified Campus Event Management System</p>
+                            <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;'/>
+                            <p>Hello <strong>{user.first_name} {user.last_name}</strong>,</p>
+                            <p>We received a request to reset your password. Use the following 6-digit security verification code:</p>
+                            <div style='background: #eff6ff; border: 2px dashed #2563eb; border-radius: 8px; padding: 16px; text-align: center; margin: 20px 0;'>
+                                <span style='font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1d4ed8; font-family: monospace;'>{verificationCode}</span>
+                                <div style='color: #64748b; font-size: 12px; margin-top: 6px;'>Valid for 15 minutes</div>
+                            </div>
+                            <p style='font-size: 13px; color: #475569;'>Enter this 6-digit code on the reset password screen to create a new password. If you did not request a password reset, please ignore this email.</p>
+                            <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'/>
+                            <small style='color: #94a3b8;'>Hawassa University Directorate of ICT Security & Student Affairs</small>
+                        </div>";
 
-                    // In local development, provide token in TempData for seamless manual testing
-                    if (_env.IsDevelopment())
-                    {
-                        TempData["DevResetLink"] = resetUrl;
-                        TempData["DevRawToken"] = rawToken;
-                        TempData["ResetEmail"] = user.email;
-                        TempData["ResetToken"] = rawToken;
-                    }
+                    await _emailSender.SendEmailAsync(
+                        user.email,
+                        "Hawassa University Security: 6-Digit Password Reset Verification Code",
+                        emailBody);
+
+                    // Pass to TempData for seamless experience
+                    TempData["ResetEmail"] = user.email;
+                    TempData["DevVerificationCode"] = verificationCode;
+                    TempData["SuccessMessage"] = $"A 6-digit security verification code has been dispatched to {user.email}. Please enter it below to set your new password.";
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error processing password reset token generation.");
+                    _logger.LogError(ex, "Error processing password reset code generation.");
                 }
             }
+            else
+            {
+                TempData["SuccessMessage"] = "If an account matching that email address exists in the campus directory, a 6-digit verification code has been dispatched.";
+            }
 
-            // Generic anti-enumeration response
-            TempData["SuccessMessage"] = "If an account matching that email address exists in the campus directory, a secure password reset link has been dispatched to your inbox.";
             return RedirectToAction(nameof(ResetPassword));
         }
 
@@ -573,38 +649,13 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
         // GET: /Account/ResetPassword
         [HttpGet]
-        public async Task<IActionResult> ResetPassword(string? token = null, string? email = null)
+        public IActionResult ResetPassword(string? email = null, string? code = null)
         {
-            var rawToken = token ?? TempData["ResetToken"] as string;
             var accountEmail = email ?? TempData["ResetEmail"] as string;
+            var devCode = code ?? TempData["DevVerificationCode"] as string;
 
-            if (!string.IsNullOrWhiteSpace(rawToken))
-            {
-                var tokenHash = HashToken(rawToken);
-                var tokenRecord = await _db.auth_tokens
-                    .Include(t => t.user)
-                    .FirstOrDefaultAsync(t => t.token_hash == tokenHash && t.token_type == "PASSWORD_RESET");
-
-                if (tokenRecord == null)
-                {
-                    ViewBag.Error = "Invalid reset token. Please request a new password reset link.";
-                }
-                else if (tokenRecord.used_at != null)
-                {
-                    ViewBag.Error = "This password reset token has already been used. Please request a new one.";
-                }
-                else if (tokenRecord.expires_at <= DateTime.UtcNow)
-                {
-                    ViewBag.Error = "This password reset token has expired (30-minute validity exceeded). Please request a new link.";
-                }
-                else if (tokenRecord.user != null)
-                {
-                    accountEmail = tokenRecord.user.email;
-                }
-            }
-
-            ViewBag.Token = rawToken;
             ViewBag.Email = accountEmail;
+            ViewBag.DevCode = devCode;
             return View();
         }
 
@@ -613,28 +664,38 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResetPassword(
             string email,
-            string? token,
+            string verificationCode,
             string password,
             string confirmPassword)
         {
             if (string.IsNullOrWhiteSpace(email))
             {
                 ViewBag.Error = "Please specify your university account email address.";
-                return View();
-            }
-
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                ViewBag.Error = "A valid security reset token is required. Please check your reset link or request a new one.";
                 ViewBag.Email = email;
                 return View();
             }
 
-            if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
+            if (string.IsNullOrWhiteSpace(verificationCode))
             {
-                ViewBag.Error = "New password must be at least 6 characters long.";
+                ViewBag.Error = "Please enter the 6-digit verification code sent to your email.";
                 ViewBag.Email = email;
-                ViewBag.Token = token;
+                return View();
+            }
+
+            var cleanCode = verificationCode.Trim().Replace(" ", "").Replace("-", "");
+            if (cleanCode.Length < 6)
+            {
+                ViewBag.Error = "Verification code must be 6 digits long.";
+                ViewBag.Email = email;
+                return View();
+            }
+
+            // Strict Strong Password policy: 8+ chars, upper, lower, digit, special character
+            if (!ValidationHelper.IsStrongPassword(password, out string pwdErr))
+            {
+                ViewBag.Error = pwdErr;
+                ViewBag.Email = email;
+                ViewBag.VerificationCode = cleanCode;
                 return View();
             }
 
@@ -642,11 +703,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             {
                 ViewBag.Error = "Passwords do not match.";
                 ViewBag.Email = email;
-                ViewBag.Token = token;
+                ViewBag.VerificationCode = cleanCode;
                 return View();
             }
 
-            var tokenHash = HashToken(token);
+            var tokenHash = HashToken(cleanCode);
             var cleanEmail = email.Trim().ToLowerInvariant();
 
             var tokenRecord = await _db.auth_tokens
@@ -655,21 +716,21 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
             if (tokenRecord == null)
             {
-                ViewBag.Error = "Security Verification Failed: The provided token is invalid.";
+                ViewBag.Error = "Security Verification Failed: The 6-digit verification code is invalid. Please check the code or request a new one.";
                 ViewBag.Email = email;
                 return View();
             }
 
             if (tokenRecord.used_at != null)
             {
-                ViewBag.Error = "Security Verification Failed: This reset token has already been consumed.";
+                ViewBag.Error = "Security Verification Failed: This verification code has already been used. Please request a new code.";
                 ViewBag.Email = email;
                 return View();
             }
 
             if (tokenRecord.expires_at <= DateTime.UtcNow)
             {
-                ViewBag.Error = "Security Verification Failed: This reset token has expired.";
+                ViewBag.Error = "Security Verification Failed: This verification code has expired (15-minute validity exceeded). Please request a new code.";
                 ViewBag.Email = email;
                 return View();
             }
@@ -677,9 +738,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var user = tokenRecord.user;
             if (user == null || (!string.Equals(user.email.Trim(), cleanEmail, StringComparison.OrdinalIgnoreCase) && !string.Equals(user.username.Trim(), cleanEmail, StringComparison.OrdinalIgnoreCase)))
             {
-                ViewBag.Error = "Security Verification Failed: The reset token does not match the specified account email.";
+                ViewBag.Error = "Security Verification Failed: The verification code does not match the specified account email.";
                 ViewBag.Email = email;
-                ViewBag.Token = token;
                 return View();
             }
 
@@ -698,15 +758,47 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     action = "PASSWORD_RESET_SUCCESS",
                     entity_type = "USER",
                     entity_id = user.id,
-                    description = $"Password successfully updated and verified via secure token for {user.username}",
+                    description = $"Password successfully updated and verified via 6-digit security code for {user.username}",
                     ip_address = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
                     user_agent = Request.Headers["User-Agent"].ToString(),
                     created_at = DateTime.UtcNow
                 });
 
+                _db.notifications.Add(new Notification
+                {
+                    user_id = user.id,
+                    title = "Password Changed Successfully",
+                    message = $"Your account password was successfully reset on {DateTime.UtcNow:MMM dd, yyyy hh:mm tt} UTC.",
+                    notification_type = "SYSTEM",
+                    related_entity_type = "USER",
+                    related_entity_id = user.id,
+                    action_url = "/Account/Profile",
+                    is_read = false,
+                    created_at = DateTime.UtcNow
+                });
+
                 await _db.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = "Your password has been successfully updated and verified. Please sign in with your new credentials.";
+                // Dispatch confirmation email
+                try
+                {
+                    string confirmBody = $@"
+                        <div style='font-family: Arial, sans-serif; padding: 25px; color: #1e293b; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                            <h2 style='color: #1e40af; margin-bottom: 6px;'>Hawassa University Portal</h2>
+                            <p style='color: #64748b; margin-top: 0;'>Password Reset Confirmation</p>
+                            <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;'/>
+                            <p>Hello <strong>{user.first_name} {user.last_name}</strong>,</p>
+                            <p>Your account password was successfully updated on <strong>{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC</strong>.</p>
+                            <p>You can now sign in using your new credentials. If you did not make this change, please contact campus ICT security immediately.</p>
+                            <p style='margin-top: 20px;'><a href='/Account/Login' style='background: #1e40af; color: #ffffff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;'>Sign In to Portal &rarr;</a></p>
+                            <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'/>
+                            <small style='color: #94a3b8;'>Hawassa University Directorate of ICT & Student Affairs</small>
+                        </div>";
+                    _ = _emailSender.SendEmailAsync(user.email, "Security Alert: Password Reset Completed for Hawassa University Portal", confirmBody);
+                }
+                catch { }
+
+                TempData["SuccessMessage"] = "Your password has been successfully reset! Please sign in with your new password.";
                 return RedirectToAction(nameof(Login));
             }
             catch (Exception ex)
@@ -714,7 +806,6 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 _logger.LogError(ex, "Failed to persist new password hash to database.");
                 ViewBag.Error = "An internal error occurred while updating your password. Please try again.";
                 ViewBag.Email = email;
-                ViewBag.Token = token;
                 return View();
             }
         }

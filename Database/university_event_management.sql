@@ -1,7 +1,7 @@
 -- ============================================================
 -- UNIVERSITY EVENT MANAGEMENT SYSTEM
 -- COMPLETE MYSQL 8 DATABASE
--- 35 RELATIONAL TABLES FOR CAMPUS EVENT MANAGEMENT
+-- 34 RELATIONAL TABLES FOR CAMPUS EVENT MANAGEMENT
 -- ============================================================
 
 DROP DATABASE IF EXISTS university_event_management;
@@ -868,7 +868,7 @@ CREATE TABLE notifications (
         'ANNOUNCEMENT',
         'SYSTEM',
         'FEEDBACK',
-        'POLL'
+        'CLUB'
     ) NOT NULL DEFAULT 'SYSTEM',
 
     related_entity_type VARCHAR(100) NULL,
@@ -898,95 +898,7 @@ CREATE TABLE notifications (
 
 
 -- ============================================================
--- 25. DEVICE_TOKENS
--- ============================================================
-
-CREATE TABLE device_tokens (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    user_id BIGINT UNSIGNED NOT NULL,
-
-    token VARCHAR(1000) NOT NULL,
-
-    platform ENUM(
-        'WEB',
-        'ANDROID',
-        'IOS',
-        'DESKTOP',
-        'OTHER'
-    ) NOT NULL DEFAULT 'WEB',
-
-    device_name VARCHAR(255) NULL,
-
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-
-    last_used_at DATETIME(6) NULL,
-
-    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-        ON UPDATE CURRENT_TIMESTAMP(6),
-
-    PRIMARY KEY (id),
-
-    UNIQUE KEY uq_device_tokens_token (token(255)),
-
-    KEY idx_device_tokens_user (user_id),
-
-    CONSTRAINT fk_device_tokens_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-) ENGINE=InnoDB;
-
-
--- ============================================================
--- 26. CALENDAR_SYNCS
--- ============================================================
-
-CREATE TABLE calendar_syncs (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    user_id BIGINT UNSIGNED NOT NULL,
-
-    provider ENUM(
-        'GOOGLE',
-        'APPLE',
-        'OUTLOOK'
-    ) NOT NULL,
-
-    provider_account_id VARCHAR(255) NULL,
-
-    access_token_encrypted TEXT NULL,
-    refresh_token_encrypted TEXT NULL,
-
-    calendar_id VARCHAR(500) NULL,
-
-    sync_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-
-    last_synced_at DATETIME(6) NULL,
-
-    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-        ON UPDATE CURRENT_TIMESTAMP(6),
-
-    PRIMARY KEY (id),
-
-    UNIQUE KEY uq_calendar_sync_user_provider (
-        user_id,
-        provider
-    ),
-
-    CONSTRAINT fk_calendar_syncs_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-) ENGINE=InnoDB;
-
-
--- ============================================================
--- 27. USER_PREFERENCES
+-- 25. USER_PREFERENCES
 -- ============================================================
 
 CREATE TABLE user_preferences (
@@ -1187,134 +1099,8 @@ CREATE TABLE event_feedback (
 ) ENGINE=InnoDB;
 
 
-
-
-
 -- ============================================================
--- 34. POLLS
--- ============================================================
-
-CREATE TABLE polls (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    created_by BIGINT UNSIGNED NOT NULL,
-
-    title VARCHAR(255) NOT NULL,
-    question TEXT NOT NULL,
-    description TEXT NULL,
-
-    start_at DATETIME(6) NULL,
-    end_at DATETIME(6) NULL,
-
-    allow_multiple_answers BOOLEAN NOT NULL DEFAULT FALSE,
-    anonymous BOOLEAN NOT NULL DEFAULT FALSE,
-
-    status ENUM(
-        'DRAFT',
-        'ACTIVE',
-        'CLOSED',
-        'ARCHIVED'
-    ) NOT NULL DEFAULT 'DRAFT',
-
-    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-        ON UPDATE CURRENT_TIMESTAMP(6),
-
-    PRIMARY KEY (id),
-
-    KEY idx_polls_creator (created_by),
-    KEY idx_polls_status (status),
-
-    CONSTRAINT fk_polls_creator
-        FOREIGN KEY (created_by)
-        REFERENCES users(id)
-        ON DELETE RESTRICT
-        ON UPDATE CASCADE,
-
-    CONSTRAINT chk_polls_dates
-        CHECK (
-            end_at IS NULL
-            OR start_at IS NULL
-            OR end_at > start_at
-        )
-) ENGINE=InnoDB;
-
-
--- ============================================================
--- 35. POLL_OPTIONS
--- ============================================================
-
-CREATE TABLE poll_options (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    poll_id BIGINT UNSIGNED NOT NULL,
-
-    option_text VARCHAR(500) NOT NULL,
-
-    display_order INT UNSIGNED NOT NULL DEFAULT 0,
-
-    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-
-    PRIMARY KEY (id),
-
-    KEY idx_poll_options_poll (poll_id),
-    KEY idx_poll_options_order (poll_id, display_order),
-
-    CONSTRAINT fk_poll_options_poll
-        FOREIGN KEY (poll_id)
-        REFERENCES polls(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-) ENGINE=InnoDB;
-
-
--- ============================================================
--- 36. POLL_RESPONSES
--- ============================================================
-
-CREATE TABLE poll_responses (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    poll_id BIGINT UNSIGNED NOT NULL,
-    option_id BIGINT UNSIGNED NOT NULL,
-    user_id BIGINT UNSIGNED NOT NULL,
-
-    responded_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-
-    PRIMARY KEY (id),
-
-    UNIQUE KEY uq_poll_response (
-        poll_id,
-        option_id,
-        user_id
-    ),
-
-    KEY idx_poll_responses_poll (poll_id),
-    KEY idx_poll_responses_option (option_id),
-    KEY idx_poll_responses_user (user_id),
-
-    CONSTRAINT fk_poll_responses_poll
-        FOREIGN KEY (poll_id)
-        REFERENCES polls(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_poll_responses_option
-        FOREIGN KEY (option_id)
-        REFERENCES poll_options(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_poll_responses_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-) ENGINE=InnoDB;
-
-
--- ============================================================
--- 37. AUDIT_LOGS
+-- 29. AUDIT_LOGS
 -- ============================================================
 
 CREATE TABLE audit_logs (
@@ -1751,7 +1537,7 @@ INSERT INTO venues (id, name, building_name, room_number, description, capacity,
 (4, 'Hawassa University Central Stadium', 'Sports Complex', 'Stadium-Main', 'Standard grass pitch, running tracks, and shaded pavilion stands', 5000, 'SPORTS_FIELD', 'AVAILABLE'),
 (5, 'Senate Executive Conference Room', 'University Senate Hall', 'Senate-200', 'Executive conference suite for academic symposiums & board meets', 60, 'MEETING_ROOM', 'AVAILABLE');
 
--- 9. SEED ACCOUNTS: SUPERADMIN AND ADMIN (WITH DISTINCT CREDENTIALS)
+-- 9. SEED ACCOUNTS: MASTER SUPERADMIN AND CAMPUS ADMINISTRATOR
 -- Master SuperAdmin (Platform Owner): superadmin@hawassa.edu.et / SuperAdmin@2026!
 -- Campus Administrator (Events & Operations): admin@hawassa.edu.et / Admin@2026!
 INSERT INTO users (id, department_id, username, email, password_hash, first_name, last_name, student_id, employee_id, phone, account_type, account_status, email_verified, phone_verified) VALUES

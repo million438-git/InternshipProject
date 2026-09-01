@@ -271,9 +271,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
         // =========================================================
         // GET: /Events/Create
-        // Allowed Roles: Faculty, Staff, Organization, Club, Admin, SuperAdmin
+        // Allowed: All Authenticated Campus Members (Students, Faculty, Staff, Org, Admin)
         // =========================================================
-        [Authorize(Roles = "Faculty,Staff,Organization,Club,Admin,SuperAdmin,FACULTY,STAFF,ORGANIZATION,ADMIN,SUPERADMIN")]
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> Create()
         {
@@ -285,7 +285,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =========================================================
         // POST: /Events/Create
         // =========================================================
-        [Authorize(Roles = "Faculty,Staff,Organization,Club,Admin,SuperAdmin,FACULTY,STAFF,ORGANIZATION,ADMIN,SUPERADMIN")]
+        [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Event model)
@@ -1063,16 +1063,454 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         }
 
         // =====================================================================
-        // VENUES DIRECTORY & FACILITIES
+        // 1. INTERACTIVE MULTI-CAMPUS VISUAL MAP & VENUES EXPLORER
         // =====================================================================
         [HttpGet]
-        public async Task<IActionResult> Venues()
+        public async Task<IActionResult> Venues(string? campus = null, string? viewMode = "map")
         {
-            var venues = await _db.venues
+            var activeCampus = string.IsNullOrWhiteSpace(campus) ? "MAIN" : campus.ToUpperInvariant();
+
+            var campuses = new List<CampusInfo>
+            {
+                new()
+                {
+                    Id = "MAIN",
+                    Name = "Main Campus",
+                    ShortName = "Main Campus",
+                    Description = "Central Administration, College of Social Science, Natural Sciences & Central Library.",
+                    LocationTag = "Hawassa Main Campus • Menaharia Sub-City",
+                    Lat = 7.0504,
+                    Lng = 38.4955
+                },
+                new()
+                {
+                    Id = "IOT",
+                    Name = "Institute of Technology (IoT)",
+                    ShortName = "Tech Campus",
+                    Description = "Engineering, Computing, Innovation Hubs, and Advanced Technical Laboratories.",
+                    LocationTag = "IoT Campus • Yirgalem Road",
+                    Lat = 7.0345,
+                    Lng = 38.4821
+                },
+                new()
+                {
+                    Id = "CMHS",
+                    Name = "College of Medicine & Health Sciences",
+                    ShortName = "Medical Campus",
+                    Description = "Referral Hospital, Health Sciences Auditoriums & Clinical Research Centers.",
+                    LocationTag = "CMHS Campus • Hospital Road",
+                    Lat = 7.0621,
+                    Lng = 38.4719
+                },
+                new()
+                {
+                    Id = "WONDO",
+                    Name = "College of Agriculture & Forestry",
+                    ShortName = "Wondo Genet",
+                    Description = "Natural Resources, Forestry Research Amphitheater & Agri Innovation Complex.",
+                    LocationTag = "Wondo Genet Campus • 25km South",
+                    Lat = 7.0982,
+                    Lng = 38.6190
+                }
+            };
+
+            var allVenues = await _db.venues
+                .AsNoTracking()
                 .OrderBy(v => v.name)
                 .ToListAsync();
 
-            return View(venues);
+            // Query upcoming approved events per venue
+            var now = DateTime.UtcNow;
+            var upcomingEvents = await _db.events
+                .Include(e => e.category)
+                .Include(e => e.organizer)
+                .AsNoTracking()
+                .Where(e => e.start_at >= now.AddDays(-1) && e.venue_id.HasValue && e.approval_status == "APPROVED")
+                .OrderBy(e => e.start_at)
+                .Take(50)
+                .ToListAsync();
+
+            var venueMapItems = new List<VenueMapItem>();
+            int index = 0;
+
+            foreach (var v in allVenues)
+            {
+                // Infer campus based on building name or name
+                string venueCampus = "MAIN";
+                string venueCampusName = "Main Campus";
+                var combined = $"{v.name} {v.building_name} {v.description}".ToLowerInvariant();
+                if (combined.Contains("iot") || combined.Contains("tech") || combined.Contains("computer") || combined.Contains("engineering"))
+                {
+                    venueCampus = "IOT";
+                    venueCampusName = "Institute of Technology (IoT)";
+                }
+                else if (combined.Contains("med") || combined.Contains("health") || combined.Contains("hospital") || combined.Contains("clinical"))
+                {
+                    venueCampus = "CMHS";
+                    venueCampusName = "College of Medicine & Health Sciences";
+                }
+                else if (combined.Contains("wondo") || combined.Contains("agri") || combined.Contains("forest"))
+                {
+                    venueCampus = "WONDO";
+                    venueCampusName = "College of Agriculture & Forestry";
+                }
+
+                // Real Hawassa University GPS coordinates
+                double lat = v.latitude.HasValue ? (double)v.latitude.Value : 7.0504;
+                double lng = v.longitude.HasValue ? (double)v.longitude.Value : 38.4955;
+
+                if (!v.latitude.HasValue || !v.longitude.HasValue)
+                {
+                    if (venueCampus == "MAIN")
+                    {
+                        lat = 7.0504 + ((index % 5) * 0.0008) - 0.0015;
+                        lng = 38.4955 + (((index * 3) % 7) * 0.0007) - 0.0020;
+                    }
+                    else if (venueCampus == "IOT")
+                    {
+                        lat = 7.0345 + ((index % 4) * 0.0007) - 0.0010;
+                        lng = 38.4821 + (((index * 2) % 5) * 0.0006) - 0.0012;
+                    }
+                    else if (venueCampus == "CMHS")
+                    {
+                        lat = 7.0621 + ((index % 3) * 0.0006) - 0.0008;
+                        lng = 38.4719 + (((index * 2) % 4) * 0.0007) - 0.0010;
+                    }
+                    else if (venueCampus == "WONDO")
+                    {
+                        lat = 7.0982 + ((index % 3) * 0.0009) - 0.0010;
+                        lng = 38.6190 + (((index * 2) % 4) * 0.0008) - 0.0012;
+                    }
+                }
+
+                // Visual percentage positions for fallback
+                int posX = 20 + ((index * 23) % 65);
+                int posY = 25 + ((index * 29) % 55);
+                index++;
+
+                var equipment = new List<string>();
+                if (!string.IsNullOrWhiteSpace(v.amenities))
+                {
+                    equipment.AddRange(v.amenities.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+                }
+                if (equipment.Count == 0)
+                {
+                    equipment.AddRange(new[] { "HD Projector", "PA Sound System", "Campus Wi-Fi", "Air Conditioning" });
+                }
+
+                var venueUpcoming = upcomingEvents
+                    .Where(e => e.venue_id == v.id)
+                    .Select(e => new UpcomingVenueEvent
+                    {
+                        Id = e.id,
+                        Title = e.title,
+                        StartAt = e.start_at,
+                        EndAt = e.end_at,
+                        CategoryName = e.category?.name ?? "General",
+                        OrganizerName = e.organizer != null ? $"{e.organizer.first_name} {e.organizer.last_name}".Trim() : "University"
+                    })
+                    .ToList();
+
+                venueMapItems.Add(new VenueMapItem
+                {
+                    Id = v.id,
+                    Name = v.name,
+                    Campus = venueCampus,
+                    CampusName = venueCampusName,
+                    BuildingName = v.building_name,
+                    RoomNumber = v.room_number,
+                    Capacity = (int)v.capacity,
+                    VenueType = v.venue_type ?? "Auditorium",
+                    Status = string.IsNullOrWhiteSpace(v.status) ? "AVAILABLE" : v.status,
+                    Description = v.description,
+                    Amenities = v.amenities,
+                    Lat = lat,
+                    Lng = lng,
+                    EquipmentList = equipment,
+                    UpcomingEvents = venueUpcoming
+                });
+            }
+
+            foreach (var c in campuses)
+            {
+                c.VenueCount = venueMapItems.Count(v => v.Campus == c.Id);
+            }
+
+            var vm = new CampusMapViewModel
+            {
+                ActiveCampus = activeCampus,
+                Campuses = campuses,
+                Venues = venueMapItems,
+                TotalVenuesCount = allVenues.Count,
+                AvailableVenuesCount = allVenues.Count(v => v.status == "AVAILABLE" || string.IsNullOrEmpty(v.status)),
+                TotalCapacityCount = Convert.ToInt32(allVenues.Sum(v => (long)v.capacity))
+            };
+
+            ViewBag.ViewMode = string.Equals(viewMode, "grid", StringComparison.OrdinalIgnoreCase) ? "grid" : "map";
+            return View(vm);
+        }
+
+        // =====================================================================
+        // 2. LIVE CAMERA DOOR CHECK-IN TERMINAL
+        // =====================================================================
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> CheckIn(ulong id)
+        {
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue) return RedirectToAction("Login", "Account");
+
+            var evt = await _db.events
+                .Include(e => e.venue)
+                .Include(e => e.registrations)
+                    .ThenInclude(r => r.user)
+                        .ThenInclude(u => u.department)
+                .FirstOrDefaultAsync(e => e.id == id);
+
+            if (evt == null) return NotFound();
+
+            // Authorization: Event organizer or Admin/SuperAdmin
+            if (evt.organizer_id != currentUserId.Value && !IsAdminOrSuperAdmin())
+            {
+                TempData["ErrorMessage"] = "Access Denied: Only event organizers and campus administrators can operate the check-in terminal.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            var attendeeList = evt.registrations
+                .OrderByDescending(r => r.registered_at)
+                .Select(r => new AttendeeCheckInItem
+                {
+                    RegistrationId = r.id,
+                    UserId = r.user_id,
+                    FullName = r.user != null ? $"{r.user.first_name} {r.user.last_name}".Trim() : "Attendee",
+                    StudentId = r.user?.student_id ?? r.user?.employee_id ?? "UGR/---",
+                    Email = r.user?.email ?? "",
+                    Department = r.user?.department?.name ?? "Campus Member",
+                    RegistrationCode = r.registration_code ?? $"HUCEMS-REG-{r.id:D5}",
+                    Status = r.status ?? "REGISTERED",
+                    RegisteredAt = r.registered_at,
+                    AttendedAt = r.status == "ATTENDED" ? (r.checked_in_at ?? r.registered_at) : null
+                })
+                .ToList();
+
+            var vm = new CheckInViewModel
+            {
+                EventId = evt.id,
+                EventTitle = evt.title,
+                EventDate = evt.start_at,
+                VenueName = evt.venue?.name ?? "Main Campus",
+                Capacity = evt.capacity.HasValue ? (int)evt.capacity.Value : 0,
+                TotalRegisteredCount = attendeeList.Count,
+                AttendedCount = attendeeList.Count(a => a.Status == "ATTENDED"),
+                Attendees = attendeeList
+            };
+
+            return View(vm);
+        }
+
+        // =====================================================================
+        // 3. FAST AJAX TICKET VERIFICATION (QR CODE / MANUAL CODE)
+        // =====================================================================
+        [Authorize]
+        [HttpPost]
+        [Route("Events/VerifyTicket")]
+        public async Task<IActionResult> VerifyTicket([FromBody] VerifyTicketRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.TicketCode) || request.EventId == 0)
+            {
+                return Json(new VerifyTicketResponse
+                {
+                    Success = false,
+                    Message = "Invalid ticket scan request. Please provide ticket code.",
+                    Status = "INVALID"
+                });
+            }
+
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+            {
+                return Json(new VerifyTicketResponse { Success = false, Message = "Unauthorized session.", Status = "INVALID" });
+            }
+
+            var evt = await _db.events.FirstOrDefaultAsync(e => e.id == request.EventId);
+            if (evt == null)
+            {
+                return Json(new VerifyTicketResponse { Success = false, Message = "Event not found.", Status = "INVALID" });
+            }
+
+            if (evt.organizer_id != currentUserId.Value && !IsAdminOrSuperAdmin())
+            {
+                return Json(new VerifyTicketResponse { Success = false, Message = "Permission denied.", Status = "INVALID" });
+            }
+
+            var cleanCode = request.TicketCode.Trim().ToUpperInvariant();
+
+            // Locate registration record by registration_code, qr_token, or registration ID
+            var registration = await _db.registrations
+                .Include(r => r.user)
+                    .ThenInclude(u => u.department)
+                .FirstOrDefaultAsync(r => r.event_id == request.EventId &&
+                    (r.registration_code == cleanCode ||
+                     r.qr_token == cleanCode ||
+                     cleanCode.Contains(r.id.ToString()) ||
+                     (cleanCode.StartsWith("HUCEMS-REG-") && cleanCode.EndsWith(r.id.ToString()))));
+
+            if (registration == null)
+            {
+                return Json(new VerifyTicketResponse
+                {
+                    Success = false,
+                    Message = "❌ Ticket Not Found: No registration record matches this ticket code.",
+                    Status = "INVALID"
+                });
+            }
+
+            var totalReg = await _db.registrations.CountAsync(r => r.event_id == request.EventId);
+
+            // If already attended
+            if (registration.status == "ATTENDED")
+            {
+                var currentAttended = await _db.registrations.CountAsync(r => r.event_id == request.EventId && r.status == "ATTENDED");
+                return Json(new VerifyTicketResponse
+                {
+                    Success = true,
+                    Message = $"⚠️ Already Checked In: {registration.user.first_name} {registration.user.last_name} was checked in previously.",
+                    Status = "ALREADY_ATTENDED",
+                    FullName = $"{registration.user.first_name} {registration.user.last_name}".Trim(),
+                    StudentId = registration.user.student_id ?? registration.user.employee_id ?? "Verified",
+                    Department = registration.user.department?.name ?? "Campus Member",
+                    TicketCode = registration.registration_code ?? $"HUCEMS-REG-{registration.id:D5}",
+                    AttendedAt = registration.checked_in_at ?? registration.registered_at,
+                    TotalAttended = currentAttended,
+                    TotalRegistered = totalReg
+                });
+            }
+
+            // Mark as ATTENDED
+            registration.status = "ATTENDED";
+            registration.checked_in_at = DateTime.UtcNow;
+            registration.check_in_method = "QR";
+            await _db.SaveChangesAsync();
+
+            var totalAttendedCount = await _db.registrations.CountAsync(r => r.event_id == request.EventId && r.status == "ATTENDED");
+
+            return Json(new VerifyTicketResponse
+            {
+                Success = true,
+                Message = $"✅ Verified & Checked In: Welcome, {registration.user.first_name} {registration.user.last_name}!",
+                Status = "VERIFIED",
+                FullName = $"{registration.user.first_name} {registration.user.last_name}".Trim(),
+                StudentId = registration.user.student_id ?? registration.user.employee_id ?? "Verified",
+                Department = registration.user.department?.name ?? "Campus Member",
+                TicketCode = registration.registration_code ?? $"HUCEMS-REG-{registration.id:D5}",
+                AttendedAt = DateTime.UtcNow,
+                TotalAttended = totalAttendedCount,
+                TotalRegistered = totalReg
+            });
+        }
+
+        // =====================================================================
+        // 4. AUTOMATED VERIFIABLE CERTIFICATE OF PARTICIPATION
+        // =====================================================================
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> Certificate(ulong id)
+        {
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue) return RedirectToAction("Login", "Account");
+
+            // Look up registration either by registration ID or event ID for current user
+            var registration = await _db.registrations
+                .Include(r => r.user)
+                    .ThenInclude(u => u.department)
+                        .ThenInclude(d => d != null ? d.faculty : null)
+                .Include(r => r._event)
+                    .ThenInclude(e => e.venue)
+                .Include(r => r._event)
+                    .ThenInclude(e => e.category)
+                .Include(r => r._event)
+                    .ThenInclude(e => e.organizer)
+                .FirstOrDefaultAsync(r => (r.id == id || (r.event_id == id && r.user_id == currentUserId.Value)) &&
+                                          (r.user_id == currentUserId.Value || IsAdminOrSuperAdmin()));
+
+            if (registration == null || registration._event == null)
+            {
+                TempData["ErrorMessage"] = "Certificate not found or you are not registered for this event.";
+                return RedirectToAction(nameof(MyEvents));
+            }
+
+            // Generate deterministic cryptographic verification hash
+            var rawHashSource = $"HUCEMS-CERT-{registration.id}-{registration.user_id}-{registration.event_id}-HAWASSA-2026";
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(rawHashSource));
+            var securityHash = Convert.ToHexString(hashBytes).Substring(0, 16);
+
+            var certNumber = $"HU-CERT-{registration._event.start_at:yyyy}-{registration.id:D6}";
+            var verificationUrl = Url.Action(nameof(VerifyCertificate), "Events", new { code = certNumber }, Request.Scheme)
+                                  ?? $"https://hucems.hawassa.edu.et/Events/VerifyCertificate?code={certNumber}";
+
+            var vm = new CertificateViewModel
+            {
+                RegistrationId = registration.id,
+                CertificateNumber = certNumber,
+                StudentFullName = $"{registration.user.first_name} {registration.user.last_name}".Trim(),
+                StudentIdNumber = registration.user.student_id ?? registration.user.employee_id ?? "UGR/2026",
+                DepartmentName = registration.user.department?.name ?? "Hawassa University",
+                FacultyName = registration.user.department?.faculty?.name ?? "Academic Programs Directorate",
+                EventTitle = registration._event.title,
+                EventCategory = registration._event.category?.name ?? "Academic Conference",
+                EventDate = registration._event.start_at,
+                VenueName = registration._event.venue?.name ?? "Hawassa University Main Campus",
+                OrganizerName = registration._event.organizer != null ? $"{registration._event.organizer.first_name} {registration._event.organizer.last_name}".Trim() : "Student Affairs & Event Directorate",
+                IssueDate = registration.checked_in_at ?? registration.registered_at,
+                VerificationUrl = verificationUrl,
+                SecurityHash = securityHash
+            };
+
+            return View(vm);
+        }
+
+        // =====================================================================
+        // 5. PUBLIC CERTIFICATE VERIFICATION PORTAL
+        // =====================================================================
+        [HttpGet]
+        public async Task<IActionResult> VerifyCertificate(string? code = null)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                ViewBag.Status = "SEARCH";
+                return View();
+            }
+
+            var clean = code.Trim().ToUpperInvariant();
+            var regIdStr = clean.Replace("HU-CERT-", "").Split('-').LastOrDefault();
+
+            if (ulong.TryParse(regIdStr, out ulong regId))
+            {
+                var reg = await _db.registrations
+                    .Include(r => r.user)
+                        .ThenInclude(u => u.department)
+                    .Include(r => r._event)
+                        .ThenInclude(e => e.venue)
+                    .FirstOrDefaultAsync(r => r.id == regId);
+
+                if (reg != null && reg._event != null)
+                {
+                    ViewBag.Status = "VALID";
+                    ViewBag.CertificateNumber = clean;
+                    ViewBag.StudentName = $"{reg.user.first_name} {reg.user.last_name}".Trim();
+                    ViewBag.StudentId = reg.user.student_id ?? "Verified";
+                    ViewBag.Department = reg.user.department?.name ?? "Hawassa University";
+                    ViewBag.EventTitle = reg._event.title;
+                    ViewBag.EventDate = reg._event.start_at;
+                    ViewBag.Venue = reg._event.venue?.name ?? "Main Campus";
+                    return View();
+                }
+            }
+
+            ViewBag.Status = "INVALID";
+            ViewBag.SearchedCode = code;
+            return View();
         }
     }
 }

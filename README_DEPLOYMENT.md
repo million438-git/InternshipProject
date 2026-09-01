@@ -1,29 +1,29 @@
-# 🚀 HUCEMS Enterprise Production Deployment Manual
+# HUCEMS Production Deployment Manual
 
-This guide outlines the production deployment procedures for the **Hawassa Unified Campus Event Management System (HUCEMS)**.
+This guide outlines the production deployment procedures for the Hawassa Unified Campus Event Management System (HUCEMS).
 
 ---
 
-## 🏗️ 1. QUICK DEPLOY WITH DOCKER & DOCKER COMPOSE (RECOMMENDED)
+## 1. Deploy with Docker & Docker Compose
 
-The fastest and most reliable way to run HUCEMS in production is using Docker Compose.
+To deploy HUCEMS and MySQL using Docker Compose:
 
 ```bash
-# 1. Clone or copy project to production server
+# 1. Navigate to project directory
 cd HawassaUnifiedCampusEventManagementSystem
 
-# 2. Start HUCEMS and MySQL 8.0 in isolated network
+# 2. Start HUCEMS and MySQL 8.0 container services
 docker-compose up -d --build
 
 # 3. Verify running containers
 docker-compose ps
 ```
 
-The system will be live and active at: `http://<your-server-ip>:5000`
+The system will be accessible at: `http://<server-ip>:5000`
 
 ---
 
-## 🐧 2. DEPLOYMENT ON LINUX SERVER (UBUNTU / DEBIAN + NGINX)
+## 2. Deployment on Linux Server (Ubuntu / Debian + Nginx)
 
 ### Step 1: Install .NET 10 Runtime
 ```bash
@@ -88,20 +88,20 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ---
 
-## 🪟 3. DEPLOYMENT ON WINDOWS SERVER / IIS
+## 3. Deployment on Windows Server / IIS
 
 1. Open PowerShell as Administrator.
-2. Run the automated deployment script:
+2. Run the deployment script:
    ```powershell
    .\deploy_production.ps1
    ```
-3. Point your IIS Web Application root to the generated `.\publish` folder.
-4. Ensure the **ASP.NET Core Hosting Bundle (v10.0)** is installed on the Windows Server.
+3. Configure your IIS Web Site physical path to the generated `.\publish` folder.
+4. Ensure the ASP.NET Core Hosting Bundle (v10.0) is installed on the host.
 
 ---
 
-## 🔐 4. PRODUCTION SECURITY BEST PRACTICES
+## 4. Production Security Practices
 
-1. **Environment Variables**: Never commit production passwords into version control. Supply `DATABASE_CONNECTION_STRING` and `JWT_SECRET_KEY` via server environment variables.
-2. **HTTPS / SSL**: Install a Let's Encrypt SSL certificate using `certbot --nginx` on Linux or via IIS Certificate Manager on Windows.
-3. **Database Snapshots**: Use the built-in SuperAdmin Database Management Vault (`/Admin/DatabaseManagement`) to take regular pre-maintenance snapshots.
+1. **Environment Variables**: Configure `DATABASE_CONNECTION_STRING` and `JWT_SECRET_KEY` via server environment variables.
+2. **HTTPS / SSL**: Configure SSL certificates using Let's Encrypt (`certbot --nginx`) on Linux or IIS Certificate Manager on Windows.
+3. **Database Backups**: Take pre-maintenance database backups via the Database Management interface (`/Admin/DatabaseManagement`).

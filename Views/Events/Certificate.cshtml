@@ -1,0 +1,228 @@
+@model HawassaUnifiedCampusEventManagementSystem.Models.CertificateViewModel
+@{
+    ViewData["Title"] = $"Certificate of Participation - {Model.StudentFullName} | Hawassa University";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <style>
+        .cert-container-wrapper {
+            background: #e2e8f0;
+            padding: 2.5rem 1rem;
+            min-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cert-paper {
+            width: 100%;
+            max-width: 960px;
+            background: #fff;
+            padding: 3.5rem 3rem;
+            border-radius: 0.5rem;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+            border: 12px solid #1e3a8a;
+            outline: 3px solid #d97706;
+            outline-offset: -8px;
+            background-image: radial-gradient(circle at 50% 50%, rgba(248, 250, 252, 0.9) 0%, #ffffff 100%);
+        }
+
+        .cert-header-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .cert-logo {
+            width: 90px;
+            height: 90px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+        }
+
+        .cert-institution-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #1e3a8a;
+            margin-bottom: 0.2rem;
+            text-transform: uppercase;
+        }
+
+        .cert-subtitle {
+            font-size: 0.85rem;
+            color: #64748b;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .cert-main-title {
+            font-family: 'Plus Jakarta Sans', Georgia, serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #b45309;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 1rem;
+        }
+
+        .cert-recipient-name {
+            font-family: 'Plus Jakarta Sans', Georgia, serif;
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: #0f172a;
+            border-bottom: 2px solid #cbd5e1;
+            display: inline-block;
+            padding: 0 2rem 0.25rem 2rem;
+            margin: 0.5rem 0 1rem 0;
+        }
+
+        .cert-event-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #1e40af;
+            margin: 0.5rem 0;
+        }
+
+        .cert-gold-seal {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4);
+            border: 3px dashed #fef3c7;
+            margin: 0 auto;
+        }
+
+        @@media print {
+            header, footer, .cert-actions-bar, .theme-toggle-btn {
+                display: none !important;
+            }
+            body {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .cert-container-wrapper {
+                padding: 0 !important;
+                background: transparent !important;
+            }
+            .cert-paper {
+                max-width: 100% !important;
+                box-shadow: none !important;
+                border-width: 8px !important;
+                outline-width: 2px !important;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+}
+
+<div class="cert-container-wrapper">
+
+    <!-- ACTION BUTTONS -->
+    <div class="cert-actions-bar mb-4 d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold shadow-sm d-inline-flex align-items-center gap-2">
+            <i class="bi bi-printer-fill fs-5"></i>
+            <span>Print / Save as PDF Certificate</span>
+        </button>
+        <a asp-action="MyEvents" class="btn btn-outline-secondary rounded-pill px-4 py-2">
+            <i class="bi bi-arrow-left me-1"></i> Back to My Events
+        </a>
+    </div>
+
+    <!-- CERTIFICATE DOCUMENT PAPER -->
+    <div class="cert-paper text-center">
+
+        <!-- HEADER WITH CREST -->
+        <div class="cert-header-badge">
+            <img src="~/images/hawassa-logo.png" alt="Hawassa University Crest" class="cert-logo" />
+            <div class="text-start">
+                <div class="cert-institution-title">Hawassa University</div>
+                <div class="cert-subtitle">Directorate of Student Affairs & Academic Engagement</div>
+                <small class="text-muted" style="font-size: 11px;">Hawassa, Sidama National Regional State, Ethiopia</small>
+            </div>
+        </div>
+
+        <div class="cert-main-title">
+            Certificate of Participation
+        </div>
+
+        <p class="text-secondary small mb-2 text-uppercase tracking-wide">This is to officially certify that</p>
+
+        <div class="cert-recipient-name">
+            @Model.StudentFullName
+        </div>
+
+        <p class="text-muted small mb-3">
+            ID: <strong>@Model.StudentIdNumber</strong> • Department of <strong>@Model.DepartmentName</strong>
+        </p>
+
+        <p class="text-secondary small mb-1" style="max-width: 680px; margin: 0 auto; line-height: 1.6;">
+            has actively participated in and successfully completed the university-approved campus event:
+        </p>
+
+        <div class="cert-event-title">
+            "@Model.EventTitle"
+        </div>
+
+        <p class="text-muted small mb-4">
+            Held at <strong>@Model.VenueName</strong> on <strong>@Model.EventDate.ToString("MMMM dd, yyyy")</strong>.
+        </p>
+
+        <!-- FOOTER SIGNATURES & VERIFICATION SEAL -->
+        <div class="row align-items-center mt-5 pt-3">
+            <!-- LEFT: ORGANIZER SIGNATURE -->
+            <div class="col-4 text-center">
+                <div style="font-family: 'Brush Script MT', cursive; font-size: 1.6rem; color: #1e3a8a; margin-bottom: -5px;">
+                    @Model.OrganizerName
+                </div>
+                <div style="width: 140px; height: 1px; background: #94a3b8; margin: 0 auto 6px auto;"></div>
+                <strong class="d-block text-dark small">Event Coordinator</strong>
+                <small class="text-muted" style="font-size: 10px;">@Model.FacultyName</small>
+            </div>
+
+            <!-- CENTER: GOLD FOIL SEAL -->
+            <div class="col-4 text-center">
+                <div class="cert-gold-seal">
+                    <i class="bi bi-award-fill fs-3 leading-none"></i>
+                    <span style="font-size: 9px; font-weight: 800; letter-spacing: 0.5px;">VERIFIED</span>
+                </div>
+                <small class="d-block text-muted mt-2 fw-semibold" style="font-size: 10px;">
+                    Cert ID: @Model.CertificateNumber
+                </small>
+            </div>
+
+            <!-- RIGHT: ACADEMIC DIRECTOR SIGNATURE -->
+            <div class="col-4 text-center">
+                <div style="font-family: 'Brush Script MT', cursive; font-size: 1.6rem; color: #1e3a8a; margin-bottom: -5px;">
+                    Dr. Academic Dean
+                </div>
+                <div style="width: 140px; height: 1px; background: #94a3b8; margin: 0 auto 6px auto;"></div>
+                <strong class="d-block text-dark small">Director of Academic Affairs</strong>
+                <small class="text-muted" style="font-size: 10px;">Hawassa University</small>
+            </div>
+        </div>
+
+        <!-- BOTTOM SECURITY TIMESTAMP & VERIFICATION HASH -->
+        <div class="mt-4 pt-3 border-top d-flex justify-content-between text-muted" style="font-size: 9px;">
+            <span>Issued: @Model.IssueDate.ToString("yyyy-MM-dd HH:mm:ss") UTC</span>
+            <span>Security Hash: <code>@Model.SecurityHash</code></span>
+            <span>Verify Online: <a href="@Model.VerificationUrl" class="text-decoration-none text-muted">@Model.VerificationUrl</a></span>
+        </div>
+
+    </div>
+
+</div>

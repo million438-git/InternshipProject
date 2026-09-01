@@ -1,0 +1,374 @@
+@model HawassaUnifiedCampusEventManagementSystem.Models.CheckInViewModel
+@{
+    ViewData["Title"] = $"Door Check-In Desk - {Model.EventTitle} | HUCEMS";
+}
+
+@section Styles {
+    <style>
+        .scanner-card {
+            background: #0f172a;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            color: #fff;
+        }
+        .scanner-viewport {
+            position: relative;
+            width: 100%;
+            height: 320px;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        #cameraVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .scanner-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .scanner-target-box {
+            width: 220px;
+            height: 220px;
+            border: 3px solid #38bdf8;
+            border-radius: 1.25rem;
+            position: relative;
+            box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5);
+        }
+        .scanner-laser {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+            box-shadow: 0 0 12px #38bdf8;
+            animation: laserScan 2s infinite ease-in-out;
+        }
+        @@keyframes laserScan {
+            0% { top: 5%; opacity: 0.2; }
+            50% { top: 90%; opacity: 1; }
+            100% { top: 5%; opacity: 0.2; }
+        }
+        .result-verified {
+            background: #f0fdf4;
+            border: 2px solid #22c55e;
+            color: #15803d;
+        }
+        .result-warning {
+            background: #fffbeb;
+            border: 2px solid #f59e0b;
+            color: #b45309;
+        }
+        .result-danger {
+            background: #fef2f2;
+            border: 2px solid #ef4444;
+            color: #b91c1c;
+        }
+    </style>
+}
+
+<div class="container-fluid px-lg-5 py-4">
+
+    <!-- TOP NAVIGATION & STATUS HEADER -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom">
+        <div>
+            <a asp-action="Details" asp-route-id="@Model.EventId" class="text-muted small text-decoration-none mb-1 d-inline-block">
+                &larr; Return to Event Details
+            </a>
+            <h1 class="h2 fw-bold text-dark mb-0">Door Check-In & Ticket Scanner Desk</h1>
+            <p class="text-muted small mb-0">
+                <strong>@Model.EventTitle</strong> • <i class="bi bi-calendar-event me-1"></i>@Model.EventDate.ToString("MMM dd, yyyy • hh:mm tt") • <i class="bi bi-geo-alt me-1"></i>@Model.VenueName
+            </p>
+        </div>
+
+        <!-- STATS PILL COUNTERS -->
+        <div class="d-flex align-items-center gap-2">
+            <div class="px-3 py-2 bg-primary-subtle text-primary border border-primary-subtle rounded-4 text-center">
+                <span class="d-block fs-4 fw-bold leading-none" id="totalAttendedCounter">@Model.AttendedCount</span>
+                <span class="small fw-semibold" style="font-size: 10px; letter-spacing: 0.5px;">CHECKED IN</span>
+            </div>
+            <div class="px-3 py-2 bg-light text-secondary border rounded-4 text-center">
+                <span class="d-block fs-4 fw-bold leading-none" id="totalRegisteredCounter">@Model.TotalRegisteredCount</span>
+                <span class="small fw-semibold" style="font-size: 10px; letter-spacing: 0.5px;">REGISTERED</span>
+            </div>
+            <div class="px-3 py-2 bg-success-subtle text-success border border-success-subtle rounded-4 text-center">
+                <span class="d-block fs-4 fw-bold leading-none" id="attendanceRateCounter">@Model.AttendancePercentage%</span>
+                <span class="small fw-semibold" style="font-size: 10px; letter-spacing: 0.5px;">ATTENDANCE</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN TERMINAL SPLIT SCREEN -->
+    <div class="row g-4 mb-4">
+
+        <!-- LEFT COLUMN: LIVE CAMERA SCANNER & MANUAL CODE -->
+        <div class="col-lg-5">
+            <div class="card scanner-card p-4 h-100 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge bg-primary text-white px-3 py-1 rounded-pill small fw-bold">
+                        <i class="bi bi-camera-video-fill me-1"></i> Live Optical Scanner
+                    </span>
+                    <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" id="toggleCameraBtn" onclick="toggleCameraStream()">
+                        <i class="bi bi-arrow-repeat me-1"></i> Switch Camera
+                    </button>
+                </div>
+
+                <!-- VIDEO VIEWPORT -->
+                <div class="scanner-viewport rounded-4 mb-3" id="viewportContainer">
+                    <video id="cameraVideo" autoplay playsinline muted></video>
+                    <div class="scanner-overlay">
+                        <div class="scanner-target-box">
+                            <div class="scanner-laser"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-white-50 text-center small mb-3">
+                    Point camera at student's <strong>HUCEMS Ticket QR Code</strong> to verify entry instantly.
+                </p>
+
+                <!-- MANUAL TICKET CODE INPUT -->
+                <div class="mt-auto pt-3 border-top border-white border-opacity-15">
+                    <label class="small text-white-50 fw-semibold mb-2">Or Enter Ticket Code / Student ID Manually:</label>
+                    <div class="input-group">
+                        <input type="text" id="manualTicketInput" class="form-control bg-dark text-white border-secondary" placeholder="e.g. HUCEMS-REG-00042 or UGR/1234/15" autocomplete="off" />
+                        <button class="btn btn-primary px-4 fw-semibold" type="button" onclick="submitManualCode()">
+                            <i class="bi bi-check2-circle me-1"></i> Verify
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LIVE SCAN RESULT POPUP -->
+                <div id="scanResultBox" class="mt-3 p-3 rounded-4 d-none">
+                    <div class="d-flex align-items-start gap-3">
+                        <div id="resultIcon" class="fs-2"></div>
+                        <div>
+                            <h5 class="fw-bold mb-1" id="resultName">Attendee Name</h5>
+                            <p class="small mb-1" id="resultDetails">ID & Department</p>
+                            <span class="badge px-2 py-1 rounded-pill small" id="resultBadge">Status</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: SEARCHABLE ATTENDEE ROSTER -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 d-flex flex-column">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
+                    <h4 class="fw-bold text-dark mb-0">Attendee Roster & Door List</h4>
+                    <div class="position-relative" style="min-width: 240px;">
+                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                        <input type="text" id="rosterSearch" class="form-control form-control-sm ps-5 rounded-pill" placeholder="Search by name or ID..." onkeyup="filterAttendeeTable()" />
+                    </div>
+                </div>
+
+                <div class="table-responsive flex-grow-1" style="max-height: 480px;">
+                    <table class="table table-hover align-middle mb-0" id="attendeesTable">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th class="small fw-semibold">Attendee</th>
+                                <th class="small fw-semibold">Student / Employee ID</th>
+                                <th class="small fw-semibold">Department</th>
+                                <th class="small fw-semibold">Ticket Code</th>
+                                <th class="small fw-semibold text-center">Status</th>
+                                <th class="small fw-semibold text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Attendees.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">No attendees registered yet for this event.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var att in Model.Attendees)
+                                {
+                                    var isAttended = att.Status == "ATTENDED";
+                                    <tr id="row-@att.RegistrationId" class="@(isAttended ? "table-success-subtle" : "")">
+                                        <td>
+                                            <strong class="d-block text-dark">@att.FullName</strong>
+                                            <small class="text-muted" style="font-size: 11px;">@att.Email</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border">@att.StudentId</span>
+                                        </td>
+                                        <td>
+                                            <small class="text-secondary">@att.Department</small>
+                                        </td>
+                                        <td>
+                                            <code class="small text-primary fw-bold">@att.RegistrationCode</code>
+                                        </td>
+                                        <td class="text-center">
+                                            <span id="badge-@att.RegistrationId" class="badge @(isAttended ? "bg-success text-white" : "bg-secondary text-white") rounded-pill px-2 py-1 small">
+                                                @(isAttended ? "Attended" : "Registered")
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            @if (!isAttended)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="checkInByCode('@att.RegistrationCode', '@att.RegistrationId')">
+                                                    Check In
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-success small fw-semibold"><i class="bi bi-check-circle-fill"></i> In</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const eventId = @Model.EventId;
+        let currentFacingMode = "environment";
+        let videoStream = null;
+
+        // Initialize Camera Stream
+        async function startCamera() {
+            try {
+                if (videoStream) {
+                    videoStream.getTracks().forEach(track => track.stop());
+                }
+                const constraints = {
+                    video: { facingMode: currentFacingMode }
+                };
+                videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const videoElement = document.getElementById('cameraVideo');
+                videoElement.srcObject = videoStream;
+            } catch (err) {
+                console.warn("Camera access not available or blocked:", err);
+            }
+        }
+
+        function toggleCameraStream() {
+            currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+            startCamera();
+        }
+
+        async function verifyTicketCode(code) {
+            if (!code || !code.trim()) return;
+
+            try {
+                const res = await fetch('/Events/VerifyTicket', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ EventId: eventId, TicketCode: code.trim() })
+                });
+
+                const data = await res.json();
+                displayVerificationResult(data);
+            } catch (err) {
+                console.error(err);
+                displayVerificationResult({
+                    Success: false,
+                    Message: "Network connection error while verifying ticket.",
+                    Status: "INVALID"
+                });
+            }
+        }
+
+        function displayVerificationResult(data) {
+            const box = document.getElementById('scanResultBox');
+            box.classList.remove('d-none', 'result-verified', 'result-warning', 'result-danger');
+
+            const icon = document.getElementById('resultIcon');
+            const name = document.getElementById('resultName');
+            const details = document.getElementById('resultDetails');
+            const badge = document.getElementById('resultBadge');
+
+            if (data.Status === "VERIFIED" || data.status === "VERIFIED") {
+                box.classList.add('result-verified');
+                icon.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+                name.innerText = data.FullName || data.fullName || "Attendee Verified";
+                details.innerText = `${data.StudentId || data.studentId || ''} • ${data.Department || data.department || ''}`;
+                badge.className = "badge bg-success text-white";
+                badge.innerText = "Check-In Confirmed";
+                
+                updateLiveCounters(data.TotalAttended || data.totalAttended, data.TotalRegistered || data.totalRegistered);
+            } else if (data.Status === "ALREADY_ATTENDED" || data.status === "ALREADY_ATTENDED") {
+                box.classList.add('result-warning');
+                icon.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-warning"></i>';
+                name.innerText = data.FullName || data.fullName || "Already Checked In";
+                details.innerText = data.Message || data.message;
+                badge.className = "badge bg-warning text-dark";
+                badge.innerText = "Duplicate Scan";
+            } else {
+                box.classList.add('result-danger');
+                icon.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+                name.innerText = "Verification Failed";
+                details.innerText = data.Message || data.message || "Invalid ticket code.";
+                badge.className = "badge bg-danger text-white";
+                badge.innerText = "Invalid Ticket";
+            }
+        }
+
+        function updateLiveCounters(attended, total) {
+            if (attended !== undefined) {
+                document.getElementById('totalAttendedCounter').innerText = attended;
+            }
+            if (total !== undefined && total > 0 && attended !== undefined) {
+                const pct = Math.round((attended / total) * 100);
+                document.getElementById('attendanceRateCounter').innerText = `${pct}%`;
+            }
+        }
+
+        function submitManualCode() {
+            const input = document.getElementById('manualTicketInput');
+            const code = input.value;
+            if (code) {
+                verifyTicketCode(code);
+                input.value = '';
+            }
+        }
+
+        function checkInByCode(code, regId) {
+            verifyTicketCode(code);
+            const row = document.getElementById(`row-${regId}`);
+            if (row) {
+                row.className = "table-success-subtle";
+                const badge = document.getElementById(`badge-${regId}`);
+                if (badge) {
+                    badge.className = "badge bg-success text-white rounded-pill px-2 py-1 small";
+                    badge.innerText = "Attended";
+                }
+            }
+        }
+
+        function filterAttendeeTable() {
+            const q = document.getElementById('rosterSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#attendeesTable tbody tr');
+            rows.forEach(r => {
+                const text = r.innerText.toLowerCase();
+                r.style.display = text.includes(q) ? '' : 'none';
+            });
+        }
+
+        document.getElementById('manualTicketInput')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') submitManualCode();
+        });
+
+        window.addEventListener('DOMContentLoaded', startCamera);
+    </script>
+}

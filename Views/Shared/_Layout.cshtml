@@ -218,6 +218,15 @@ else
                             </a>
                         </li>
 
+                        <!-- CAMPUS MAP & VENUES -->
+                        <li class="nav-item">
+                            <a class="nav-link @(currentController == "Events" && currentAction == "Venues" ? "active" : "")"
+                               asp-controller="Events"
+                               asp-action="Venues">
+                                Campus Map
+                            </a>
+                        </li>
+
                         <!-- ANNOUNCEMENTS -->
                         <li class="nav-item">
                             <a class="nav-link @(currentController == "Announcements" ? "active" : "")"
