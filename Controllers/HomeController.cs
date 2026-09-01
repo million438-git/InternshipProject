@@ -103,20 +103,22 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [HttpGet]
         public IActionResult Privacy()
         {
-            ViewData["Title"] = "Privacy Policy";
+            ViewData["Title"] = "Privacy Policy & Terms";
             return View();
         }
 
         // =====================================================
-        // SITEMAP / ALL PAGES DIRECTORY
-        // URL: /Home/Sitemap or /Sitemap
+        // TERMS OF SERVICE PAGE
+        // URL: /Home/Terms
         // =====================================================
         [HttpGet]
-        public IActionResult Sitemap()
+        public IActionResult Terms()
         {
-            ViewData["Title"] = "All Pages Directory & Sitemap";
-            return View();
+            ViewData["Title"] = "Terms of Service & Platform Policy";
+            return View("Privacy");
         }
+
+
 
         // =====================================================
         // CONTACT PAGE

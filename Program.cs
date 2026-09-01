@@ -121,11 +121,10 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
+    app.UseHttpsRedirection();
 }
 
 app.UseStatusCodePagesWithReExecute("/Home/Error", "?statusCode={0}");
-
-app.UseHttpsRedirection();
 
 // Cache static files in production for optimal performance
 app.UseStaticFiles(new StaticFileOptions

@@ -10,7 +10,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     {
         public string AdminName { get; set; } = "Administrator";
         public string AdminRole { get; set; } = "Super Admin";
-        public string AdminEmail { get; set; } = "admin@hawassauniversity.edu.et";
+        public string AdminEmail { get; set; } = "admin@hawassa.edu.et";
 
         // Statistics
         public int TotalUsers { get; set; }
@@ -67,12 +67,12 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
     }
 
     // =========================================================
-    // SUPERADMIN MASTER GOVERNANCE VIEW MODEL
+    // SUPERADMIN DASHBOARD VIEW MODEL
     // =========================================================
     public class SuperAdminMasterDashboardViewModel
     {
         public string SuperAdminName { get; set; } = "Super Administrator";
-        public string SuperAdminEmail { get; set; } = "superadmin@hawassauniversity.edu.et";
+        public string SuperAdminEmail { get; set; } = "superadmin@hawassa.edu.et";
         
         // System Wide Metrics
         public int TotalPlatformUsers { get; set; }
@@ -771,7 +771,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public string UniversityName { get; set; } = "Hawassa University";
         public string CampusName { get; set; } = "Main Campus (Unified Hub)";
         public string WebsiteTitle { get; set; } = "Hawassa Unified Campus Event Management System (HUCEMS)";
-        public string ContactEmail { get; set; } = "events@hawassauniversity.edu.et";
+        public string ContactEmail { get; set; } = "events@hawassa.edu.et";
         public string ContactPhone { get; set; } = "+251 46 220 9676";
         public string DefaultTimezone { get; set; } = "East Africa Time (UTC+3)";
         public bool RequireEventApproval { get; set; } = true;

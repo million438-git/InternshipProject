@@ -2,11 +2,11 @@
 
 @{
     Layout = "_SuperAdminLayout";
-    ViewData["Title"] = "SuperAdmin Master Command Center";
+    ViewData["Title"] = "SuperAdmin Console | HUCEMS";
 }
 
 <!-- =========================================================================
-     1. SUPERADMIN EXECUTIVE HERO BANNER
+     1. SUPERADMIN HERO BANNER
      ========================================================================= -->
 <div class="admin-card p-4 mb-4 border-0 text-white shadow-sm" style="background: linear-gradient(135deg, #070a12 0%, #0f172a 40%, #1e3a8a 100%); border-radius: 14px;">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
@@ -14,18 +14,17 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-1 small text-white-50">
                     <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-white-50 text-decoration-none">Home</a></li>
-                    <li class="breadcrumb-item text-white-50">Central Authority</li>
-                    <li class="breadcrumb-item active text-white" aria-current="page">Master Command Center</li>
+                    <li class="breadcrumb-item active text-white" aria-current="page">SuperAdmin Console</li>
                 </ol>
             </nav>
             <div class="d-flex align-items-center gap-2 mb-1">
-                <h1 class="h3 fw-bold text-white mb-0">SuperAdmin Master Command Center</h1>
+                <h1 class="h3 fw-bold text-white mb-0">SuperAdmin Console</h1>
                 <span class="badge bg-warning text-dark fw-bold rounded-pill px-3 py-1 shadow-sm" style="font-size: 11px;">
-                    <i class="bi bi-shield-check me-1"></i> Central Authority • Full Control
+                    <i class="bi bi-shield-check me-1"></i> System Administration
                 </span>
             </div>
             <p class="text-white-50 small mb-0">
-                Logged in as <strong class="text-white">@Model.SuperAdminName</strong> (@Model.SuperAdminEmail) &bull; Master governance over all campus administrators, user activations, and system infrastructure.
+                Logged in as <strong class="text-white">@Model.SuperAdminName</strong> (@Model.SuperAdminEmail) &bull; System oversight for user accounts, platform roles, security logs, and infrastructure.
             </p>
         </div>
 
@@ -379,7 +378,7 @@
             <div class="alert alert-info py-2 px-3 mb-0 small rounded border border-info-subtle d-flex align-items-center gap-2">
                 <i class="bi bi-info-circle-fill fs-6 text-info"></i>
                 <div>
-                    <strong>SuperAdmin Authority:</strong> You have unrestricted master access to all campus operations, database tables, and user registrations.
+                    <strong>SuperAdmin Access:</strong> You have system-level access to campus event operations, database tables, and user registrations.
                 </div>
             </div>
         </div>

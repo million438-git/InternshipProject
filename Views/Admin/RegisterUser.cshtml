@@ -39,7 +39,7 @@
         <i class="bi @(Model.IsSuperAdmin ? "bi-shield-check text-primary" : "bi-shield-exclamation text-warning-emphasis") fs-3 flex-shrink-0 mt-1"></i>
         <div>
             <h6 class="fw-bold mb-1 @(Model.IsSuperAdmin ? "text-primary" : "text-dark")">
-                @(Model.IsSuperAdmin ? "Master SuperAdmin Provisioning Hub" : "Campus Administrator Provisioning Policy")
+                @(Model.IsSuperAdmin ? "SuperAdmin User Registration" : "Administrator User Registration")
             </h6>
             <p class="small mb-0 @(Model.IsSuperAdmin ? "text-dark" : "text-secondary")">
                 @if (Model.IsSuperAdmin)

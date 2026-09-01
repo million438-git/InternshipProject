@@ -82,7 +82,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var vm = new AdminOverviewViewModel
             {
                 AdminName = GetCurrentUserName(),
-                AdminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin@hawassauniversity.edu.et"
+                AdminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "admin@hawassa.edu.et"
             };
 
             try
@@ -175,21 +175,21 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         }
 
         // =========================================================
-        // 1B. SUPERADMIN MASTER GOVERNANCE COMMAND CENTER
+        // 1B. SUPERADMIN CONSOLE
         // =========================================================
         [HttpGet]
         public async Task<IActionResult> SuperAdmin()
         {
             if (!IsSuperAdmin())
             {
-                TempData["ErrorMessage"] = "Access Restricted: The SuperAdmin Master Command Center is exclusive to Central Super Administrator accounts.";
+                TempData["ErrorMessage"] = "Access Restricted: The SuperAdmin Console is exclusive to Super Administrator accounts.";
                 return RedirectToAction(nameof(Index));
             }
 
             var vm = new SuperAdminMasterDashboardViewModel
             {
                 SuperAdminName = GetCurrentUserName(),
-                SuperAdminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "superadmin@hawassauniversity.edu.et"
+                SuperAdminEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "superadmin@hawassa.edu.et"
             };
 
             try
@@ -294,7 +294,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error assembling SuperAdmin Master Dashboard data");
+                _logger.LogError(ex, "Error assembling SuperAdmin Dashboard data");
             }
 
             return View(vm);
@@ -568,7 +568,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         <p>An administrator has reset your password for the Hawassa University Portal account: <strong>{user.username}</strong>.</p>
                         <p>Your temporary password is: <strong style='font-family: monospace; font-size: 16px; color: #1e3a8a;'>{tempPassword}</strong></p>
                         <p>Please log in immediately and change your password in your Account Settings.</p>
-                        <p><a href='http://localhost:5110/Account/Login'>Sign In Here</a></p>";
+                        <p><a href='/Account/Login'>Sign In to Portal</a></p>";
 
                     await _emailSender.SendEmailAsync(user.email, emailSubject, emailBody);
                 }
@@ -1038,7 +1038,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                                <p><strong>Username:</strong> {username}<br/>
                                <strong>Temporary Password:</strong> <code>{password}</code><br/>
                                <strong>Role:</strong> {roleName}</p>
-                               <p>You can sign in immediately at: <a href='http://localhost:5110/Account/Login'>http://localhost:5110/Account/Login</a></p>
+                               <p>You can sign in immediately at: <a href='/Account/Login'>Sign In to Portal</a></p>
                                <p>Hawassa Unified Campus Event Management System</p>";
 
                         await _emailSender.SendEmailAsync(email, emailSubject, emailBody);
@@ -1173,7 +1173,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     string emailBody = $@"<h3>Account Approved!</h3>
                         <p>Hello {user.first_name} {user.last_name},</p>
                         <p>Great news! Your Hawassa University portal account (<strong>{user.username}</strong>) has been approved and activated by the SuperAdmin.</p>
-                        <p>You can now sign in immediately at: <a href='http://localhost:5110/Account/Login'>http://localhost:5110/Account/Login</a></p>
+                        <p>You can now sign in immediately at: <a href='/Account/Login'>Sign In to Portal</a></p>
                         <p>Hawassa Unified Campus Event Management System</p>";
 
                     await _emailSender.SendEmailAsync(user.email, emailSubject, emailBody);
@@ -5029,7 +5029,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     ["university_name"] = model.UniversityName ?? "Hawassa University",
                     ["campus_name"] = model.CampusName ?? "Main Campus",
                     ["website_title"] = model.WebsiteTitle ?? "HUCEMS",
-                    ["contact_email"] = model.ContactEmail ?? "events@hawassauniversity.edu.et",
+                    ["contact_email"] = model.ContactEmail ?? "events@hawassa.edu.et",
                     ["contact_phone"] = model.ContactPhone ?? "+251 46 220 9676",
                     ["default_timezone"] = model.DefaultTimezone ?? "East Africa Time (UTC+3)",
                     ["require_event_approval"] = model.RequireEventApproval.ToString().ToLower(),
@@ -5119,7 +5119,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 vm.TableStats = new List<DatabaseTableStatItem>
                 {
                     new() { TableName = "users", RowCount = userCount, Description = "Registered student, faculty, staff and admin identity records." },
-                    new() { TableName = "events", RowCount = eventCount, Description = "Master campus event schedule, details and capacity." },
+                    new() { TableName = "events", RowCount = eventCount, Description = "Campus event schedules, details, and capacity." },
                     new() { TableName = "clubs", RowCount = clubCount, Description = "Interest-based campus clubs, technical guilds, and student societies." },
                     new() { TableName = "club_interests", RowCount = clubInterestCount, Description = "Multi-category interest tags assigned to campus clubs." },
                     new() { TableName = "club_followers", RowCount = followerCount, Description = "Student club following subscriptions for event feeds." },

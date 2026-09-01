@@ -118,7 +118,7 @@
             <div class="col-lg-8">
                 <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-white bg-opacity-10 rounded-pill mb-3 text-cyan border border-white border-opacity-25" style="font-size: 13px;">
                     <i class="bi bi-person-lines-fill"></i>
-                    <span>Personalized Campus Experience Engine</span>
+                    <span>Department Subscriptions & Topic Preferences</span>
                 </div>
                 <h1 class="display-6 fw-bold mb-2">Campus Personalization & Alerts</h1>
                 <p class="text-light text-opacity-75 mb-0" style="max-width: 650px;">
@@ -180,12 +180,12 @@
     <ul class="nav nav-pills mb-4 bg-light p-2 rounded-4 shadow-sm border" id="prefTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active rounded-pill fw-semibold px-4 py-2" id="categories-tab" data-bs-toggle="pill" data-bs-target="#categories-content" type="button" role="tab">
-                <i class="bi bi-bookmark-star me-2"></i>1. Category Interests (USER_CATEGORY_INTERESTS)
+                <i class="bi bi-bookmark-star me-2"></i>1. Category & Topic Interests
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link rounded-pill fw-semibold px-4 py-2" id="depts-tab" data-bs-toggle="pill" data-bs-target="#depts-content" type="button" role="tab">
-                <i class="bi bi-building me-2"></i>2. Department Subscriptions (USER_DEPT_SUBSCRIPTIONS)
+                <i class="bi bi-building me-2"></i>2. Department Subscriptions & Alerts
             </button>
         </li>
     </ul>
@@ -194,7 +194,7 @@
     <div class="tab-content" id="prefTabsContent">
 
         <!-- =========================================================
-             TAB 1: USER_CATEGORY_INTERESTS
+             TAB 1: CATEGORY INTERESTS
              ========================================================= -->
         <div class="tab-pane fade show active" id="categories-content" role="tabpanel">
             <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
@@ -261,7 +261,7 @@
         </div>
 
         <!-- =========================================================
-             TAB 2: USER_DEPT_SUBSCRIPTIONS
+             TAB 2: DEPARTMENT SUBSCRIPTIONS
              ========================================================= -->
         <div class="tab-pane fade" id="depts-content" role="tabpanel">
             <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
@@ -271,7 +271,7 @@
                             <i class="bi bi-bell-fill text-warning me-2"></i>Academic Department Subscriptions & Push Alerts
                         </h4>
                         <p class="text-muted small mb-0">
-                            Follow academic faculties to receive real-time push alerts (<code>notify_on_new_event = true</code>) when your department or other wings schedule seminars, guest lectures, and workshops.
+                            Follow academic faculties to receive real-time push alerts when your department or other campus units schedule seminars, guest lectures, and workshops.
                         </p>
                     </div>
                     <div>

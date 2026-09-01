@@ -49,10 +49,10 @@
     </script>
 
 
-    <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+    <!-- Google Fonts: Outfit, Plus Jakarta Sans, Inter & Noto Sans Ethiopic -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
     <!-- =====================================================
          BOOTSTRAP
@@ -123,7 +123,7 @@
     <header class="py-3 border-bottom bg-body">
         <div class="container d-flex justify-content-between align-items-center">
             <a class="d-flex align-items-center gap-2 text-decoration-none" asp-controller="Home" asp-action="Index" aria-label="HUCEMS Home">
-                <img src="~/images/hawassa-logo.png" alt="Hawassa University Crest" class="brand-logo-img" style="width: 38px; height: 38px; object-fit: contain; border-radius: 50%;" />
+                <img src="~/images/hawassa-logo.png" alt="Hawassa University" class="brand-logo-img" style="width: 38px; height: 38px; object-fit: contain; border-radius: 50%;" />
                 <div class="d-flex flex-column leading-none">
                     <span class="brand-text fw-bold text-dark fs-6">HUCEMS</span>
                     <span class="brand-subtext text-muted" style="font-size: 9px; letter-spacing: 0.5px; margin-top: -3px;">HAWASSA UNIVERSITY</span>
@@ -158,7 +158,7 @@ else
                    asp-controller="Home"
                    asp-action="Index"
                    aria-label="HUCEMS Home">
-                    <img src="~/images/hawassa-logo.png" alt="Hawassa University Crest" class="brand-logo-img" style="width: 38px; height: 38px; object-fit: contain; border-radius: 50%;" />
+                    <img src="~/images/hawassa-logo.png" alt="Hawassa University" class="brand-logo-img" style="width: 38px; height: 38px; object-fit: contain; border-radius: 50%;" />
                     <div class="d-flex flex-column leading-none">
                         <span class="brand-text fw-bold">HUCEMS</span>
                         <span class="brand-subtext text-muted d-none d-sm-inline" style="font-size: 9px; letter-spacing: 0.5px; margin-top: -3px;">HAWASSA UNIVERSITY</span>
@@ -191,12 +191,12 @@ else
                             </a>
                         </li>
 
-                        <!-- EXPLORE EVENTS -->
+                        <!-- EVENTS -->
                         <li class="nav-item">
                             <a class="nav-link @(currentController == "Events" && currentAction == "Index" ? "active" : "")"
                                asp-controller="Events"
                                asp-action="Index">
-                                <span class="d-none d-xl-inline">Explore </span>Events
+                                Events
                             </a>
                         </li>
 
@@ -214,7 +214,7 @@ else
                             <a class="nav-link @(currentController == "Calendar" ? "active" : "")"
                                asp-controller="Calendar"
                                asp-action="Index">
-                                <span class="d-none d-xl-inline">Event </span>Calendar
+                                Calendar
                             </a>
                         </li>
 
@@ -574,19 +574,15 @@ else
                 <!-- 1. BRAND & IDENTITY COLUMN -->
                 <div class="col-12 col-md-6 col-lg-4">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <img src="~/images/hawassa-logo.png" alt="Hawassa University Official Crest" class="bg-white rounded-circle p-1 shadow-sm" style="width: 52px; height: 52px; object-fit: contain;" />
+                        <img src="~/images/hawassa-logo.png" alt="Hawassa University" class="bg-white rounded-circle p-1 shadow-sm" style="width: 52px; height: 52px; object-fit: contain;" />
                         <div>
                             <h5 class="mb-0 fw-bold text-white tracking-tight fs-6">HAWASSA UNIVERSITY</h5>
                             <span class="text-white-50 text-uppercase fw-semibold" style="font-size: 11px; letter-spacing: 1.2px;">Unified Event Platform (HUCEMS)</span>
                         </div>
                     </div>
-                    <p class="text-white-50 small mb-3" style="line-height: 1.6; max-width: 340px;">
+                    <p class="text-white-50 small mb-0" style="line-height: 1.6; max-width: 340px;">
                         The official unified platform for coordinating university academic conferences, departmental seminars, student club activities, and campus facilities.
                     </p>
-                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-white bg-opacity-10 rounded-pill border border-white border-opacity-10">
-                        <span class="badge-pulse bg-success rounded-circle" style="width: 8px; height: 8px;"></span>
-                        <span class="text-white small fw-medium" style="font-size: 11px;">● All Systems Operational</span>
-                    </div>
                 </div>
 
                 <!-- 2. QUICK LINKS COLUMN -->
@@ -604,13 +600,13 @@ else
                         <li>
                             <a asp-controller="Events" asp-action="Index" class="footer-nav-link p-0 text-white-50 hover-white d-inline-flex align-items-center gap-1">
                                 <i class="bi bi-chevron-right text-primary" style="font-size: 10px;"></i>
-                                <span>Explore Events</span>
+                                <span>Events</span>
                             </a>
                         </li>
                         <li>
                             <a asp-controller="Calendar" asp-action="Index" class="footer-nav-link p-0 text-white-50 hover-white d-inline-flex align-items-center gap-1">
                                 <i class="bi bi-chevron-right text-primary" style="font-size: 10px;"></i>
-                                <span>Academic Calendar</span>
+                                <span>Calendar</span>
                             </a>
                         </li>
                         <li>
@@ -659,15 +655,9 @@ else
                             </a>
                         </li>
                         <li>
-                            <a asp-controller="Home" asp-action="Privacy" class="footer-nav-link p-0 text-white-50 hover-white d-inline-flex align-items-center gap-1">
+                            <a asp-controller="Home" asp-action="Terms" class="footer-nav-link p-0 text-white-50 hover-white d-inline-flex align-items-center gap-1">
                                 <i class="bi bi-chevron-right text-primary" style="font-size: 10px;"></i>
                                 <span>Terms of Service</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a asp-controller="Home" asp-action="Sitemap" class="footer-nav-link p-0 text-primary fw-semibold d-inline-flex align-items-center gap-1">
-                                <i class="bi bi-compass text-primary" style="font-size: 11px;"></i>
-                                <span>All Pages Directory</span>
                             </a>
                         </li>
                     </ul>
@@ -727,12 +717,7 @@ else
                 <div class="d-flex align-items-center gap-3">
                     <a asp-controller="Home" asp-action="Privacy" class="text-white-50 text-decoration-none hover-white" style="font-size: 12px;">Privacy Policy</a>
                     <span class="text-white-50 opacity-25">•</span>
-                    <a asp-controller="Home" asp-action="Privacy" class="text-white-50 text-decoration-none hover-white" style="font-size: 12px;">Terms of Service</a>
-                    <span class="text-white-50 opacity-25">•</span>
-                    <a href="#top" class="text-primary text-decoration-none fw-semibold d-inline-flex align-items-center gap-1" title="Scroll to top of page">
-                        <i class="bi bi-arrow-up-circle-fill"></i>
-                        <span>Top</span>
-                    </a>
+                    <a asp-controller="Home" asp-action="Terms" class="text-white-50 text-decoration-none hover-white" style="font-size: 12px;">Terms of Service</a>
                 </div>
             </div>
 

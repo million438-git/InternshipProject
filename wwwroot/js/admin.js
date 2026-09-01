@@ -99,6 +99,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Automatically expand parent submenu containing active item
+    const activeSubmenuItem = document.querySelector('.admin-submenu .admin-submenu-item.active');
+    if (activeSubmenuItem) {
+        const parentSubmenu = activeSubmenuItem.closest('.admin-submenu');
+        if (parentSubmenu) {
+            parentSubmenu.classList.add('show');
+            const toggleTrigger = document.querySelector(`[data-bs-target="#${parentSubmenu.id}"]`);
+            if (toggleTrigger) {
+                toggleTrigger.setAttribute('aria-expanded', 'true');
+                toggleTrigger.classList.add('active');
+            }
+        }
+    }
+
+    // Submenu toggle clicks in mini-mode automatically expand the sidebar
+    const submenuToggles = document.querySelectorAll('.admin-nav-toggle');
+    submenuToggles.forEach(toggle => {
+        toggle.addEventListener('click', () => {
+            if (isDesktop() && (document.documentElement.classList.contains('sidebar-mini') || document.body.classList.contains('sidebar-mini'))) {
+                document.documentElement.classList.remove('sidebar-mini');
+                document.body.classList.remove('sidebar-mini');
+                localStorage.setItem('hucems-admin-sidebar-mini', 'false');
+                updateToggleButtonState(false);
+            }
+        });
+    });
+
     if (toggleBtn) {
         toggleBtn.addEventListener('click', (e) => {
             e.preventDefault();

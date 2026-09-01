@@ -23,7 +23,7 @@
                 <i class="bi bi-clock-history me-1"></i>@Model.TotalPendingCount Pending
             </span>
         </div>
-        <p class="text-muted small mb-0 mt-1">Review accounts registered by Campus Administrators and grant cryptographic login credentials.</p>
+        <p class="text-muted small mb-0 mt-1">Review and approve account registration requests to grant platform login access.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
         <a asp-controller="Admin" asp-action="ExportPendingApprovalsCsv" 
@@ -100,25 +100,7 @@
     </div>
 </div>
 
-<!-- =======================================================
-     ROLE POLICY ALERT BANNER
-     ======================================================= -->
-<div class="alert alert-info border-info-subtle d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 rounded-3 shadow-sm mb-4">
-    <div class="d-flex align-items-center gap-3">
-        <div class="bg-primary text-white rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
-            <i class="bi bi-shield-check fs-5"></i>
-        </div>
-        <div>
-            <h6 class="fw-bold mb-0 text-primary">Two-Tier Campus Governance Policy Active</h6>
-            <p class="mb-0 text-dark small">
-                Campus Administrators can provision new profiles, but only SuperAdministrators hold cryptographic authority to activate accounts.
-            </p>
-        </div>
-    </div>
-    <span class="badge bg-white text-primary border font-monospace px-3 py-2">
-        <i class="bi bi-lock-fill me-1"></i>SuperAdmin Authority Required
-    </span>
-</div>
+
 
 <!-- =======================================================
      SEARCH, FILTER & SORT BAR

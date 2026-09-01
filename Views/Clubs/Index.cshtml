@@ -1,7 +1,7 @@
 @model HawassaUnifiedCampusEventManagementSystem.Models.ClubListViewModel
 
 @{
-    ViewData["Title"] = "Campus Clubs & Communities | Hawassa University";
+    ViewData["Title"] = "Campus Clubs & Societies | Hawassa University";
 }
 
 @section Styles {
@@ -11,18 +11,18 @@
 <div class="container py-4">
 
     <!-- =========================================================
-         1. HERO BANNER
+         1. HERO BANNER & PLATFORM OVERVIEW
          ========================================================= -->
     <div class="clubs-hero mb-4">
         <div class="row align-items-center g-4">
             <div class="col-lg-8">
                 <div class="clubs-hero-badge">
                     <i class="bi bi-stars"></i>
-                    <span>INTEREST-BASED COMMUNITIES</span>
+                    <span>Interest-Based Campus Communities</span>
                 </div>
-                <h1 class="h2 fw-bold text-white mb-2">Campus Clubs & Societies</h1>
-                <p class="text-white-50 mb-4" style="max-width: 620px; line-height: 1.5;">
-                    Discover student associations, tech societies, cultural guilds, and academic communities tailored to your personal passions and career aspirations at Hawassa University.
+                <h1 class="display-6 fw-bold text-white mb-2">Campus Clubs & Societies</h1>
+                <p class="text-white text-opacity-85 mb-4" style="max-width: 640px; line-height: 1.6;">
+                    Discover student associations, technology societies, academic research guilds, and cultural communities across Hawassa University. Connect with peers, participate in hackathons, and shape campus life.
                 </p>
 
                 <div class="d-flex flex-wrap gap-2 align-items-center">
@@ -32,36 +32,51 @@
                     @if (User.Identity?.IsAuthenticated == true)
                     {
                         <a asp-controller="Clubs" asp-action="MyClubs" class="btn btn-outline-light px-3 py-2 rounded-pill fw-semibold">
-                            <i class="bi bi-collection-fill me-1"></i> My Clubs & Memberships
+                            <i class="bi bi-collection-fill me-1"></i> My Memberships
                         </a>
                     }
-                    @if (User.IsInRole("SuperAdmin") || User.IsInRole("Admin") || User.IsInRole("Faculty") || User.IsInRole("Staff") || User.IsInRole("Organization") || User.IsInRole("SUPERADMIN") || User.IsInRole("ADMIN") || User.IsInRole("FACULTY") || User.IsInRole("STAFF") || User.IsInRole("ORGANIZATION"))
+                    @if (User.IsInRole("SuperAdmin") || User.IsInRole("Admin") || User.IsInRole("Faculty") || User.IsInRole("Staff") || User.IsInRole("Organization"))
                     {
-                        <a asp-controller="Clubs" asp-action="Create" class="btn btn-light text-dark px-3 py-2 rounded-pill fw-semibold shadow-sm">
-                            <i class="bi bi-plus-circle-fill text-primary me-1"></i> Charter New Club
+                        <a asp-controller="Clubs" asp-action="Create" class="btn btn-light text-primary px-3 py-2 rounded-pill fw-semibold shadow-sm">
+                            <i class="bi bi-plus-circle-fill me-1"></i> Charter New Club
                         </a>
                     }
+                </div>
+
+                <div class="clubs-stat-pill-group">
+                    <div class="clubs-stat-pill">
+                        <i class="bi bi-people-fill text-info"></i>
+                        <span><strong>@Model.TotalActiveCount</strong> Active Communities</span>
+                    </div>
+                    <div class="clubs-stat-pill">
+                        <i class="bi bi-tag-fill text-warning"></i>
+                        <span><strong>@Model.AvailableCategories.Count</strong> Focus Topics</span>
+                    </div>
+                    <div class="clubs-stat-pill">
+                        <i class="bi bi-shield-check text-success"></i>
+                        <span>Verified University Charters</span>
+                    </div>
                 </div>
             </div>
 
             <div class="col-lg-4 text-lg-end d-none d-lg-block">
-                <div class="p-3 bg-white bg-opacity-10 border border-white border-opacity-15 rounded-4 text-start">
-                    <div class="d-flex align-items-center gap-2 mb-2 text-white">
+                <div class="p-4 bg-white bg-opacity-10 border border-white border-opacity-15 rounded-4 text-start shadow-sm backdrop-blur">
+                    <div class="d-flex align-items-center gap-2 mb-3 text-white">
                         <i class="bi bi-lightbulb-fill text-warning fs-5"></i>
-                        <span class="fw-bold">How Club Matching Works</span>
+                        <h6 class="fw-bold mb-0">How Club Discovery Works</h6>
                     </div>
-                    <p class="small text-white text-opacity-75 mb-0" style="line-height: 1.5;">
-                        1. Select your learning & hobby interests.<br />
-                        2. Our system scores clubs matching your topics.<br />
-                        3. Follow for event alerts or apply for official membership!
-                    </p>
+                    <ol class="small text-white text-opacity-80 ps-3 mb-0" style="line-height: 1.7;">
+                        <li><strong>Pick your topics:</strong> Technology, Academic Research, Debate, Sports, Arts, or Health.</li>
+                        <li><strong>Topic matching:</strong> Relevant clubs are surfaced at the top of your catalog.</li>
+                        <li><strong>Stay connected:</strong> Follow for event alerts or apply for official membership.</li>
+                    </ol>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- =========================================================
-         2. ADMIN GOVERNANCE BAR (Visible to Admins & SuperAdmins)
+         2. ADMIN GOVERNANCE BAR (Visible to Admins)
          ========================================================= -->
     @if (Model.IsUserAdmin)
     {
@@ -73,7 +88,7 @@
                     </div>
                     <div>
                         <h6 class="mb-0 fw-bold text-white">Platform Administrator Club Governance Hub</h6>
-                        <small class="text-white-50">Manage status approvals, club charters, and membership integrity across campus.</small>
+                        <small class="text-white-50">Manage status verification, club charters, and membership integrity across campus.</small>
                     </div>
                 </div>
 
@@ -82,7 +97,7 @@
                         <i class="bi bi-plus-circle me-1"></i> Charter New Club
                     </a>
                     <a asp-controller="Admin" asp-action="Index" class="btn btn-sm btn-outline-light rounded-pill px-3">
-                        <i class="bi bi-speedometer2 me-1"></i> Admin Panel
+                        <i class="bi bi-speedometer2 me-1"></i> Admin Console
                     </a>
                 </div>
             </div>
@@ -109,19 +124,19 @@
     }
 
     <!-- =========================================================
-         3. USER INTEREST NOTIFICATION BANNER
+         3. PERSONALIZATION NOTIFICATION BANNER
          ========================================================= -->
     @if (User.Identity?.IsAuthenticated == true)
     {
         @if (Model.HasSelectedInterests)
         {
-            <div class="alert alert-primary bg-primary-subtle border-primary-subtle rounded-3 p-3 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="alert alert-primary bg-primary-subtle border-primary-subtle rounded-4 p-3 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3 shadow-sm">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-check-circle-fill text-primary fs-5"></i>
                     <div>
                         <span class="fw-bold text-dark">Personalized Recommendations Active:</span>
                         <span class="text-muted small ms-1">
-                            Filtering based on: <strong>@string.Join(", ", Model.UserInterestNames)</strong>
+                            Matching your interests in <strong>@string.Join(", ", Model.UserInterestNames)</strong>
                         </span>
                     </div>
                 </div>
@@ -132,23 +147,23 @@
         }
         else
         {
-            <div class="alert alert-warning bg-warning-subtle border-warning-subtle rounded-3 p-3 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="alert alert-warning bg-warning-subtle border-warning-subtle rounded-4 p-3 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3 shadow-sm">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-info-circle-fill text-warning-emphasis fs-5"></i>
                     <div>
-                        <span class="fw-bold text-dark">You haven't set your campus interests yet!</span>
-                        <span class="text-muted small ms-1">Pick your interests (AI, Coding, Debate, Sports) to unlock tailored club recommendations.</span>
+                        <span class="fw-bold text-dark">Personalize your student community experience!</span>
+                        <span class="text-muted small ms-1">Select your focus areas (Technology, Debate, Sports, Arts, Leadership) to receive relevant club recommendations.</span>
                     </div>
                 </div>
                 <a asp-controller="Clubs" asp-action="Interests" class="btn btn-sm btn-warning text-dark fw-semibold px-4 rounded-pill shadow-sm">
-                    Select My Interests Now
+                    Select My Interests
                 </a>
             </div>
         }
     }
 
     <!-- =========================================================
-         4. SEARCH & CATEGORY FILTER BAR
+         4. SEARCH & TOPIC FILTER BAR
          ========================================================= -->
     <div class="card border-0 shadow-sm rounded-4 mb-4 p-3 bg-white">
         <form method="get" asp-action="Index" class="row g-3 align-items-center">
@@ -159,7 +174,7 @@
             <div class="col-md-5">
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                    <input type="text" name="search" value="@Model.SearchQuery" class="form-control border-start-0 bg-light" placeholder="Search clubs by name, keywords, or topics..." />
+                    <input type="text" name="search" value="@Model.SearchQuery" class="form-control border-start-0 bg-light" placeholder="Search clubs by name, keywords, or focus..." />
                 </div>
             </div>
             <div class="col-md-3">
@@ -173,7 +188,7 @@
             </div>
             <div class="col-md-3">
                 <select name="deptId" class="form-select bg-light" onchange="this.form.submit()">
-                    <option value="">All Departments</option>
+                    <option value="">All Academic Departments</option>
                     @foreach (var d in Model.AvailableDepartments)
                     {
                         <option value="@d.Value" selected="@(d.Selected ? "selected" : null)">@d.Text</option>
@@ -181,18 +196,18 @@
                 </select>
             </div>
             <div class="col-md-1 d-grid">
-                <button type="submit" class="btn btn-primary fw-semibold">Filter</button>
+                <button type="submit" class="btn btn-primary fw-semibold rounded-3">Filter</button>
             </div>
         </form>
 
         <!-- Quick Category Filter Pills -->
         <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
-            <a asp-action="Index" asp-route-status="@Model.StatusFilter" class="interest-pill @(Model.SelectedCategoryId == null ? "interest-pill-lg active" : "")">
-                All Topics
+            <a asp-action="Index" asp-route-status="@Model.StatusFilter" class="interest-pill @(Model.SelectedCategoryId == null ? "active" : "")">
+                <i class="bi bi-grid"></i> All Topics
             </a>
             @foreach (var cat in Model.AvailableCategories.Take(8))
             {
-                <a asp-action="Index" asp-route-categoryId="@cat.Value" asp-route-status="@Model.StatusFilter" class="interest-pill @(Model.SelectedCategoryId?.ToString() == cat.Value ? "interest-pill-lg active" : "")">
+                <a asp-action="Index" asp-route-categoryId="@cat.Value" asp-route-status="@Model.StatusFilter" class="interest-pill @(Model.SelectedCategoryId?.ToString() == cat.Value ? "active" : "")">
                     @cat.Text
                 </a>
             }
@@ -200,7 +215,7 @@
     </div>
 
     <!-- =========================================================
-         5. RECOMMENDED CLUBS (MATCH SCORE HIGHLIGHT)
+         5. RECOMMENDED CLUBS SECTION (Based on user interests)
          ========================================================= -->
     @if (Model.RecommendedClubs.Any() && Model.HasSelectedInterests && Model.StatusFilter != "SUSPENDED" && Model.StatusFilter != "PENDING")
     {
@@ -210,7 +225,7 @@
                     <h2 class="h5 fw-bold text-dark mb-0">
                         <i class="bi bi-magic me-2 text-primary"></i>Recommended For You
                     </h2>
-                    <p class="text-muted small mb-0">Clubs and societies matching your selected interests</p>
+                    <p class="text-muted small mb-0">Student societies matching your active interests</p>
                 </div>
             </div>
 
@@ -218,19 +233,32 @@
                 @foreach (var club in Model.RecommendedClubs)
                 {
                     var targetId = !string.IsNullOrEmpty(club.Slug) ? club.Slug : club.Id.ToString();
+                    var initials = !string.IsNullOrEmpty(club.ShortName) ? club.ShortName : (club.Name.Length > 2 ? club.Name.Substring(0, 2) : club.Name);
+
                     <div class="col-md-6 col-lg-4">
                         <div class="club-card">
                             <div class="club-card-header">
-                                <img src="@(!string.IsNullOrEmpty(club.LogoUrl) ? club.LogoUrl : "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&auto=format&fit=crop&q=80")"
-                                     alt="@club.Name Logo"
-                                     class="club-card-avatar"
-                                     onerror="this.src='https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&auto=format&fit=crop&q=80'" />
+                                <div class="club-card-avatar-wrap">
+                                    @if (!string.IsNullOrEmpty(club.LogoUrl))
+                                    {
+                                        <img src="@club.LogoUrl" alt="@club.Name" class="club-card-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                                        <div class="club-avatar-fallback" style="display: none;">@initials</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="club-avatar-fallback">@initials</div>
+                                    }
+                                </div>
+                                <span class="badge bg-white bg-opacity-20 text-white border border-white border-opacity-25 rounded-pill px-2 py-1 small">
+                                    <i class="bi bi-patch-check-fill me-1"></i>Verified
+                                </span>
                             </div>
+
                             <div class="club-card-body">
                                 @if (!string.IsNullOrEmpty(club.RecommendationReason))
                                 {
                                     <div class="club-recommendation-tag">
-                                        <i class="bi bi-check2-circle"></i>
+                                        <i class="bi bi-stars"></i>
                                         <span>@club.RecommendationReason</span>
                                     </div>
                                 }
@@ -242,7 +270,7 @@
                                 </h3>
 
                                 <p class="small text-muted mb-2">
-                                    <i class="bi bi-building me-1"></i>@(club.DepartmentName ?? club.FacultyName ?? "Hawassa University")
+                                    <i class="bi bi-building me-1 text-primary"></i>@(club.DepartmentName ?? club.FacultyName ?? "Hawassa University")
                                 </p>
 
                                 <p class="club-card-desc">@club.Description</p>
@@ -250,16 +278,17 @@
                                 <div class="d-flex flex-wrap gap-1 mt-auto mb-2">
                                     @foreach (var tag in club.Interests.Take(3))
                                     {
-                                        <span class="interest-pill">
-                                            <i class="bi @(tag.Icon ?? "bi-tag")"></i> @tag.Name
+                                        <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small">
+                                            <i class="bi @(tag.Icon ?? "bi-tag") me-1"></i>@tag.Name
                                         </span>
                                     }
                                 </div>
                             </div>
+
                             <div class="club-card-footer">
                                 <div class="d-flex align-items-center gap-3 small text-muted">
-                                    <span><i class="bi bi-bell me-1"></i><strong class="text-dark follower-count-@club.Id">@club.FollowerCount</strong> followers</span>
-                                    <span><i class="bi bi-people me-1"></i><strong class="text-dark">@club.MemberCount</strong> members</span>
+                                    <span><i class="bi bi-bell me-1 text-primary"></i><strong class="text-dark follower-count-@club.Id">@club.FollowerCount</strong></span>
+                                    <span><i class="bi bi-people me-1 text-info"></i><strong class="text-dark">@club.MemberCount</strong> members</span>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
                                     @if (User.Identity?.IsAuthenticated == true)
@@ -272,7 +301,7 @@
                                         </button>
                                     }
                                     <a asp-action="Details" asp-route-id="@targetId" class="btn btn-sm btn-outline-primary px-3 rounded-pill">
-                                        View
+                                        Explore
                                     </a>
                                 </div>
                             </div>
@@ -284,15 +313,15 @@
     }
 
     <!-- =========================================================
-         6. ALL CLUBS & SOCIETIES
+         6. ALL CLUBS & SOCIETIES CATALOG
          ========================================================= -->
     <div>
         <div class="d-flex align-items-center justify-content-between mb-3">
             <div>
                 <h2 class="h5 fw-bold text-dark mb-0">
-                    <i class="bi bi-grid-fill me-2 text-primary"></i>All Campus Clubs & Societies (@Model.AllClubs.Count)
+                    <i class="bi bi-grid-fill me-2 text-primary"></i>All Campus Communities (@Model.AllClubs.Count)
                 </h2>
-                <p class="text-muted small mb-0">Browse and connect with verified university student groups</p>
+                <p class="text-muted small mb-0">Browse student associations, leadership clubs, and technical societies</p>
             </div>
         </div>
 
@@ -302,29 +331,46 @@
                 @foreach (var club in Model.AllClubs)
                 {
                     var targetId = !string.IsNullOrEmpty(club.Slug) ? club.Slug : club.Id.ToString();
+                    var initials = !string.IsNullOrEmpty(club.ShortName) ? club.ShortName : (club.Name.Length > 2 ? club.Name.Substring(0, 2) : club.Name);
+
                     <div class="col-md-6 col-lg-4">
-                        <div class="club-card position-relative">
-                            <div class="club-card-header d-flex justify-content-end align-items-start">
+                        <div class="club-card">
+                            <div class="club-card-header">
+                                <div class="club-card-avatar-wrap">
+                                    @if (!string.IsNullOrEmpty(club.LogoUrl))
+                                    {
+                                        <img src="@club.LogoUrl" alt="@club.Name" class="club-card-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                                        <div class="club-avatar-fallback" style="display: none;">@initials</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="club-avatar-fallback">@initials</div>
+                                    }
+                                </div>
+
                                 @if (Model.IsUserAdmin || club.Status != "ACTIVE")
                                 {
                                     @if (club.Status == "ACTIVE")
                                     {
-                                        <span class="badge bg-success shadow-sm"><i class="bi bi-patch-check-fill me-1"></i>ACTIVE</span>
+                                        <span class="badge bg-success shadow-sm rounded-pill px-2 py-1"><i class="bi bi-patch-check-fill me-1"></i>Active</span>
                                     }
                                     else if (club.Status == "PENDING")
                                     {
-                                        <span class="badge bg-warning text-dark shadow-sm"><i class="bi bi-hourglass-split me-1"></i>PENDING REVIEW</span>
+                                        <span class="badge bg-warning text-dark shadow-sm rounded-pill px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>Pending</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-danger shadow-sm"><i class="bi bi-slash-circle me-1"></i>@club.Status</span>
+                                        <span class="badge bg-danger shadow-sm rounded-pill px-2 py-1"><i class="bi bi-slash-circle me-1"></i>@club.Status</span>
                                     }
                                 }
-                                <img src="@(!string.IsNullOrEmpty(club.LogoUrl) ? club.LogoUrl : "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&auto=format&fit=crop&q=80")"
-                                     alt="@club.Name Logo"
-                                     class="club-card-avatar"
-                                     onerror="this.src='https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&auto=format&fit=crop&q=80'" />
+                                else
+                                {
+                                    <span class="badge bg-white bg-opacity-20 text-white border border-white border-opacity-25 rounded-pill px-2 py-1 small">
+                                        <i class="bi bi-patch-check-fill me-1"></i>Verified
+                                    </span>
+                                }
                             </div>
+
                             <div class="club-card-body">
                                 <h3 class="club-card-title">
                                     <a asp-action="Details" asp-route-id="@targetId" class="text-dark text-decoration-none hover-primary">
@@ -333,7 +379,7 @@
                                 </h3>
 
                                 <p class="small text-muted mb-2">
-                                    <i class="bi bi-building me-1"></i>@(club.DepartmentName ?? club.FacultyName ?? "Hawassa University")
+                                    <i class="bi bi-building me-1 text-primary"></i>@(club.DepartmentName ?? club.FacultyName ?? "Hawassa University")
                                 </p>
 
                                 <p class="club-card-desc">@club.Description</p>
@@ -341,16 +387,17 @@
                                 <div class="d-flex flex-wrap gap-1 mt-auto mb-2">
                                     @foreach (var tag in club.Interests.Take(3))
                                     {
-                                        <span class="interest-pill">
-                                            <i class="bi @(tag.Icon ?? "bi-tag")"></i> @tag.Name
+                                        <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small">
+                                            <i class="bi @(tag.Icon ?? "bi-tag") me-1"></i>@tag.Name
                                         </span>
                                     }
                                 </div>
                             </div>
+
                             <div class="club-card-footer">
                                 <div class="d-flex align-items-center gap-3 small text-muted">
-                                    <span><i class="bi bi-bell me-1"></i><strong class="text-dark follower-count-@club.Id">@club.FollowerCount</strong> followers</span>
-                                    <span><i class="bi bi-people me-1"></i><strong class="text-dark">@club.MemberCount</strong> members</span>
+                                    <span><i class="bi bi-bell me-1 text-primary"></i><strong class="text-dark follower-count-@club.Id">@club.FollowerCount</strong></span>
+                                    <span><i class="bi bi-people me-1 text-info"></i><strong class="text-dark">@club.MemberCount</strong> members</span>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
                                     @if (User.Identity?.IsAuthenticated == true && club.Status == "ACTIVE")
@@ -363,7 +410,7 @@
                                         </button>
                                     }
                                     <a asp-action="Details" asp-route-id="@targetId" class="btn btn-sm btn-outline-primary px-3 rounded-pill">
-                                        View
+                                        Explore
                                     </a>
                                 </div>
                             </div>
@@ -375,9 +422,11 @@
         else
         {
             <div class="text-center py-5 bg-light rounded-4">
-                <i class="bi bi-search fs-1 text-muted d-block mb-3"></i>
+                <div class="d-inline-flex p-3 bg-white rounded-circle shadow-sm mb-3 text-muted">
+                    <i class="bi bi-search fs-2"></i>
+                </div>
                 <h5 class="fw-bold text-dark mb-1">No Clubs Found</h5>
-                <p class="text-muted small mb-3">Try adjusting your search query, status, department, or category filters.</p>
+                <p class="text-muted small mb-3">Try adjusting your search query, department, or category topic filters.</p>
                 <a asp-action="Index" class="btn btn-sm btn-primary rounded-pill px-4">Reset Filters</a>
             </div>
         }

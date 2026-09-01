@@ -863,16 +863,19 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         }
 
         // =========================================================
-        // GET: /Events/Search?q=term
+        // GET: /Events/Search?q=term or ?query=term
         // =========================================================
-        public async Task<IActionResult> Search(string q)
+        public async Task<IActionResult> Search(string? q, string? query)
         {
-            if (string.IsNullOrWhiteSpace(q)) return View(new List<Event>());
+            var searchTerm = !string.IsNullOrWhiteSpace(q) ? q : query;
+            ViewBag.Query = searchTerm;
+
+            if (string.IsNullOrWhiteSpace(searchTerm)) return View(new List<Event>());
 
             var currentUserId = GetCurrentUserId();
 
             var items = await _db.events
-                .Where(x => x.title.Contains(q) && (x.is_public == true && x.approval_status == "APPROVED"))
+                .Where(x => (x.title.Contains(searchTerm) || (x.description != null && x.description.Contains(searchTerm)) || (x.short_description != null && x.short_description.Contains(searchTerm))) && (x.is_public == true && x.approval_status == "APPROVED"))
                 .Include(x => x.category)
                 .Include(x => x.venue)
                 .Include(x => x.organizer)
@@ -880,7 +883,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 .OrderByDescending(x => x.start_at)
                 .ToListAsync();
 
-            var vm = items.Select(e => ToViewModel(e, currentUserId));
+            var vm = items.Select(e => ToViewModel(e, currentUserId)).ToList();
             return View(vm);
         }
 

@@ -2,12 +2,12 @@
     ViewData["Title"] = "My Profile";
     Layout = "_Layout";
 
-    var userName = ViewData["UserName"]?.ToString() ?? "Million Teshome";
-    var email = ViewData["Email"]?.ToString() ?? "student@hawassauniversity.edu.et";
-    var role = ViewData["Role"]?.ToString() ?? "Student";
-    var department = ViewData["Department"]?.ToString() ?? "Computer Cyber Security";
+    var userName = ViewData["UserName"]?.ToString() ?? (User.Identity?.Name ?? "Campus Member");
+    var email = ViewData["Email"]?.ToString() ?? (User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "user@hawassa.edu.et");
+    var role = ViewData["Role"]?.ToString() ?? (User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Student");
+    var department = ViewData["Department"]?.ToString() ?? "Hawassa University";
     var university = ViewData["University"]?.ToString() ?? "Hawassa University";
-    var userId = ViewData["UserId"]?.ToString() ?? "HUCEMS-2026-001";
+    var userId = ViewData["UserId"]?.ToString() ?? (User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value != null ? $"HUCEMS-{User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value}" : "HUCEMS-MEMBER");
 }
 
 @section Styles {
@@ -797,18 +797,14 @@
 
 
                     <!-- LOGOUT -->
-
                     <div class="profile-logout">
-
-                        <a asp-controller="Account"
-                           asp-action="Login">
-
-                            <i class="bi bi-box-arrow-right"></i>
-
-                            Sign Out
-
-                        </a>
-
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="w-100">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="border-0 bg-transparent text-danger p-0 fw-semibold d-inline-flex align-items-center gap-2" style="cursor: pointer;">
+                                <i class="bi bi-box-arrow-right"></i>
+                                <span>Sign Out</span>
+                            </button>
+                        </form>
                     </div>
 
                 </aside>

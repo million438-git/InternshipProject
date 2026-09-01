@@ -692,7 +692,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             var userRole = await GetCurrentNormalizedRoleAsync();
             if (userRole != "SuperAdmin")
             {
-                TempData["ErrorMessage"] = "Access Restricted: The SuperAdmin Master Dashboard is strictly exclusive to Central Super Administrator accounts.";
+                TempData["ErrorMessage"] = "Access Restricted: The SuperAdmin Dashboard is strictly exclusive to Super Administrator accounts.";
                 return RedirectToAction(nameof(Admin));
             }
 
@@ -848,11 +848,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         private async Task<(ulong? UserId, string UserName, string UserEmail, string UserRole, string UserDept, string FormattedId, string? StudentId, string? EmployeeId, string? Bio)> GetUserInfoAsync()
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? "user@hawassauniversity.edu.et";
+            var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? "user@hawassa.edu.et";
             var userName = User.Identity?.Name ?? "Campus Member";
             var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "Student";
-            var userDept = "Computer Science & Cyber Security";
-            var formattedUserId = "HUCEMS-2026-001";
+            var userDept = "Hawassa University";
+            var formattedUserId = !string.IsNullOrEmpty(userIdStr) ? $"HUCEMS-{userIdStr}" : "HUCEMS-MEMBER";
             string? studentId = null;
             string? employeeId = null;
             string? bio = null;

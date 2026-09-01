@@ -11,8 +11,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Models
         public string UserName { get; set; } = "Campus Member";
         public string UserEmail { get; set; } = string.Empty;
         public string UserRole { get; set; } = "Student";
-        public string UserDepartment { get; set; } = "Computer Cyber Security";
-        public string UserId { get; set; } = "HUCEMS-2026-001";
+        public string UserDepartment { get; set; } = "Hawassa University";
+        public string UserId { get; set; } = "HUCEMS-MEMBER";
         public string? StudentId { get; set; }
         public string? EmployeeId { get; set; }
         public string? OrganizationName { get; set; }

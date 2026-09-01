@@ -728,9 +728,6 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.sub_id).HasName("PRIMARY");
 
-            entity.Property(e => e.notify_on_new_event)
-                .HasDefaultValueSql("'1'");
-
             entity.Property(e => e.subscribed_at)
                 .HasDefaultValueSql("'CURRENT_TIMESTAMP(6)'");
 

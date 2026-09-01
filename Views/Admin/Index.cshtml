@@ -8,20 +8,20 @@
 
 @if (isSuperAdmin)
 {
-    <!-- SUPERADMIN BANNER WITH ONE-CLICK SWITCH TO MASTER COMMAND -->
-    <div class="alert alert-primary border border-primary-subtle d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 rounded-3 mb-4 shadow-sm" style="background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 100%);">
+    <!-- SUPERADMIN BANNER WITH ONE-CLICK SWITCH TO SUPERADMIN CONSOLE -->
+    <div class="alert alert-primary border border-primary-subtle d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 rounded-3 mb-4 shadow-sm">
         <div class="d-flex align-items-center gap-3">
             <div class="stat-icon-box bg-primary text-white rounded-circle" style="width: 38px; height: 38px; font-size: 18px;">
                 <i class="bi bi-shield-lock-fill"></i>
             </div>
             <div>
-                <strong class="text-primary-emphasis d-block">SuperAdmin Master Governance Clearance Active</strong>
-                <small class="text-muted">You are viewing the Campus Operations Dashboard. To oversee all admin activities, user activations, and system vaults, switch to the Master Console.</small>
+                <strong class="text-primary-emphasis d-block">SuperAdmin Access</strong>
+                <small class="text-muted">Switch to the SuperAdmin Console for system oversight, user approvals, and audit logs.</small>
             </div>
         </div>
         <a asp-controller="Admin" asp-action="SuperAdmin" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1 fw-semibold">
             <i class="bi bi-speedometer2"></i>
-            <span>Open SuperAdmin Master Command Center &rarr;</span>
+            <span>SuperAdmin Console &rarr;</span>
         </a>
     </div>
 }

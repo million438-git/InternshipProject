@@ -380,13 +380,13 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             }
 
             ViewData["UserName"] = User.Identity?.Name ?? "Campus Member";
-            ViewData["FirstName"] = "Campus";
-            ViewData["LastName"] = "Member";
-            ViewData["Email"] = userEmail ?? "student@hawassauniversity.edu.et";
+            ViewData["FirstName"] = User.Identity?.Name ?? "Campus";
+            ViewData["LastName"] = "User";
+            ViewData["Email"] = userEmail ?? "user@hawassa.edu.et";
             ViewData["Role"] = User.FindFirstValue(ClaimTypes.Role) ?? "Student";
-            ViewData["Department"] = "Computer Cyber Security";
+            ViewData["Department"] = "Hawassa University";
             ViewData["University"] = "Hawassa University";
-            ViewData["UserId"] = "HUCEMS-2026-001";
+            ViewData["UserId"] = !string.IsNullOrEmpty(userIdStr) ? $"HUCEMS-{userIdStr}" : "HUCEMS-MEMBER";
 
             return View();
         }

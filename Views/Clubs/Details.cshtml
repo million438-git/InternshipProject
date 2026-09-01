@@ -65,16 +65,30 @@
         </div>
     }
 
+    @{
+        var initials = !string.IsNullOrEmpty(Model.ShortName) ? Model.ShortName : (Model.Name.Length > 2 ? Model.Name.Substring(0, 2) : Model.Name);
+    }
+
     <!-- =========================================================
          1. CLUB PROFILE BANNER
          ========================================================= -->
     <div class="club-profile-banner">
         <div class="row align-items-center g-4">
             <div class="col-md-auto text-center text-md-start">
-                <img src="@(!string.IsNullOrEmpty(Model.LogoUrl) ? Model.LogoUrl : "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&auto=format&fit=crop&q=80")"
-                     alt="@Model.Name Logo"
-                     class="club-profile-logo"
-                     onerror="this.src='https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&auto=format&fit=crop&q=80'" />
+                <div class="club-profile-logo-wrap mx-auto mx-md-0">
+                    @if (!string.IsNullOrEmpty(Model.LogoUrl))
+                    {
+                        <img src="@Model.LogoUrl"
+                             alt="@Model.Name Logo"
+                             class="club-profile-logo"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                        <div class="club-avatar-fallback fs-2" style="display: none;">@initials</div>
+                    }
+                    else
+                    {
+                        <div class="club-avatar-fallback fs-2">@initials</div>
+                    }
+                </div>
             </div>
 
             <div class="col-md">

@@ -60,8 +60,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Data
                     {
                         username = "superadmin",
                         email = "superadmin@hawassa.edu.et",
-                        first_name = "Master",
-                        last_name = "SuperAdmin",
+                        first_name = "Super",
+                        last_name = "Admin",
                         employee_id = "EMP-SA-001",
                         phone = "+251911000001",
                         account_type = "STAFF",
@@ -192,12 +192,18 @@ CREATE TABLE IF NOT EXISTS club_members (
                     ("Health & Medicine", "health-medicine", "Public Health, Biomedical Sciences, and Clinical Outreach.", "bi-heart-pulse")
                 };
 
+                // Load all existing categories in a single bulk query to eliminate repeated round-trips
+                var existingCategories = await db.event_categories.ToListAsync();
+                var categoryMap = existingCategories
+                    .Where(c => !string.IsNullOrWhiteSpace(c.slug))
+                    .ToDictionary(c => c.slug, c => c, StringComparer.OrdinalIgnoreCase);
+
+                var categoriesToAdd = new List<event_category>();
                 foreach (var cat in defaultCategories)
                 {
-                    var existing = await db.event_categories.FirstOrDefaultAsync(c => c.slug == cat.Slug || c.name == cat.Name);
-                    if (existing == null)
+                    if (!categoryMap.ContainsKey(cat.Slug) && !existingCategories.Any(c => string.Equals(c.name, cat.Name, StringComparison.OrdinalIgnoreCase)))
                     {
-                        db.event_categories.Add(new event_category
+                        var newCat = new event_category
                         {
                             name = cat.Name,
                             slug = cat.Slug,
@@ -206,20 +212,30 @@ CREATE TABLE IF NOT EXISTS club_members (
                             is_active = true,
                             created_at = DateTime.UtcNow,
                             updated_at = DateTime.UtcNow
-                        });
+                        };
+                        categoriesToAdd.Add(newCat);
                     }
                 }
-                await db.SaveChangesAsync();
+
+                if (categoriesToAdd.Count > 0)
+                {
+                    db.event_categories.AddRange(categoriesToAdd);
+                    await db.SaveChangesAsync();
+                    foreach (var added in categoriesToAdd)
+                    {
+                        categoryMap[added.slug] = added;
+                    }
+                }
 
                 // 5. SEED INITIAL CLUBS IF EMPTY
                 if (!await db.clubs.AnyAsync())
                 {
-                    var aiCat = await db.event_categories.FirstOrDefaultAsync(c => c.slug == "artificial-intelligence");
-                    var cyberCat = await db.event_categories.FirstOrDefaultAsync(c => c.slug == "cybersecurity");
-                    var progCat = await db.event_categories.FirstOrDefaultAsync(c => c.slug == "programming-software");
-                    var robotCat = await db.event_categories.FirstOrDefaultAsync(c => c.slug == "robotics-iot");
-                    var dataCat = await db.event_categories.FirstOrDefaultAsync(c => c.slug == "data-science");
-                    var entCat = await db.event_categories.FirstOrDefaultAsync(c => c.slug == "entrepreneurship-business");
+                    categoryMap.TryGetValue("artificial-intelligence", out var aiCat);
+                    categoryMap.TryGetValue("cybersecurity", out var cyberCat);
+                    categoryMap.TryGetValue("programming-software", out var progCat);
+                    categoryMap.TryGetValue("robotics-iot", out var robotCat);
+                    categoryMap.TryGetValue("data-science", out var dataCat);
+                    categoryMap.TryGetValue("entrepreneurship-business", out var entCat);
 
                     var csDept = await db.departments.FirstOrDefaultAsync();
 
@@ -229,8 +245,8 @@ CREATE TABLE IF NOT EXISTS club_members (
                         name = "AI & Machine Learning Club",
                         slug = "ai-machine-learning-club",
                         short_name = "AIML-HU",
-                        description = "Hawassa University's premier community for Artificial Intelligence, Neural Networks, Computer Vision, and Generative Models. We host weekly hands-on workshops and Kaggle hackathons.",
-                        logo_url = "https://images.unsplash.com/photo-1677442136019-21780efad99a?w=400&auto=format&fit=crop&q=80",
+                        description = "Hawassa University student community for Artificial Intelligence, Neural Networks, Computer Vision, and Data Science. We host weekly hands-on workshops and hackathons.",
+                        logo_url = null,
                         department_id = csDept?.id,
                         president_id = adminUser?.id,
                         status = "ACTIVE",
@@ -246,7 +262,7 @@ CREATE TABLE IF NOT EXISTS club_members (
                         slug = "hawassa-cybersecurity-guild",
                         short_name = "HUCyber",
                         description = "Dedicated to ethical hacking, Capture The Flag (CTF) competitions, reverse engineering, web security forensics, and cyber defense training across Ethiopian universities.",
-                        logo_url = "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400&auto=format&fit=crop&q=80",
+                        logo_url = null,
                         department_id = csDept?.id,
                         president_id = adminUser?.id,
                         status = "ACTIVE",
@@ -261,8 +277,8 @@ CREATE TABLE IF NOT EXISTS club_members (
                         name = "Campus Coding & Open Source Society",
                         slug = "campus-coding-society",
                         short_name = "HU-Code",
-                        description = "Empowering students in modern software engineering, web architectures, mobile app development, and open-source contributions with active mentor sessions.",
-                        logo_url = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=400&auto=format&fit=crop&q=80",
+                        description = "Training students in modern software engineering, web architectures, mobile app development, and open-source contributions with active mentor sessions.",
+                        logo_url = null,
                         department_id = csDept?.id,
                         president_id = adminUser?.id,
                         status = "ACTIVE",
@@ -278,7 +294,7 @@ CREATE TABLE IF NOT EXISTS club_members (
                         slug = "robotics-iot-society",
                         short_name = "HU-Robo",
                         description = "Hardware prototyping, Arduino/Raspberry Pi microcontrollers, drone engineering, and industrial automation project labs.",
-                        logo_url = "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&auto=format&fit=crop&q=80",
+                        logo_url = null,
                         department_id = csDept?.id,
                         president_id = adminUser?.id,
                         status = "ACTIVE",
