@@ -108,7 +108,7 @@
                     <i class="bi bi-tags"></i>
                     <span class="nav-label">Categories</span>
                 </a>
-                <a asp-controller="Admin" asp-action="Calendar" class="admin-nav-item @(currentController == "Admin" && currentAction == "Calendar" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Master Schedule Calendar">
+                <a asp-controller="Admin" asp-action="Calendar" class="admin-nav-item @(currentController == "Admin" && currentAction == "Calendar" ? "active" : "")" data-bs-toggle="tooltip" data-bs-placement="right" title="Campus Event Calendar">
                     <i class="bi bi-calendar3"></i>
                     <span class="nav-label">Calendar</span>
                 </a>
@@ -191,18 +191,13 @@
             <header class="admin-topbar">
                 <!-- LEFT SECTION: TOGGLE & SEARCH -->
                 <div class="d-flex align-items-center gap-3">
-                    <button type="button" class="admin-toggle-btn" id="adminSidebarToggle" title="Toggle Sidebar (Ctrl+B)" aria-label="Toggle Sidebar Menu" aria-expanded="true">
+                    <button type="button" class="admin-toggle-btn" id="adminSidebarToggle" title="Toggle Sidebar" aria-label="Toggle Sidebar Menu" aria-expanded="true">
                         <i class="bi bi-list fs-4"></i>
                     </button>
                     
                     <div class="admin-topbar-search d-none d-md-flex align-items-center">
                         <i class="bi bi-search search-icon"></i>
-                        <input type="text" class="form-control form-control-sm admin-search-input" id="adminGlobalSearch" placeholder="Search events, registrations, venues... (Ctrl+K)" />
-                    </div>
-
-                    <div class="system-status-indicator d-none d-xl-flex align-items-center gap-2">
-                        <span class="status-dot online"></span>
-                        <span class="status-label">Campus Event Hub Active</span>
+                        <input type="text" class="form-control form-control-sm admin-search-input" id="adminGlobalSearch" placeholder="Search events, registrations, venues..." />
                     </div>
                 </div>
 
@@ -211,7 +206,7 @@
                     @if (isSuperAdminUser)
                     {
                         <!-- SuperAdmin Elevated Switcher Shortcut -->
-                        <a asp-controller="Admin" asp-action="SuperAdmin" class="btn btn-sm btn-outline-warning d-none d-md-inline-flex align-items-center gap-1 fw-semibold rounded-pill px-3" title="Switch to SuperAdmin Master Console">
+                        <a asp-controller="Admin" asp-action="SuperAdmin" class="btn btn-sm btn-outline-warning d-none d-md-inline-flex align-items-center gap-1 fw-semibold rounded-pill px-3" title="Switch to SuperAdmin Dashboard">
                             <i class="bi bi-shield-check"></i>
                             <span>SuperAdmin Console</span>
                         </a>
@@ -303,10 +298,7 @@
             <!-- FOOTER -->
             <footer class="admin-footer px-4 py-3 text-muted border-top d-flex flex-wrap justify-content-between align-items-center bg-white">
                 <small>&copy; @DateTime.UtcNow.Year <strong>Hawassa University</strong> — Campus Event Management System</small>
-                <small class="d-flex align-items-center gap-2">
-                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1" style="font-size: 11px;">● Operations Active</span>
-                    <span class="badge bg-light text-secondary border font-monospace" style="font-size: 10px;">Admin Operations v2.0</span>
-                </small>
+                <small class="text-muted">ICT Directorate</small>
             </footer>
         </div>
     </div>

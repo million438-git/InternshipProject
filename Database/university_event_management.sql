@@ -1755,8 +1755,8 @@ INSERT INTO venues (id, name, building_name, room_number, description, capacity,
 -- Master SuperAdmin (Platform Owner): superadmin@hawassa.edu.et / SuperAdmin@2026!
 -- Campus Administrator (Events & Operations): admin@hawassa.edu.et / Admin@2026!
 INSERT INTO users (id, department_id, username, email, password_hash, first_name, last_name, student_id, employee_id, phone, account_type, account_status, email_verified, phone_verified) VALUES
-(1, 2, 'superadmin', 'superadmin@hawassa.edu.et', 'b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1', 'Dr. Ermias', 'SuperAdmin', NULL, 'EMP-SA-001', '+251911223344', 'SUPERADMIN', 'ACTIVE', TRUE, TRUE),
-(2, 1, 'admin', 'admin@hawassa.edu.et', 'b4a0980c619b02a24c96be11311b70c9c7f66e04d4dd266ec56cb04f9dfc0aa1', 'Abebe', 'Administrator', NULL, 'EMP-ADM-002', '+251911556677', 'ADMIN', 'ACTIVE', TRUE, TRUE);
+(1, 2, 'superadmin', 'superadmin@hawassa.edu.et', 'a81a516b30d7ac7f3f400cac3a696c39841ec00e919a93b7789b18b3096fc2e4', 'Million', 'Teshome', NULL, 'EMP-SA-001', '+251911223344', 'SUPERADMIN', 'ACTIVE', TRUE, TRUE),
+(2, 1, 'admin', 'admin@hawassa.edu.et', 'a9aba42da064d17587e73b5972fb3d10f23f805d2c06ad0a49df80b7b18560e7', 'Abebe', 'Administrator', NULL, 'EMP-ADM-002', '+251911556677', 'ADMIN', 'ACTIVE', TRUE, TRUE);
 
 -- 10. ASSIGN ROLES
 INSERT INTO user_roles (user_id, role_id, assigned_by) VALUES
@@ -1772,7 +1772,6 @@ INSERT INTO organizations (id, department_id, name, short_name, description, org
 -- 12. SAMPLE EVENTS
 INSERT INTO events (id, title, slug, description, short_description, category_id, organizer_id, organization_id, venue_id, start_at, end_at, capacity, registration_required, event_mode, status, approval_status, is_featured, is_public) VALUES
 (1, 'Hawassa National Tech Hackathon 2026', 'hawassa-national-tech-hackathon-2026', '48-hour continuous coding hackathon bringing together software engineers from across Ethiopian universities to build solutions in Fintech, Agriculture, and Healthtech.', '48-hour continuous hackathon for web, mobile, and AI solutions.', 1, 1, 1, 1, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 5 DAY), DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY), 300, TRUE, 'IN_PERSON', 'PUBLISHED', 'APPROVED', TRUE, TRUE),
-(2, 'Annual Campus Career & Internship Fair', 'annual-campus-career-fair-2026', 'Meet over 40 technology employers, financial institutions, telecom companies, and NGOs for on-campus interviews and direct internship offers.', 'Annual networking & job recruitment fair with leading companies.', 2, 1, NULL, 2, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 12 DAY), DATE_ADD(DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 12 DAY), INTERVAL 8 HOUR), 800, TRUE, 'IN_PERSON', 'PUBLISHED', 'APPROVED', TRUE, TRUE),
 (3, 'Inter-College Football Championship Cup', 'inter-college-football-championship-2026', 'The annual tournament clash between Institute of Technology, Informatics, Business School, and Health Sciences.', 'Annual inter-department soccer tournament.', 3, 1, 3, 4, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 18 DAY), DATE_ADD(DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 18 DAY), INTERVAL 4 HOUR), 2000, FALSE, 'IN_PERSON', 'PUBLISHED', 'APPROVED', TRUE, TRUE);
 
 -- 13. SAMPLE ANNOUNCEMENTS

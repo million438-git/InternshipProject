@@ -40,6 +40,6 @@ After init, sign in at `http://localhost:5110/Account/Login`.
 
 ---
 
-## In-app database vault
+## In-app database management & backups
 
 SuperAdmin-only: `/Admin/DatabaseManagement` can download SQL snapshots. Restore is not run inside the app; apply a dump with MySQL tools. Row-level CRUD is SuperAdmin-only at `/Admin/DatabaseRecords`.

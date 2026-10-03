@@ -72,14 +72,14 @@
                         <i class="bi bi-shield-lock-fill fs-5"></i>
                     </div>
                     <div>
-                        <h6 class="mb-0 fw-bold text-white">Platform Administrator Club Governance Hub</h6>
-                        <small class="text-white-50">Manage status approvals, club charters, and membership integrity across campus.</small>
+                        <h6 class="mb-0 fw-bold text-white">Club Administration</h6>
+                        <small class="text-white-50">Manage club listings, approvals, and student memberships.</small>
                     </div>
                 </div>
 
                 <div class="d-flex flex-wrap align-items-center gap-2">
                     <a asp-action="Create" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold">
-                        <i class="bi bi-plus-circle me-1"></i> Charter New Club
+                        <i class="bi bi-plus-circle me-1"></i> Register New Club
                     </a>
                     <a asp-controller="Admin" asp-action="Index" class="btn btn-sm btn-outline-light rounded-pill px-3">
                         <i class="bi bi-speedometer2 me-1"></i> Admin Panel
@@ -136,12 +136,12 @@
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-info-circle-fill text-warning-emphasis fs-5"></i>
                     <div>
-                        <span class="fw-bold text-dark">You haven't set your campus interests yet!</span>
-                        <span class="text-muted small ms-1">Pick your interests (AI, Coding, Debate, Sports) to unlock tailored club recommendations.</span>
+                        <span class="fw-bold text-dark">Campus interests not selected</span>
+                        <span class="text-muted small ms-1">Select your interest areas (such as Technology, Debate, Athletics, or Arts) to view recommended student clubs.</span>
                     </div>
                 </div>
                 <a asp-controller="Clubs" asp-action="Interests" class="btn btn-sm btn-warning text-dark fw-semibold px-4 rounded-pill shadow-sm">
-                    Select My Interests Now
+                    Select Interests
                 </a>
             </div>
         }
@@ -394,10 +394,12 @@
             btn.disabled = true;
 
             try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
                 const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'RequestVerificationToken': token
                     }
                 });
 

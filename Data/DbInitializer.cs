@@ -51,6 +51,25 @@ namespace HawassaUnifiedCampusEventManagementSystem.Data
                     await db.SaveChangesAsync();
                 }
 
+                // 0. PURGE DEPRECATED SAMPLE EVENT IF PRESENT
+                var deprecatedEvent = await db.events
+                    .Include(e => e.registrations)
+                    .Include(e => e.tags)
+                    .Include(e => e.event_comments)
+                    .Include(e => e.event_feedbacks)
+                    .FirstOrDefaultAsync(e => e.title.Contains("Annual Campus Career & Internship Fair") || e.slug == "annual-campus-career-fair-2026");
+
+                if (deprecatedEvent != null)
+                {
+                    if (deprecatedEvent.registrations?.Any() == true) db.registrations.RemoveRange(deprecatedEvent.registrations);
+                    if (deprecatedEvent.tags?.Any() == true) deprecatedEvent.tags.Clear();
+                    if (deprecatedEvent.event_comments?.Any() == true) db.event_comments.RemoveRange(deprecatedEvent.event_comments);
+                    if (deprecatedEvent.event_feedbacks?.Any() == true) db.event_feedbacks.RemoveRange(deprecatedEvent.event_feedbacks);
+                    db.events.Remove(deprecatedEvent);
+                    await db.SaveChangesAsync();
+                    logger.LogInformation("Permanently purged event: Annual Campus Career & Internship Fair");
+                }
+
                 // 1. SUPERADMIN ACCOUNT
                 var superAdminUser = await db.users.FirstOrDefaultAsync(u => u.username == "superadmin" || u.email == "superadmin@hawassa.edu.et");
                 if (superAdminUser == null)
@@ -59,8 +78,8 @@ namespace HawassaUnifiedCampusEventManagementSystem.Data
                     {
                         username = "superadmin",
                         email = "superadmin@hawassa.edu.et",
-                        first_name = "Master",
-                        last_name = "SuperAdmin",
+                        first_name = "Million",
+                        last_name = "Teshome",
                         employee_id = "EMP-SA-001",
                         phone = "+251911000001",
                         account_type = "STAFF",
@@ -82,6 +101,29 @@ namespace HawassaUnifiedCampusEventManagementSystem.Data
                     });
                     await db.SaveChangesAsync();
                     logger.LogInformation("Seeded master SuperAdmin account: superadmin@hawassa.edu.et");
+                }
+                else
+                {
+                    bool superAdminModified = false;
+                    if (!passwords.VerifyPassword(superAdminUser, "SuperAdmin@2026!", superAdminUser.password_hash))
+                    {
+                        superAdminUser.password_hash = passwords.HashPassword("SuperAdmin@2026!");
+                        superAdminUser.account_status = "ACTIVE";
+                        superAdminModified = true;
+                        logger.LogInformation("Self-healed SuperAdmin default password hash.");
+                    }
+                    if (superAdminUser.first_name != "Million" || superAdminUser.last_name != "Teshome")
+                    {
+                        superAdminUser.first_name = "Million";
+                        superAdminUser.last_name = "Teshome";
+                        superAdminModified = true;
+                        logger.LogInformation("Self-healed SuperAdmin name to Million Teshome.");
+                    }
+                    if (superAdminModified)
+                    {
+                        superAdminUser.updated_at = DateTime.UtcNow;
+                        await db.SaveChangesAsync();
+                    }
                 }
 
                 // 2. ADMIN ACCOUNT (Campus Operational Administrator)
@@ -115,6 +157,14 @@ namespace HawassaUnifiedCampusEventManagementSystem.Data
                     });
                     await db.SaveChangesAsync();
                     logger.LogInformation("Seeded campus Admin account: admin@hawassa.edu.et");
+                }
+                else if (!passwords.VerifyPassword(adminUser, "Admin@2026!", adminUser.password_hash))
+                {
+                    adminUser.password_hash = passwords.HashPassword("Admin@2026!");
+                    adminUser.account_status = "ACTIVE";
+                    adminUser.updated_at = DateTime.UtcNow;
+                    await db.SaveChangesAsync();
+                    logger.LogInformation("Self-healed Admin default password hash.");
                 }
 
                 // 3. ENSURE CLUB TABLES EXIST IN MYSQL
@@ -260,7 +310,7 @@ CREATE TABLE IF NOT EXISTS club_members (
                         name = "Campus Coding & Open Source Society",
                         slug = "campus-coding-society",
                         short_name = "HU-Code",
-                        description = "Empowering students in modern software engineering, web architectures, mobile app development, and open-source contributions with active mentor sessions.",
+                        description = "Supporting students in modern software engineering, web architectures, mobile app development, and open-source contributions with active mentor sessions.",
                         logo_url = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=400&auto=format&fit=crop&q=80",
                         department_id = csDept?.id,
                         president_id = adminUser?.id,

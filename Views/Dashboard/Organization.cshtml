@@ -20,7 +20,7 @@
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-1 small text-white-50">
                             <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-white-50 text-decoration-none"><i class="bi bi-house-door me-1"></i>Home</a></li>
-                            <li class="breadcrumb-item active text-white" aria-current="page">Organizer Command Center</li>
+                            <li class="breadcrumb-item active text-white" aria-current="page">Organization Dashboard</li>
                         </ol>
                     </nav>
                     <div class="d-flex align-items-center gap-2 mb-1">
@@ -44,20 +44,7 @@
                         <i class="bi bi-ticket-perforated"></i>
                         <span>Scan & Verify Passes</span>
                     </a>
-                    <div class="dropdown">
-                        <button class="btn btn-dark bg-dark-subtle border-0 text-white dropdown-toggle small px-2 py-2" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-arrow-left-right me-1"></i> Role Views
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow">
-                            <li><h6 class="dropdown-header small">Switch Dashboard Preview</h6></li>
-                            <li><a class="dropdown-item" asp-controller="Dashboard" asp-action="Student"><i class="bi bi-mortarboard me-2"></i>Student</a></li>
-                            <li><a class="dropdown-item" asp-controller="Dashboard" asp-action="Staff"><i class="bi bi-briefcase me-2"></i>Staff</a></li>
-                            <li><a class="dropdown-item" asp-controller="Dashboard" asp-action="Faculty"><i class="bi bi-journal-bookmark me-2"></i>Faculty</a></li>
-                            <li><a class="dropdown-item active" asp-controller="Dashboard" asp-action="Organization"><i class="bi bi-people me-2"></i>Organization</a></li>
-                            <li><a class="dropdown-item" asp-controller="Dashboard" asp-action="Admin"><i class="bi bi-shield-lock me-2"></i>Admin</a></li>
-                            <li><a class="dropdown-item" asp-controller="Dashboard" asp-action="SuperAdmin"><i class="bi bi-cpu me-2"></i>SuperAdmin</a></li>
-                        </ul>
-                    </div>
+
                 </div>
             </div>
         </div>
@@ -162,7 +149,7 @@
                         {
                             <div class="p-4 text-center text-muted small">
                                 <i class="bi bi-graph-up text-secondary fs-3 mb-2 d-block"></i>
-                                No active event registrations recorded yet. Once attendees RSVP for your hosted events, live attendance statistics will display here.
+                                No active event registrations recorded. Attendance statistics will display once participants register for your hosted events.
                             </div>
                         }
                     </div>

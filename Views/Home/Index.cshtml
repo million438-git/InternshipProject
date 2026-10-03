@@ -15,44 +15,57 @@
     <div class="container">
         <div class="row align-items-center g-4 py-4">
             <div class="col-lg-8">
-                <div class="hero-badge">
-                    <img src="~/images/hawassa-logo.png" alt="Hawassa University Crest" style="width: 22px; height: 22px; object-fit: contain;" />
-                    <span>HAWASSA UNIVERSITY • HUCEMS</span>
-                </div>
-                
                 <h1 class="hero-title">
-                    Campus Events &amp; Venue Management
+                    Campus Events and Venues
                 </h1>
                 
                 <p class="hero-lead">
-                    The central portal for discovering university events, managing attendee registrations, and scheduling campus venues.
+                    Find university events, view schedules, register for activities, and check available event venues.
                 </p>
                 
                 <div class="d-flex flex-wrap gap-3">
                     <a asp-controller="Events" asp-action="Index" class="hero-btn-primary">
-                        Explore Events
-                    </a>
-                    <a asp-controller="Account" asp-action="Login" class="hero-btn-outline">
-                        Sign In to Portal
+                        Browse Events
                     </a>
                     <a asp-controller="Calendar" asp-action="Index" class="hero-btn-outline">
-                        Campus Calendar
+                        View Calendar
                     </a>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a asp-controller="Dashboard" asp-action="Index" class="hero-btn-outline">
+                            Dashboard
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="Login" class="hero-btn-outline">
+                            Sign In
+                        </a>
+                    }
                 </div>
             </div>
 
-            <div class="col-lg-4 d-none d-lg-block text-center">
-                <div class="p-4 rounded-4 bg-white bg-opacity-10 border border-white border-opacity-15 text-start shadow-sm">
-                    <div class="d-flex align-items-center gap-2 mb-3 text-white">
-                        <i class="bi bi-info-circle-fill fs-5 text-info"></i>
-                        <span class="fw-bold">Campus Access</span>
+            <div class="col-lg-4 d-none d-lg-block text-start">
+                <div class="p-4 rounded-3 bg-white bg-opacity-10 border border-white border-opacity-15 shadow-sm">
+                    <div class="d-flex align-items-center gap-2 mb-2 text-white">
+                        <i class="bi bi-person-badge fs-5 text-info"></i>
+                        <span class="fw-bold">University Account</span>
                     </div>
                     <p class="small text-white text-opacity-75 mb-3" style="line-height: 1.5;">
-                        Event registration is open to students, staff, and guests. Sign in with university credentials to access schedules and organizer tools.
+                        Sign in with your university account to register for events and access organizer features.
                     </p>
-                    <a asp-controller="Home" asp-action="Contact" class="btn btn-sm btn-light w-100 fw-semibold text-primary">
-                        Contact Admin Desk &rarr;
-                    </a>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a asp-controller="Dashboard" asp-action="Index" class="btn btn-sm btn-light w-100 fw-semibold text-primary">
+                            Go to Dashboard &rarr;
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-sm btn-light w-100 fw-semibold text-primary">
+                            Sign In &rarr;
+                        </a>
+                    }
                 </div>
             </div>
         </div>
@@ -93,7 +106,7 @@
         <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
             <div class="section-header mb-0">
                 <h2 class="section-title">Upcoming Events</h2>
-                <p class="section-subtitle">Upcoming activities scheduled across Hawassa University campuses.</p>
+                <p class="section-subtitle">Events scheduled across Hawassa University.</p>
             </div>
             <a asp-controller="Events" asp-action="Index" class="btn btn-outline-primary btn-sm fw-semibold mt-2 mt-md-0">
                 View All Events &rarr;
@@ -140,7 +153,7 @@
                             </div>
                             <div class="event-footer px-3 pb-3 pt-2 border-top d-flex justify-content-between align-items-center">
                                 <span class="small text-muted"><i class="bi bi-clock me-1"></i> @(ev.FormattedTime ?? ev.StartDate.ToString("hh:mm tt"))</span>
-                                <a asp-controller="Events" asp-action="Details" asp-route-id="@ev.Id" class="btn btn-sm btn-primary px-3 rounded-pill fw-semibold">View Details</a>
+                                <a asp-controller="Events" asp-action="Details" asp-route-id="@ev.Id" class="btn btn-sm btn-primary px-3 fw-semibold">View Details</a>
                             </div>
                         </div>
                     </div>
@@ -149,11 +162,11 @@
         }
         else
         {
-            <div class="p-5 text-center bg-white rounded-4 border shadow-sm">
+            <div class="p-5 text-center bg-white rounded-3 border shadow-sm">
                 <i class="bi bi-calendar-x text-muted display-4 mb-3 d-block"></i>
                 <h5 class="fw-bold text-dark mb-1">No Upcoming Events</h5>
                 <p class="text-muted small mb-3">There are currently no scheduled public events. Please check back later.</p>
-                <a asp-controller="Events" asp-action="Index" class="btn btn-sm btn-outline-primary rounded-pill px-4">Browse Past &amp; Ongoing Events</a>
+                <a asp-controller="Events" asp-action="Index" class="btn btn-sm btn-outline-primary px-3 fw-semibold">Browse All Events</a>
             </div>
         }
     </div>
@@ -166,7 +179,7 @@
     <div class="container">
         <div class="section-header text-center mx-auto" style="max-width: 600px;">
             <h2 class="section-title">Event Categories</h2>
-            <p class="section-subtitle">Browse events by department and topic.</p>
+            <p class="section-subtitle">Browse events by category.</p>
         </div>
 
         <div class="row g-3">
@@ -230,7 +243,7 @@
         <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
             <div class="section-header mb-0">
                 <h2 class="section-title">Campus Announcements</h2>
-                <p class="section-subtitle">Official circulars and notices from university departments.</p>
+                <p class="section-subtitle">Important notices and updates from university departments.</p>
             </div>
             <a asp-controller="Announcements" asp-action="Index" class="btn btn-outline-secondary btn-sm fw-semibold mt-2 mt-md-0">
                 View All Announcements &rarr;
@@ -279,15 +292,24 @@
         <div class="portal-cta-banner">
             <div class="row align-items-center g-4">
                 <div class="col-lg-8">
-                    <h3 class="fw-bold mb-2">Event Coordination &amp; Facility Scheduling</h3>
+                    <h3 class="fw-bold mb-2">Organize an Event</h3>
                     <p class="mb-0 text-white-50" style="font-size: 1rem; line-height: 1.5;">
-                        Sign in with your university account to submit event proposals, reserve campus venues, and manage registrations.
+                        Sign in to submit events, manage registrations, and use available campus venues.
                     </p>
                 </div>
                 <div class="col-lg-4 text-lg-end">
-                    <a asp-controller="Account" asp-action="Login" class="btn btn-light btn-lg px-4 fw-bold text-primary shadow-sm">
-                        <i class="bi bi-box-arrow-in-right me-1"></i> Sign In to Portal
-                    </a>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a asp-controller="Events" asp-action="Create" class="btn btn-light px-4 fw-semibold text-primary shadow-sm">
+                            <i class="bi bi-calendar-plus me-1"></i> Create Event
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-light px-4 fw-semibold text-primary shadow-sm">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+                        </a>
+                    }
                 </div>
             </div>
         </div>

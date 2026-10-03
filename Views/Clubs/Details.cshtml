@@ -458,7 +458,7 @@
                     }
                     else
                     {
-                        <p class="small text-muted mb-0">No regular members registered yet. Be the first to join!</p>
+                        <p class="small text-muted mb-0">No registered members at this time.</p>
                     }
                 </div>
             </div>
@@ -552,9 +552,13 @@
             btn.disabled = true;
 
             try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
                 const response = await fetch(endpoint, {
                     method: 'POST',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: { 
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'RequestVerificationToken': token
+                    }
                 });
 
                 if (response.ok) {

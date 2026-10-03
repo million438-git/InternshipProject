@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded", function () {
         } else if (score === 3) {
             return { score: 3, text: "Good Password", color: "#3b82f6", width: "80%" };
         } else {
-            return { score: 4, text: "Strong & Secure 🔒", color: "#10b981", width: "100%" };
+            return { score: 4, text: "Strong Password", color: "#10b981", width: "100%" };
         }
     }
 
@@ -179,11 +179,23 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (regBtn) {
-                regBtn.disabled = true;
+                setTimeout(function () {
+                    regBtn.disabled = true;
+                }, 10);
                 if (regBtnText) regBtnText.textContent = "Verifying & Creating Account...";
                 if (regBtnArrow) regBtnArrow.classList.add("d-none");
                 if (regBtnSpinner) regBtnSpinner.classList.remove("d-none");
             }
         });
     }
+
+    // Reset button state if navigated back via browser history / bfcache
+    window.addEventListener("pageshow", function () {
+        if (regBtn) {
+            regBtn.disabled = false;
+            if (regBtnText) regBtnText.textContent = "Register Verified Campus Account";
+            if (regBtnArrow) regBtnArrow.classList.remove("d-none");
+            if (regBtnSpinner) regBtnSpinner.classList.add("d-none");
+        }
+    });
 });

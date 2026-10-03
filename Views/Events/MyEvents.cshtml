@@ -1,7 +1,7 @@
 @model HawassaUnifiedCampusEventManagementSystem.Models.StudentMyEventsViewModel
 
 @{
-    ViewData["Title"] = "My Events & Passes | HUCEMS";
+    ViewData["Title"] = "My Events & Registrations | HUCEMS";
     Layout = "_Layout";
 }
 
@@ -16,10 +16,10 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 pb-3 border-bottom">
             <div>
                 <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-semibold mb-2">
-                    <i class="bi bi-person-badge me-1"></i> STUDENT & ATTENDEE PORTAL
+                    <i class="bi bi-person-badge me-1"></i> CAMPUS PORTAL
                 </span>
-                <h1 class="display-6 fw-bold text-dark mb-1">My Campus Events & Schedule</h1>
-                <p class="text-muted mb-0">Manage your event registrations, attendee passes, and organized campus activities.</p>
+                <h1 class="display-6 fw-bold text-dark mb-1">My Events & Registrations</h1>
+                <p class="text-muted mb-0">Manage your event registrations, attendance passes, and organized campus activities.</p>
             </div>
 
             <div class="d-flex align-items-center gap-2">
@@ -27,10 +27,10 @@
                     <i class="bi bi-compass me-1"></i> Explore All Events
                 </a>
                 <a asp-controller="Calendar" asp-action="Index" class="btn btn-outline-secondary btn-sm px-3">
-                    <i class="bi bi-calendar3 me-1"></i> Interactive Calendar
+                    <i class="bi bi-calendar3 me-1"></i> Campus Calendar
                 </a>
                 <a asp-controller="Events" asp-action="Create" class="btn btn-primary btn-sm px-3 fw-semibold">
-                    <i class="bi bi-plus-circle me-1"></i> Propose Event
+                    <i class="bi bi-plus-circle me-1"></i> Create Event
                 </a>
             </div>
         </div>
@@ -44,7 +44,7 @@
                             <i class="bi bi-ticket-perforated-fill"></i>
                         </div>
                         <div>
-                            <span class="text-muted small d-block">Registered Passes</span>
+                            <span class="text-muted small d-block">Registered Events</span>
                             <h3 class="fw-bold mb-0 text-dark">@Model.TotalRegisteredCount</h3>
                         </div>
                     </div>
@@ -58,7 +58,7 @@
                             <i class="bi bi-calendar-check-fill"></i>
                         </div>
                         <div>
-                            <span class="text-muted small d-block">Events I Host</span>
+                            <span class="text-muted small d-block">Organized Events</span>
                             <h3 class="fw-bold mb-0 text-dark">@Model.TotalOrganizedCount</h3>
                         </div>
                     </div>
@@ -141,7 +141,7 @@
                                             <span class="month">@item.EventDate.ToString("MMM")</span>
                                         </div>
                                         <span class="event-category-pill bg-success text-white">
-                                            <i class="bi bi-check-circle me-1"></i> Confirmed Pass
+                                            <i class="bi bi-check-circle me-1"></i> Registered
                                         </span>
                                     </div>
 
@@ -154,7 +154,7 @@
 
                                         <div class="event-specs-list small mb-3">
                                             <div class="event-spec-row">
-                                                <i class="bi bi-geo-alt-fill text-danger flex-shrink-0"></i>
+                                                <i class="bi bi-geo-alt-fill text-primary flex-shrink-0"></i>
                                                 <span class="text-truncate">@item.Venue</span>
                                             </div>
                                             <div class="event-spec-row">
@@ -165,7 +165,7 @@
 
                                         <div class="event-card-footer pt-2">
                                             <a asp-controller="Events" asp-action="Details" asp-route-id="@item.Id" class="btn btn-primary btn-sm flex-grow-1 rounded-pill">
-                                                <i class="bi bi-ticket-perforated me-1"></i> View Pass
+                                                <i class="bi bi-ticket-perforated me-1"></i> View Details
                                             </a>
                                             <form asp-controller="Events" asp-action="CancelRegistration" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to cancel your registration for this event?');">
                                                 @Html.AntiForgeryToken()
@@ -187,9 +187,9 @@
                             <i class="bi bi-ticket-perforated fs-1 text-primary"></i>
                         </div>
                         <h4 class="h5 fw-bold text-dark mb-1">No Active Event Registrations</h4>
-                        <p class="text-muted small mb-3">You haven't reserved tickets for any upcoming events yet.</p>
+                        <p class="text-muted small mb-3">You have no active event reservations at this time.</p>
                         <a asp-controller="Events" asp-action="Index" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold">
-                            <i class="bi bi-compass me-1"></i> Browse & Register for Events
+                            <i class="bi bi-compass me-1"></i> Browse Events
                         </a>
                     </div>
                 }
@@ -259,7 +259,7 @@
 
                                         <div class="event-specs-list small mb-3">
                                             <div class="event-spec-row">
-                                                <i class="bi bi-geo-alt-fill text-danger flex-shrink-0"></i>
+                                                <i class="bi bi-geo-alt-fill text-primary flex-shrink-0"></i>
                                                 <span class="text-truncate">@item.Venue</span>
                                             </div>
                                             <div class="event-spec-row">
@@ -285,9 +285,9 @@
                 else
                 {
                     <div class="text-center py-4 bg-light rounded-3 p-4">
-                        <p class="text-muted small mb-2">You have not created or submitted any hosted events yet.</p>
+                        <p class="text-muted small mb-2">No hosted campus events found for this account.</p>
                         <a asp-controller="Events" asp-action="Create" class="btn btn-outline-primary btn-sm rounded-pill px-3">
-                            <i class="bi bi-plus-circle me-1"></i> Propose a New Campus Event
+                            <i class="bi bi-plus-circle me-1"></i> Create New Event
                         </a>
                     </div>
                 }

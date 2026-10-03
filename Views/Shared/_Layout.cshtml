@@ -117,9 +117,7 @@
 
 @if (isAuthPage)
 {
-    <!-- =====================================================
-         MINIMAL AUTH HEADER (NO UNWANTED TOGGLERS OR NAV CLUTTER)
-         ===================================================== -->
+    <!-- Minimal Header for Authentication Pages -->
     <header class="py-3 border-bottom bg-body">
         <div class="container d-flex justify-content-between align-items-center">
             <a class="d-flex align-items-center gap-2 text-decoration-none" asp-controller="Home" asp-action="Index" aria-label="HUCEMS Home">
@@ -191,12 +189,12 @@ else
                             </a>
                         </li>
 
-                        <!-- EXPLORE EVENTS -->
+                        <!-- EVENTS -->
                         <li class="nav-item">
                             <a class="nav-link @(currentController == "Events" && currentAction == "Index" ? "active" : "")"
                                asp-controller="Events"
                                asp-action="Index">
-                                <span class="d-none d-xl-inline">Explore </span>Events
+                                Events
                             </a>
                         </li>
 
@@ -214,7 +212,7 @@ else
                             <a class="nav-link @(currentController == "Calendar" ? "active" : "")"
                                asp-controller="Calendar"
                                asp-action="Index">
-                                <span class="d-none d-xl-inline">Event </span>Calendar
+                                Calendar
                             </a>
                         </li>
 
@@ -238,14 +236,16 @@ else
                                 </a>
                             </li>
 
-                            @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN"))
+                            @if (!currentAction.Equals("Student", StringComparison.OrdinalIgnoreCase) && 
+                                 !User.IsInRole("Student") && !User.IsInRole("STUDENT") && 
+                                 (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN")))
                             {
                                 <!-- ADMIN -->
                                 <li class="nav-item">
                                     <a class="nav-link @(currentController == "Admin" ? "active" : "")"
                                        asp-controller="Admin"
                                        asp-action="Index">
-                                        Admin<span class="d-none d-xxl-inline"> Console</span>
+                                        Admin
                                     </a>
                                 </li>
                             }
@@ -267,8 +267,8 @@ else
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item py-2 rounded-3 fw-semibold text-warning-emphasis" asp-controller="Home" asp-action="Contact">
-                                        Contact & Support Desk
+                                    <a class="dropdown-item py-2 rounded-3" asp-controller="Home" asp-action="Contact">
+                                        Contact Support
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider my-1" /></li>
@@ -279,7 +279,7 @@ else
                                 </li>
                                 <li>
                                     <a class="dropdown-item py-2 rounded-3" asp-controller="Home" asp-action="Privacy">
-                                        Privacy & Data Governance
+                                        Privacy Policy
                                     </a>
                                 </li>
                             </ul>
@@ -292,7 +292,9 @@ else
 
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            @if (User.IsInRole("Faculty") || User.IsInRole("Staff") || User.IsInRole("Organization") || User.IsInRole("Club") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("FACULTY") || User.IsInRole("STAFF") || User.IsInRole("ORGANIZATION") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN"))
+                            @if (!currentAction.Equals("Student", StringComparison.OrdinalIgnoreCase) && 
+                                 !User.IsInRole("Student") && !User.IsInRole("STUDENT") && 
+                                 (User.IsInRole("Faculty") || User.IsInRole("Staff") || User.IsInRole("Organization") || User.IsInRole("Club") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("FACULTY") || User.IsInRole("STAFF") || User.IsInRole("ORGANIZATION") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN")))
                             {
                                 <!-- CREATE EVENT BUTTON -->
                                 <li class="nav-item">
@@ -374,7 +376,7 @@ else
                                    aria-expanded="false">
                                     <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-sm flex-shrink-0 user-avatar-badge"
                                          style="width: 28px; height: 28px; font-size: 12px; background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);">
-                                        @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "U")
+                                        @(string.IsNullOrEmpty(User.Identity?.Name) ? "U" : User.Identity.Name.Substring(0, 1).ToUpper())
                                     </div>
                                     <span class="fw-bold small d-none d-sm-inline text-truncate user-name-display" style="max-width: 110px;">
                                         @(User.Identity?.Name ?? "My Account")
@@ -420,18 +422,18 @@ else
                                             Notifications & Alerts
                                         </a>
                                     </li>
-                                    @if (User.IsInRole("SuperAdmin") || User.IsInRole("SUPERADMIN"))
+                                    @if (!currentAction.Equals("Student", StringComparison.OrdinalIgnoreCase) && !User.IsInRole("Student") && !User.IsInRole("STUDENT") && (User.IsInRole("SuperAdmin") || User.IsInRole("SUPERADMIN")))
                                     {
                                         <li>
                                             <a class="dropdown-item text-warning-emphasis fw-bold py-2 rounded-3"
                                                asp-controller="Admin"
                                                asp-action="DatabaseManagement">
                                                <i class="bi bi-shield-lock-fill me-2 text-warning"></i>
-                                               SuperAdmin Security Vault
+                                               Database Management
                                             </a>
                                         </li>
                                     }
-                                    @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN"))
+                                    @if (!currentAction.Equals("Student", StringComparison.OrdinalIgnoreCase) && !User.IsInRole("Student") && !User.IsInRole("STUDENT") && (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN")))
                                     {
                                         <li>
                                             <a class="dropdown-item text-danger fw-semibold py-2 rounded-3"
@@ -446,7 +448,7 @@ else
                                                asp-controller="Admin"
                                                asp-action="DatabaseManagement">
                                                 <i class="bi bi-database-check me-2 text-info"></i>
-                                                Database Recovery Vault
+                                                Database & Backups
                                             </a>
                                         </li>
                                     }
@@ -474,7 +476,7 @@ else
                                             My Campus Interests
                                         </a>
                                     </li>
-                                    @if (User.IsInRole("Faculty") || User.IsInRole("Staff") || User.IsInRole("Organization") || User.IsInRole("Club") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("FACULTY") || User.IsInRole("STAFF") || User.IsInRole("ORGANIZATION") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN"))
+                                    @if (!currentAction.Equals("Student", StringComparison.OrdinalIgnoreCase) && !User.IsInRole("Student") && !User.IsInRole("STUDENT") && (User.IsInRole("Faculty") || User.IsInRole("Staff") || User.IsInRole("Organization") || User.IsInRole("Club") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("FACULTY") || User.IsInRole("STAFF") || User.IsInRole("ORGANIZATION") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN")))
                                     {
                                         <li>
                                             <a class="dropdown-item py-2 rounded-3"
@@ -488,8 +490,8 @@ else
                                             <a class="dropdown-item py-2 rounded-3"
                                                asp-controller="Clubs"
                                                asp-action="Create">
-                                                <i class="bi bi-plus-square-dotted me-2 text-warning"></i>
-                                                Charter New Club
+                                                <i class="bi bi-plus-square me-2 text-warning"></i>
+                                                Register Club
                                             </a>
                                         </li>
                                         <li>
@@ -564,9 +566,7 @@ else
 
 @if (!isAuthPage)
 {
-    <!-- =====================================================
-         CLEAN MODERN ENTERPRISE CAMPUS FOOTER
-         ===================================================== -->
+    <!-- Campus Footer -->
     <footer class="site-footer" role="contentinfo">
         <div class="container py-5">
             <div class="row g-4 justify-content-between">
@@ -576,21 +576,17 @@ else
                         <img src="~/images/hawassa-logo.png" alt="Hawassa University Official Crest" class="bg-white rounded-circle p-1 shadow-sm" style="width: 52px; height: 52px; object-fit: contain;" />
                         <div>
                             <h5 class="mb-0 fw-bold text-white tracking-tight fs-6">HAWASSA UNIVERSITY</h5>
-                            <span class="text-white-50 text-uppercase fw-semibold" style="font-size: 11px; letter-spacing: 1.2px;">Unified Event Platform (HUCEMS)</span>
+                            <span class="text-white-50 text-uppercase fw-semibold" style="font-size: 11px; letter-spacing: 1.2px;">Hawassa Unified Campus Event Management System (HUCEMS)</span>
                         </div>
                     </div>
                     <p class="text-white-50 small mb-3" style="line-height: 1.6; max-width: 340px;">
-                        The official unified platform for coordinating university academic conferences, departmental seminars, student club activities, and campus facilities.
+                        HUCEMS provides information and services for university events, schedules, announcements, and related activities.
                     </p>
-                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-white bg-opacity-10 rounded-pill border border-white border-opacity-10">
-                        <span class="badge-pulse bg-success rounded-circle" style="width: 8px; height: 8px;"></span>
-                        <span class="text-white small fw-medium" style="font-size: 11px;">All Systems Operational</span>
-                    </div>
                 </div>
 
-                <nav class="col-6 col-md-3 col-lg-2" aria-labelledby="footer-discover-heading">
-                    <h6 id="footer-discover-heading" class="text-white fw-bold text-uppercase mb-3 pb-2 border-bottom border-white border-opacity-10 footer-col-heading">
-                        Discover
+                <nav class="col-6 col-md-3 col-lg-2" aria-labelledby="footer-quicklinks-heading">
+                    <h6 id="footer-quicklinks-heading" class="text-white fw-bold text-uppercase mb-3 pb-2 border-bottom border-white border-opacity-10 footer-col-heading">
+                        Quick Links
                     </h6>
                     <ul class="list-unstyled mb-0 footer-nav-list">
                         <li>
@@ -621,9 +617,6 @@ else
                         </li>
                         <li>
                             <a asp-controller="Home" asp-action="Contact" class="footer-nav-link">Contact &amp; Support</a>
-                        </li>
-                        <li>
-                            <a asp-controller="Home" asp-action="Sitemap" class="footer-nav-link">Sitemap</a>
                         </li>
                     </ul>
                 </nav>
@@ -679,11 +672,6 @@ else
                 <nav class="footer-legal-nav d-flex flex-wrap justify-content-center align-items-center gap-3" aria-label="Legal and page utilities">
                     <a asp-controller="Home" asp-action="Privacy" class="footer-legal-link">Privacy Policy</a>
                     <a asp-controller="Home" asp-action="Contact" class="footer-legal-link">Contact</a>
-                    <a asp-controller="Home" asp-action="Sitemap" class="footer-legal-link">Sitemap</a>
-                    <a href="#top" class="footer-legal-link footer-top-link" title="Scroll to top of page">
-                        <i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i>
-                        Top
-                    </a>
                 </nav>
             </div>
 
@@ -715,81 +703,6 @@ else
     <script src="~/js/account.js"
             asp-append-version="true"></script>
 
-    @if (User.Identity?.IsAuthenticated == true)
-    {
-        <script>
-            async function loadNavNotifications() {
-                try {
-                    const res = await fetch('/Notifications/GetUnreadCount');
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data && data.success) {
-                            const badge = document.getElementById('navNotifBadge');
-                            const countBadge = document.getElementById('navNotifCountBadge');
-                            const list = document.getElementById('navNotifList');
-                            if (badge) {
-                                if (data.unreadCount > 0) {
-                                    badge.innerText = data.unreadCount > 99 ? '99+' : data.unreadCount;
-                                    badge.classList.remove('d-none');
-                                } else {
-                                    badge.classList.add('d-none');
-                                }
-                            }
-                            if (countBadge) {
-                                countBadge.innerText = data.unreadCount + ' new';
-                            }
-                            if (list) {
-                                if (data.recent && data.recent.length > 0) {
-                                    list.innerHTML = data.recent.map(item => `
-                                        <a href="${item.actionUrl || '/Notifications'}" class="dropdown-item px-3 py-2 border-bottom d-flex align-items-start gap-2 ${item.isRead ? 'text-muted' : 'bg-primary-subtle text-dark fw-semibold'}">
-                                            <i class="bi ${item.type === 'ANNOUNCEMENT' ? 'bi-megaphone-fill text-warning' : item.type === 'EVENT' ? 'bi-calendar-event-fill text-primary' : item.type === 'REGISTRATION' ? 'bi-ticket-perforated-fill text-success' : 'bi-bell-fill text-secondary'} mt-1 flex-shrink-0"></i>
-                                            <div class="flex-grow-1 overflow-hidden" style="min-width: 0;">
-                                                <div class="small text-truncate ${item.isRead ? 'text-dark' : 'text-primary fw-bold'}">${item.title}</div>
-                                                <div class="text-muted text-truncate" style="font-size: 11px; line-height: 1.3;">${item.message}</div>
-                                                <div class="text-muted mt-1" style="font-size: 10px;">${item.timeAgo}</div>
-                                            </div>
-                                        </a>
-                                    `).join('');
-                                } else {
-                                    list.innerHTML = '<div class="text-center py-4 text-muted small"><i class="bi bi-check-circle text-success d-block fs-4 mb-1"></i>No unread notifications</div>';
-                                }
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.error("Failed to load nav notifications", e);
-                }
-            }
-
-            async function markAllNotificationsReadFromNav(e) {
-                if (e) e.stopPropagation();
-                try {
-                    const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
-                    const token = tokenInput ? tokenInput.value : '';
-                    const formData = new FormData();
-                    if (token) formData.append('__RequestVerificationToken', token);
-
-                    const res = await fetch('/Notifications/MarkAllAsRead', {
-                        method: 'POST',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: formData
-                    });
-                    if (res.ok) {
-                        loadNavNotifications();
-                    }
-                } catch (err) {
-                    console.error(err);
-                }
-            }
-
-            document.addEventListener('DOMContentLoaded', function() {
-                loadNavNotifications();
-            });
-        </script>
-    }
-
     <!-- Global Interactive Confirmation Modal -->
     <div class="modal fade" id="hucemsConfirmModal" tabindex="-1" aria-labelledby="hucemsConfirmModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 420px;">
@@ -813,6 +726,8 @@ else
             </div>
         </div>
     </div>
+
+    <div id="__hucemsAntiforgeryForm" class="d-none" aria-hidden="true">@Html.AntiForgeryToken()</div>
 
     @await RenderSectionAsync(
         "Scripts",

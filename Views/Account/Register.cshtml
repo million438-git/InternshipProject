@@ -1,6 +1,7 @@
+@using HawassaUnifiedCampusEventManagementSystem.Models
 @{
     ViewData["Title"] = "Verified Campus Registration | HUCEMS";
-    var departments = ViewBag.Departments as List<HawassaUnifiedCampusEventManagementSystem.Models.Department> ?? new List<HawassaUnifiedCampusEventManagementSystem.Models.Department>();
+    var departments = ViewBag.Departments as List<Department> ?? new List<Department>();
 }
 
 @section Styles {
@@ -36,37 +37,35 @@
                 <div class="auth-feature-list">
                     <div class="auth-feature-item">
                         <div class="auth-feature-icon bg-primary text-white">
-                            <i class="bi bi-mortarboard-fill"></i>
+                            <i class="bi bi-mortarboard-fill" aria-hidden="true"></i>
                         </div>
-                        <div class="auth-feature-text">Academic Seminars & Conferences</div>
+                        <div class="auth-feature-text">Academic Seminars &amp; Conferences</div>
                     </div>
 
                     <div class="auth-feature-item">
                         <div class="auth-feature-icon bg-warning text-dark">
-                            <i class="bi bi-people-fill"></i>
+                            <i class="bi bi-people-fill" aria-hidden="true"></i>
                         </div>
-                        <div class="auth-feature-text">Student Club & Society Activities</div>
+                        <div class="auth-feature-text">Student Club &amp; Society Activities</div>
                     </div>
 
                     <div class="auth-feature-item">
                         <div class="auth-feature-icon bg-success text-white">
-                            <i class="bi bi-shield-check"></i>
+                            <i class="bi bi-shield-check" aria-hidden="true"></i>
                         </div>
-                        <div class="auth-feature-text">Verified University Role Clearance</div>
+                        <div class="auth-feature-text">Verified University Role Access</div>
                     </div>
                 </div>
             </div>
 
             <div class="auth-showcase-footer">
-                <span><i class="bi bi-shield-lock-fill text-warning me-1"></i> Secure Authentication</span>
+                <span><i class="bi bi-shield-lock-fill text-warning me-1" aria-hidden="true"></i> Secure Authentication</span>
                 <span>Hawassa University &copy; @DateTime.UtcNow.Year</span>
             </div>
 
         </div>
 
-        <!-- =====================================================
-             RIGHT INTERACTIVE REGISTRATION FORM PANEL
-             ===================================================== -->
+        <!-- Registration Form Panel -->
         <div class="auth-form-panel">
 
             <div class="auth-form-header">
@@ -74,11 +73,11 @@
                 <p>Select your campus role and complete your authenticated profile.</p>
             </div>
 
-            @if (ViewBag.Error != null)
+            @if (ViewBag.Error != null || TempData["ErrorMessage"] != null)
             {
-                <div class="alert alert-danger py-2 px-3 mb-3 small rounded-3 border-0 d-flex align-items-center gap-2" style="background-color: #fef2f2; color: #991b1b; border: 1px solid #fee2e2;">
-                    <i class="bi bi-exclamation-octagon-fill fs-5 text-danger flex-shrink-0"></i>
-                    <div>@ViewBag.Error</div>
+                <div class="alert auth-alert auth-alert-danger" role="alert">
+                    <i class="bi bi-exclamation-octagon-fill auth-alert-icon" aria-hidden="true"></i>
+                    <div>@(ViewBag.Error ?? TempData["ErrorMessage"])</div>
                 </div>
             }
 
@@ -101,28 +100,28 @@
                     <div class="role-picker-grid">
                         <label class="role-picker-card active" for="role_student">
                             <input type="radio" name="accountType" id="role_student" value="Student" checked />
-                            <span class="role-picker-icon"><i class="bi bi-mortarboard fs-4"></i></span>
+                            <span class="role-picker-icon"><i class="bi bi-mortarboard fs-4" aria-hidden="true"></i></span>
                             <strong>Student</strong>
-                            <small>Events & RSVPs</small>
+                            <small>Events &amp; RSVPs</small>
                         </label>
 
                         <label class="role-picker-card" for="role_faculty">
                             <input type="radio" name="accountType" id="role_faculty" value="Faculty" />
-                            <span class="role-picker-icon"><i class="bi bi-journal-bookmark fs-4"></i></span>
+                            <span class="role-picker-icon"><i class="bi bi-journal-bookmark fs-4" aria-hidden="true"></i></span>
                             <strong>Faculty</strong>
                             <small>Academic Seminars</small>
                         </label>
 
                         <label class="role-picker-card" for="role_staff">
                             <input type="radio" name="accountType" id="role_staff" value="Staff" />
-                            <span class="role-picker-icon"><i class="bi bi-briefcase fs-4"></i></span>
+                            <span class="role-picker-icon"><i class="bi bi-briefcase fs-4" aria-hidden="true"></i></span>
                             <strong>Staff</strong>
                             <small>Campus Operations</small>
                         </label>
 
                         <label class="role-picker-card" for="role_org">
                             <input type="radio" name="accountType" id="role_org" value="Organization" />
-                            <span class="role-picker-icon"><i class="bi bi-building fs-4"></i></span>
+                            <span class="role-picker-icon"><i class="bi bi-building fs-4" aria-hidden="true"></i></span>
                             <strong>Club / Org</strong>
                             <small>Host Activities</small>
                         </label>
@@ -135,13 +134,14 @@
                         <div class="auth-input-group">
                             <label for="fullName">Full Legal Name *</label>
                             <div class="auth-input-box">
-                                <i class="bi bi-person auth-input-icon"></i>
+                                <i class="bi bi-person auth-input-icon" aria-hidden="true"></i>
                                 <input type="text"
                                        name="fullName"
                                        id="fullName"
                                        placeholder="e.g. Dawit Yohannes"
                                        autocomplete="name"
-                                       required />
+                                       required
+                                       aria-required="true" />
                             </div>
                         </div>
                     </div>
@@ -149,7 +149,7 @@
                         <div class="auth-input-group">
                             <label for="username">Unique Username *</label>
                             <div class="auth-input-box">
-                                <i class="bi bi-at auth-input-icon"></i>
+                                <i class="bi bi-at auth-input-icon" aria-hidden="true"></i>
                                 <input type="text"
                                        name="username"
                                        id="username"
@@ -157,7 +157,8 @@
                                        pattern="^[a-zA-Z0-9_.-]{3,30}$"
                                        title="3-30 characters, alphanumeric"
                                        autocomplete="username"
-                                       required />
+                                       required
+                                       aria-required="true" />
                             </div>
                         </div>
                     </div>
@@ -169,13 +170,14 @@
                         <div class="auth-input-group">
                             <label for="email">Email Address *</label>
                             <div class="auth-input-box">
-                                <i class="bi bi-envelope auth-input-icon"></i>
+                                <i class="bi bi-envelope auth-input-icon" aria-hidden="true"></i>
                                 <input type="email"
                                        name="email"
                                        id="email"
                                        placeholder="name@hawassa.edu.et"
                                        autocomplete="email"
-                                       required />
+                                       required
+                                       aria-required="true" />
                             </div>
                         </div>
                     </div>
@@ -183,13 +185,14 @@
                         <div class="auth-input-group">
                             <label for="phone">Mobile Phone *</label>
                             <div class="auth-input-box">
-                                <i class="bi bi-telephone auth-input-icon"></i>
+                                <i class="bi bi-telephone auth-input-icon" aria-hidden="true"></i>
                                 <input type="tel"
                                        name="phone"
                                        id="phone"
                                        placeholder="+251 911 234567"
                                        autocomplete="tel"
-                                       required />
+                                       required
+                                       aria-required="true" />
                             </div>
                         </div>
                     </div>
@@ -199,8 +202,8 @@
                 <div class="auth-input-group mb-3" id="departmentGroup">
                     <label for="departmentId">Academic Department / Faculty *</label>
                     <div class="auth-input-box">
-                        <i class="bi bi-buildings auth-input-icon"></i>
-                        <select name="departmentId" id="departmentId" required>
+                        <i class="bi bi-buildings auth-input-icon" aria-hidden="true"></i>
+                        <select name="departmentId" id="departmentId" required aria-required="true">
                             <option value="">-- Select Your University Department --</option>
                             @foreach (var d in departments)
                             {
@@ -210,31 +213,41 @@
                     </div>
                 </div>
 
-                <!-- 5. DYNAMIC ROLE-SPECIFIC FIELDS -->
+                <!--
+                    5. DYNAMIC ROLE-SPECIFIC FIELDS
+                    NOTE: these fields are intentionally NOT marked `required` in HTML even
+                    though their labels show "*". They live inside role-conditional-field
+                    containers toggled with the `d-none` class by register.js. A hidden field
+                    with a native `required` attribute blocks form submission with an
+                    "invalid form control is not focusable" error the moment a different
+                    role is selected. Enforce requiredness for the active role in register.js
+                    instead of adding `required` here.
+                -->
+
                 <!-- STUDENT ID -->
                 <div class="auth-input-group role-conditional-field" id="studentIdGroup">
                     <label for="studentId">Official Student ID *</label>
                     <div class="auth-input-box">
-                        <i class="bi bi-person-badge auth-input-icon"></i>
+                        <i class="bi bi-person-badge auth-input-icon" aria-hidden="true"></i>
                         <input type="text"
                                name="studentId"
                                id="studentId"
                                placeholder="e.g. UGR/1234/16 or HU/45821/15" />
                     </div>
-                    <small class="text-muted" style="font-size: 11px;">Issued by Hawassa University Registrar Office.</small>
+                    <small class="text-muted auth-helper-text">Issued by Hawassa University Registrar Office.</small>
                 </div>
 
                 <!-- EMPLOYEE ID (Staff / Faculty) -->
                 <div class="auth-input-group role-conditional-field d-none" id="employeeIdGroup">
                     <label for="employeeId">University Employee ID *</label>
                     <div class="auth-input-box">
-                        <i class="bi bi-card-heading auth-input-icon"></i>
+                        <i class="bi bi-card-heading auth-input-icon" aria-hidden="true"></i>
                         <input type="text"
                                name="employeeId"
                                id="employeeId"
                                placeholder="e.g. EMP-HU-1042 or FAC-HU-8091" />
                     </div>
-                    <small class="text-muted" style="font-size: 11px;">Official staff/faculty ID number.</small>
+                    <small class="text-muted auth-helper-text">Official staff/faculty ID number.</small>
                 </div>
 
                 <!-- CLUB / ORGANIZATION FIELDS -->
@@ -244,7 +257,7 @@
                             <div class="auth-input-group mb-0">
                                 <label for="organizationName">Official Club / Organization Name *</label>
                                 <div class="auth-input-box">
-                                    <i class="bi bi-people auth-input-icon"></i>
+                                    <i class="bi bi-people auth-input-icon" aria-hidden="true"></i>
                                     <input type="text"
                                            name="organizationName"
                                            id="organizationName"
@@ -256,7 +269,7 @@
                             <div class="auth-input-group mb-0">
                                 <label for="organizationType">Organization Type</label>
                                 <div class="auth-input-box">
-                                    <i class="bi bi-tag auth-input-icon"></i>
+                                    <i class="bi bi-tag auth-input-icon" aria-hidden="true"></i>
                                     <select name="organizationType" id="organizationType">
                                         <option value="CLUB">Student Club</option>
                                         <option value="ASSOCIATION">Academic Association</option>
@@ -271,7 +284,7 @@
                     <div class="auth-input-group mb-3">
                         <label for="bio">Club Mission Description</label>
                         <div class="auth-input-box">
-                            <i class="bi bi-pencil-square auth-input-icon"></i>
+                            <i class="bi bi-pencil-square auth-input-icon" aria-hidden="true"></i>
                             <textarea name="bio" id="bio" rows="2" placeholder="Briefly summarize your club's goals and activities..."></textarea>
                         </div>
                     </div>
@@ -283,16 +296,17 @@
                         <div class="auth-input-group mb-1">
                             <label for="password">Security Password *</label>
                             <div class="auth-input-box">
-                                <i class="bi bi-shield-lock auth-input-icon"></i>
+                                <i class="bi bi-shield-lock auth-input-icon" aria-hidden="true"></i>
                                 <input type="password"
                                        name="password"
                                        id="password"
                                        placeholder="Min 8 characters"
                                        minlength="8"
                                        autocomplete="new-password"
-                                       required />
-                                <button type="button" class="auth-password-toggle" id="toggleRegPasswordBtn" title="Toggle visibility">
-                                    <i class="bi bi-eye" id="toggleRegPasswordIcon"></i>
+                                       required
+                                       aria-required="true" />
+                                <button type="button" class="auth-password-toggle" id="toggleRegPasswordBtn" aria-label="Toggle password visibility" title="Toggle visibility">
+                                    <i class="bi bi-eye" id="toggleRegPasswordIcon" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </div>
@@ -301,14 +315,15 @@
                         <div class="auth-input-group mb-1">
                             <label for="confirmPassword">Confirm Password *</label>
                             <div class="auth-input-box">
-                                <i class="bi bi-shield-check auth-input-icon"></i>
+                                <i class="bi bi-shield-check auth-input-icon" aria-hidden="true"></i>
                                 <input type="password"
                                        name="confirmPassword"
                                        id="confirmPassword"
                                        placeholder="Re-type password"
                                        minlength="8"
                                        autocomplete="new-password"
-                                       required />
+                                       required
+                                       aria-required="true" />
                             </div>
                         </div>
                     </div>
@@ -330,7 +345,7 @@
                         class="auth-submit-btn"
                         id="registerButton">
                     <span id="regBtnText">Register Verified Campus Account</span>
-                    <i class="bi bi-arrow-right" id="regBtnArrow"></i>
+                    <i class="bi bi-arrow-right" id="regBtnArrow" aria-hidden="true"></i>
                     <span class="spinner-border spinner-border-sm d-none" id="regBtnSpinner" role="status" aria-hidden="true"></span>
                 </button>
 

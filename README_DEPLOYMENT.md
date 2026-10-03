@@ -1,10 +1,10 @@
-# 🚀 HUCEMS Enterprise Production Deployment Manual
+# HUCEMS Enterprise Production Deployment Manual
 
 This guide outlines the production deployment procedures for the **Hawassa Unified Campus Event Management System (HUCEMS)**.
 
 ---
 
-## 🏗️ 1. QUICK DEPLOY WITH DOCKER & DOCKER COMPOSE (RECOMMENDED)
+## 1. Quick Deploy with Docker & Docker Compose (Recommended)
 
 The fastest and most reliable way to run HUCEMS in production is using Docker Compose.
 
@@ -27,7 +27,7 @@ The system will be live and active at: `http://<your-server-ip>:5000`
 
 ---
 
-## 🐧 2. DEPLOYMENT ON LINUX SERVER (UBUNTU / DEBIAN + NGINX)
+## 2. Deployment on Linux Server (Ubuntu / Debian + Nginx)
 
 ### Step 1: Install .NET 10 Runtime
 ```bash
@@ -92,7 +92,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ---
 
-## 🪟 3. DEPLOYMENT ON WINDOWS SERVER / IIS
+## 3. Deployment on Windows Server / IIS
 
 1. Open PowerShell as Administrator.
 2. Run the automated deployment script:
@@ -104,7 +104,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ---
 
-## 🔐 4. PRODUCTION SECURITY BEST PRACTICES
+## 4. Production Security Best Practices
 
 1. **Environment Variables**: Never commit production passwords into version control. Supply `DATABASE_CONNECTION_STRING` and `JWT_SECRET_KEY` via server environment variables.
 2. **HTTPS / SSL**: Install a Let's Encrypt SSL certificate using `certbot --nginx` on Linux or via IIS Certificate Manager on Windows.

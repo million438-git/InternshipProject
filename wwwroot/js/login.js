@@ -32,9 +32,21 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            loginBtn.disabled = true;
+            // Defer disabling to avoid aborting native form submission
+            setTimeout(function () {
+                loginBtn.disabled = true;
+            }, 10);
             if (btnText) btnText.textContent = "Signing In...";
             if (btnSpinner) btnSpinner.classList.remove("d-none");
         });
     }
+
+    // Reset button state if navigated back via browser history / bfcache
+    window.addEventListener("pageshow", function () {
+        if (loginBtn) {
+            loginBtn.disabled = false;
+            if (btnText) btnText.textContent = "Sign In";
+            if (btnSpinner) btnSpinner.classList.add("d-none");
+        }
+    });
 });

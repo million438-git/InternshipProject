@@ -16,7 +16,7 @@
                 <li class="breadcrumb-item active" aria-current="page">Academic Departments</li>
             </ol>
         </nav>
-        <h1 class="h3 fw-bold text-dark mb-1">📚 Academic Departments Governance</h1>
+        <h1 class="h3 fw-bold text-dark mb-1"><i class="bi bi-mortarboard me-2 text-primary"></i>Academic Departments</h1>
         <p class="text-muted small mb-0">Oversee academic departments, assign faculty parent bodies, track enrolled users, and manage department chairs.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
@@ -119,8 +119,8 @@
         <div class="col-6 col-md-2">
             <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="ALL" selected="@(Model.StatusFilter == null || Model.StatusFilter == "ALL")">All Statuses</option>
-                <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">🟢 Active</option>
-                <option value="INACTIVE" selected="@(Model.StatusFilter == "INACTIVE")">⚪ Inactive</option>
+                <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">Active</option>
+                <option value="INACTIVE" selected="@(Model.StatusFilter == "INACTIVE")">Inactive</option>
             </select>
         </div>
 

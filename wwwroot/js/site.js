@@ -547,4 +547,87 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    /* =====================================================
+       REAL-TIME NAVIGATION NOTIFICATIONS & BADGES
+       ===================================================== */
+    window.loadNavNotifications = async function () {
+        var notifDropdown = document.getElementById('navNotificationDropdown');
+        if (!notifDropdown) return;
+
+        try {
+            var res = await fetch('/Notifications/GetUnreadCount');
+            if (res.ok) {
+                var data = await res.json();
+                if (data && data.success) {
+                    var badge = document.getElementById('navNotifBadge');
+                    var countBadge = document.getElementById('navNotifCountBadge');
+                    var list = document.getElementById('navNotifList');
+                    if (badge) {
+                        if (data.unreadCount > 0) {
+                            badge.innerText = data.unreadCount > 99 ? '99+' : data.unreadCount;
+                            badge.classList.remove('d-none');
+                        } else {
+                            badge.classList.add('d-none');
+                        }
+                    }
+                    if (countBadge) {
+                        countBadge.innerText = data.unreadCount + ' new';
+                    }
+                    if (list) {
+                        if (data.recent && data.recent.length > 0) {
+                            list.innerHTML = data.recent.map(function (item) {
+                                var actionUrl = item.actionUrl || '/Notifications';
+                                var itemClass = item.isRead ? 'text-muted' : 'bg-primary-subtle text-dark fw-semibold';
+                                var titleClass = item.isRead ? 'text-dark' : 'text-primary fw-bold';
+                                var iconClass = item.type === 'ANNOUNCEMENT' ? 'bi-megaphone-fill text-warning' :
+                                                item.type === 'EVENT' ? 'bi-calendar-event-fill text-primary' :
+                                                item.type === 'REGISTRATION' ? 'bi-ticket-perforated-fill text-success' : 'bi-bell-fill text-secondary';
+
+                                return '<a href="' + actionUrl + '" class="dropdown-item px-3 py-2 border-bottom d-flex align-items-start gap-2 ' + itemClass + '">' +
+                                       '<i class="bi ' + iconClass + ' mt-1 flex-shrink-0"></i>' +
+                                       '<div class="flex-grow-1 overflow-hidden" style="min-width: 0;">' +
+                                       '<div class="small text-truncate ' + titleClass + '">' + (item.title || '') + '</div>' +
+                                       '<div class="text-muted text-truncate" style="font-size: 11px; line-height: 1.3;">' + (item.message || '') + '</div>' +
+                                       '<div class="text-muted mt-1" style="font-size: 10px;">' + (item.timeAgo || '') + '</div>' +
+                                       '</div>' +
+                                       '</a>';
+                            }).join('');
+                        } else {
+                            list.innerHTML = '<div class="text-center py-4 text-muted small"><i class="bi bi-check-circle text-success d-block fs-4 mb-1"></i>No unread notifications</div>';
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load nav notifications", e);
+        }
+    };
+
+    window.markAllNotificationsReadFromNav = async function (e) {
+        if (e) e.stopPropagation();
+        try {
+            var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            var token = tokenInput ? tokenInput.value : '';
+            var formData = new FormData();
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            var res = await fetch('/Notifications/MarkAllAsRead', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            });
+            if (res.ok) {
+                window.loadNavNotifications();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    if (document.getElementById('navNotificationDropdown')) {
+        window.loadNavNotifications();
+    }
+
 });

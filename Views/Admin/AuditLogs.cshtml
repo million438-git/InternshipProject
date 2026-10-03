@@ -2,7 +2,7 @@
 
 @{
     Layout = "_SuperAdminLayout";
-    ViewData["Title"] = "Security & Forensic Audit Trail";
+    ViewData["Title"] = "Security & Audit Trail";
 }
 
 <!-- =======================================================
@@ -16,8 +16,8 @@
                 <li class="breadcrumb-item active" aria-current="page">Audit Trail</li>
             </ol>
         </nav>
-        <h1 class="h3 fw-bold text-dark mb-1">🛡️ Security & Forensic Audit Trail</h1>
-        <p class="text-muted small mb-0">Immutable record of administrative operations, authentication events, user provisioning, role changes, and system governance.</p>
+        <h1 class="h3 fw-bold text-dark mb-1"><i class="bi bi-shield-check me-2 text-primary"></i>Security & Audit Trail</h1>
+        <p class="text-muted small mb-0">Log of administrative operations, authentication events, user registrations, and role changes.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
         <a asp-controller="Admin" asp-action="ExportAuditLogsCsv" 
@@ -29,8 +29,8 @@
             <i class="bi bi-file-earmark-spreadsheet me-1"></i>
             <span>Export Audit CSV</span>
         </a>
-        <a asp-controller="Admin" asp-action="SuperAdminDashboard" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
-            <i class="bi bi-shield-lock me-1"></i>Security Console
+        <a asp-controller="Admin" asp-action="SuperAdmin" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
+            <i class="bi bi-shield-lock me-1"></i>SuperAdmin Dashboard
         </a>
     </div>
 </div>
@@ -109,15 +109,15 @@
         <div class="col-6 col-md-3">
             <select name="entity" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="ALL" selected="@(Model.EntityFilter == null || Model.EntityFilter == "ALL")">All Entity Scopes</option>
-                <option value="USER" selected="@(Model.EntityFilter == "USER")">👤 User Accounts & Auth</option>
-                <option value="EVENT" selected="@(Model.EntityFilter == "EVENT")">📅 Events & Schedules</option>
-                <option value="ORGANIZATION" selected="@(Model.EntityFilter == "ORGANIZATION")">🏛️ Organizations & Clubs</option>
-                <option value="ROLE" selected="@(Model.EntityFilter == "ROLE")">🔐 Roles & Permissions</option>
-                <option value="VENUE" selected="@(Model.EntityFilter == "VENUE")">🏟️ Venues & Facilities</option>
-                <option value="FACULTY" selected="@(Model.EntityFilter == "FACULTY")">🏢 Faculties & Colleges</option>
-                <option value="DEPARTMENT" selected="@(Model.EntityFilter == "DEPARTMENT")">📚 Academic Departments</option>
-                <option value="DATABASE" selected="@(Model.EntityFilter == "DATABASE")">🗄️ Database & Backups</option>
-                <option value="SYSTEM" selected="@(Model.EntityFilter == "SYSTEM")">⚙️ System Configuration</option>
+                <option value="USER" selected="@(Model.EntityFilter == "USER")">User Accounts & Auth</option>
+                <option value="EVENT" selected="@(Model.EntityFilter == "EVENT")">Events & Schedules</option>
+                <option value="ORGANIZATION" selected="@(Model.EntityFilter == "ORGANIZATION")">Organizations & Clubs</option>
+                <option value="ROLE" selected="@(Model.EntityFilter == "ROLE")">Roles & Permissions</option>
+                <option value="VENUE" selected="@(Model.EntityFilter == "VENUE")">Venues & Facilities</option>
+                <option value="FACULTY" selected="@(Model.EntityFilter == "FACULTY")">Faculties & Colleges</option>
+                <option value="DEPARTMENT" selected="@(Model.EntityFilter == "DEPARTMENT")">Academic Departments</option>
+                <option value="DATABASE" selected="@(Model.EntityFilter == "DATABASE")">Database & Backups</option>
+                <option value="SYSTEM" selected="@(Model.EntityFilter == "SYSTEM")">System Configuration</option>
             </select>
         </div>
 
@@ -224,7 +224,7 @@
                                     data-log-old-values="@(log.OldValues ?? "")"
                                     data-log-new-values="@(log.NewValues ?? "")"
                                     onclick="openLogDetailsModalFromButton(this)"
-                                    title="View Forensic Payload">
+                                    title="View Log Details">
                                 <i class="bi bi-search"></i>
                             </button>
                         </td>
@@ -292,14 +292,14 @@
 </div>
 
 <!-- =======================================================
-     FORENSIC LOG DETAILS MODAL
+     AUDIT LOG DETAILS MODAL
      ======================================================= -->
 <div class="modal fade" id="logDetailsModal" tabindex="-1" aria-labelledby="logDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-dark text-white">
                 <h5 class="modal-title fw-bold" id="logDetailsModalLabel">
-                    <i class="bi bi-shield-check me-2"></i>Forensic Audit Record Details
+                    <i class="bi bi-shield-check me-2"></i>Audit Log Details
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -338,7 +338,7 @@
                 </div>
 
                 <div id="modalLogValuesSection" class="d-none">
-                    <label class="text-muted small fw-semibold">State Payload Changes (Before / After)</label>
+                    <label class="text-muted small fw-semibold">Changes (Before / After)</label>
                     <div class="row g-2">
                         <div class="col-6">
                             <label class="small text-muted font-monospace">Old Values</label>

@@ -8,20 +8,20 @@
 
 @if (isSuperAdmin)
 {
-    <!-- SUPERADMIN BANNER WITH ONE-CLICK SWITCH TO MASTER COMMAND -->
+    <!-- SUPERADMIN BANNER WITH SHORTCUT TO SUPERADMIN DASHBOARD -->
     <div class="alert alert-primary border border-primary-subtle d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 rounded-3 mb-4 shadow-sm" style="background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 100%);">
         <div class="d-flex align-items-center gap-3">
             <div class="stat-icon-box bg-primary text-white rounded-circle" style="width: 38px; height: 38px; font-size: 18px;">
                 <i class="bi bi-shield-lock-fill"></i>
             </div>
             <div>
-                <strong class="text-primary-emphasis d-block">SuperAdmin Master Governance Clearance Active</strong>
-                <small class="text-muted">You are viewing the Campus Operations Dashboard. To oversee all admin activities, user activations, and system vaults, switch to the Master Console.</small>
+                <strong class="text-primary-emphasis d-block">System Administrator Privileges</strong>
+                <small class="text-muted">You are viewing the Campus Operations Dashboard. To manage user account approvals and system settings, switch to the SuperAdmin Dashboard.</small>
             </div>
         </div>
         <a asp-controller="Admin" asp-action="SuperAdmin" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1 fw-semibold">
             <i class="bi bi-speedometer2"></i>
-            <span>Open SuperAdmin Master Command Center &rarr;</span>
+            <span>Open SuperAdmin Dashboard &rarr;</span>
         </a>
     </div>
 }
@@ -31,7 +31,7 @@
         <div class="d-flex align-items-center gap-2">
             <h1 class="h3 fw-bold text-dark mb-0">Campus Operations Dashboard</h1>
             <span class="badge bg-secondary-subtle text-secondary border px-2 py-1" style="font-size: 11px;">
-                <i class="bi bi-person-gear me-1"></i>Operational Console
+                <i class="bi bi-person-gear me-1"></i>Administration
             </span>
         </div>
         <p class="text-muted small mb-0 mt-1">Operational management for Hawassa University campus events, venues, student clubs, and registrations.</p>
@@ -55,7 +55,7 @@
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div class="d-flex align-items-center gap-2">
             <span class="badge bg-primary px-2 py-1 rounded-pill"><i class="bi bi-lightning-charge-fill me-1"></i>Quick Actions</span>
-            <span class="small text-muted d-none d-md-inline">Operational shortcuts for campus management</span>
+            <span class="small text-muted d-none d-md-inline">Common administrative tasks</span>
         </div>
         <div class="d-flex flex-wrap gap-2">
             <a asp-controller="Admin" asp-action="RegisterUser" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 rounded-pill px-3">
@@ -65,7 +65,7 @@
                 <i class="bi bi-plus-circle"></i> Create Event
             </a>
             <a asp-controller="Admin" asp-action="Announcements" class="btn btn-sm btn-outline-info d-inline-flex align-items-center gap-1 rounded-pill px-3">
-                <i class="bi bi-megaphone"></i> Broadcast Notice
+                <i class="bi bi-megaphone"></i> Post Announcement
             </a>
             <a asp-controller="Admin" asp-action="Venues" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1 rounded-pill px-3">
                 <i class="bi bi-geo-alt"></i> Add Venue
@@ -74,12 +74,12 @@
                 <i class="bi bi-mortarboard"></i> Student Clubs
             </a>
             <a asp-controller="Admin" asp-action="Registrations" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 rounded-pill px-3">
-                <i class="bi bi-ticket-perforated"></i> Ticket Passes
+                <i class="bi bi-ticket-perforated"></i> Event Registrations
             </a>
             @if (isSuperAdmin)
             {
-                <a asp-controller="Admin" asp-action="DatabaseManagement" class="btn btn-sm btn-outline-warning text-dark d-inline-flex align-items-center gap-1 rounded-pill px-3" title="SuperAdmin Database Vault">
-                    <i class="bi bi-database"></i> DB Vault
+                <a asp-controller="Admin" asp-action="DatabaseManagement" class="btn btn-sm btn-outline-warning text-dark d-inline-flex align-items-center gap-1 rounded-pill px-3" title="Database Management">
+                    <i class="bi bi-database"></i> Database Management
                 </a>
             }
         </div>
@@ -174,7 +174,7 @@
             </div>
             <div>
                 <div class="stat-num">@Model.TotalAnnouncements</div>
-                <div class="stat-desc">Broadcast Bulletins</div>
+                <div class="stat-desc">Announcements</div>
             </div>
         </div>
     </div>
@@ -248,7 +248,7 @@
                             <tr>
                                 <td colspan="5" class="text-center py-4 text-muted">
                                     <i class="bi bi-check-circle fs-4 text-success d-block mb-1"></i>
-                                    No pending event approvals. All campus submissions are up to date!
+                                    No pending event approvals.
                                 </td>
                             </tr>
                         }
@@ -262,7 +262,7 @@
     <div class="col-lg-5">
         <div class="admin-card overflow-hidden shadow-sm h-100">
             <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
-                <h2 class="h6 fw-bold mb-0 text-dark"><i class="bi bi-people me-2 text-primary"></i>Recent Campus Registrations</h2>
+                <h2 class="h6 fw-bold mb-0 text-dark"><i class="bi bi-people me-2 text-primary"></i>Recent Registered Users</h2>
                 <a asp-controller="Admin" asp-action="Users" class="btn btn-sm btn-outline-primary" style="font-size: 11.5px;">User Directory</a>
             </div>
             <div class="table-responsive">

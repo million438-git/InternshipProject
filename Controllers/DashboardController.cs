@@ -86,7 +86,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                             StartDate = e.start_at,
                             VenueName = e.venue?.name ?? "Main Campus Hall",
                             CategoryName = e.category?.name ?? "Academic",
-                            OrganizerName = e.organizer != null ? $"{e.organizer.first_name} {e.organizer.last_name}".Trim() : "Hawassa University",
+                            OrganizerName = e.organizer != null 
+                                ? ((e.organizer.account_type == "SUPERADMIN" || e.organizer.account_type == "ADMIN" || e.organizer.username == "superadmin" || e.organizer.username == "admin") 
+                                    ? "Hawassa University" 
+                                    : $"{e.organizer.first_name} {e.organizer.last_name}".Trim()) 
+                                : "Hawassa University",
                             IsRegistered = true,
                             Capacity = (int)(e.capacity ?? 100)
                         }).ToList();
@@ -274,7 +278,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                             StartDate = e.start_at,
                             AttendeeCount = e.registrations.Count,
                             Capacity = (int)(e.capacity ?? 100),
-                            Status = $"🏛️ {e.organizer.department?.name ?? "Department"}"
+                            Status = e.organizer.department?.name ?? "Department"
                         })
                         .ToList();
                 }
@@ -940,7 +944,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         StartDate = e.start_at,
                         VenueName = e.venue != null ? e.venue.name : "Main Auditorium",
                         CategoryName = e.category != null ? e.category.name : "Academic",
-                        OrganizerName = e.organizer != null ? (e.organizer.first_name + " " + e.organizer.last_name).Trim() : "University Staff",
+                        OrganizerName = e.organizer != null 
+                            ? ((e.organizer.account_type == "SUPERADMIN" || e.organizer.account_type == "ADMIN" || e.organizer.username == "superadmin" || e.organizer.username == "admin") ? "Hawassa University" : (e.organizer.first_name + " " + e.organizer.last_name)) 
+                            : "Hawassa University",
                         AttendeeCount = e.registrations.Count(r => r.status == "REGISTERED" || r.status == "ATTENDED"),
                         Capacity = (int)(e.capacity ?? 0)
                     })
@@ -975,7 +981,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         Id = a.id,
                         Title = a.title,
                         Content = a.content,
-                        AuthorName = a.author != null ? $"{a.author.first_name} {a.author.last_name}".Trim() : "Campus Administration",
+                        AuthorName = a.author != null 
+                            ? ((a.author.account_type == "SUPERADMIN" || a.author.account_type == "ADMIN" || a.author.username == "superadmin" || a.author.username == "admin") 
+                                ? "University Communications" 
+                                : $"{a.author.first_name} {a.author.last_name}".Trim()) 
+                            : "University Communications",
                         CreatedAt = a.created_at,
                         Priority = a.priority ?? "Normal"
                     }).ToList();

@@ -59,7 +59,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         private IActionResult? DenyUnlessSuperAdminPage()
         {
             if (IsSuperAdmin()) return null;
-            TempData["ErrorMessage"] = "Security Warning: Only SuperAdmin accounts can access the database records vault.";
+            TempData["ErrorMessage"] = "Access Denied: Only SuperAdmin accounts can access the database management portal.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -333,6 +333,9 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
             return View(vm);
         }
+
+        [HttpGet]
+        public IActionResult SuperAdminDashboard() => RedirectToAction(nameof(SuperAdmin));
 
         // =========================================================
         // 2. USER MANAGEMENT
@@ -1052,11 +1055,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
                 if (isPending)
                 {
-                    TempData["SuccessMessage"] = $"User '{username}' ({finalFirst} {finalLast}) registered successfully! The account is in PENDING status awaiting SuperAdmin authorization.";
+                    TempData["SuccessMessage"] = $"User '{username}' ({finalFirst} {finalLast}) registered successfully. The account is in PENDING status awaiting SuperAdmin authorization.";
                 }
                 else
                 {
-                    TempData["SuccessMessage"] = $"User '{username}' ({finalFirst} {finalLast}) registered and activated successfully!";
+                    TempData["SuccessMessage"] = $"User '{username}' ({finalFirst} {finalLast}) registered and activated successfully.";
                 }
             }
             catch (Exception ex)
@@ -1184,7 +1187,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     _logger.LogWarning(mailEx, "Could not send approval email to user {Email}", user.email);
                 }
 
-                TempData["SuccessMessage"] = $"Account for '{user.username}' ({user.first_name} {user.last_name}) has been approved and activated!";
+                TempData["SuccessMessage"] = $"Account for '{user.username}' ({user.first_name} {user.last_name}) has been approved and activated.";
             }
             catch (Exception ex)
             {
@@ -1331,7 +1334,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
                 await _db.SaveChangesAsync();
                 await LogAuditAsync("BATCH_USERS_APPROVED_BY_SUPERADMIN", "USER", 0, $"SuperAdmin '{GetCurrentUserName()}' batch approved and activated {approvedCount} user accounts.");
-                TempData["SuccessMessage"] = $"Successfully approved and activated {approvedCount} user accounts in bulk!";
+                TempData["SuccessMessage"] = $"Successfully approved and activated {approvedCount} user accounts in bulk.";
             }
             catch (Exception ex)
             {
@@ -1432,7 +1435,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
                 await _db.SaveChangesAsync();
                 await LogAuditAsync("ALL_PENDING_USERS_APPROVED_BY_SUPERADMIN", "USER", 0, $"SuperAdmin '{GetCurrentUserName()}' approved and activated all {approvedCount} pending user accounts.");
-                TempData["SuccessMessage"] = $"Successfully approved and activated all {approvedCount} pending user accounts!";
+                TempData["SuccessMessage"] = $"Successfully approved and activated all {approvedCount} pending user accounts.";
             }
             catch (Exception ex)
             {
@@ -2406,7 +2409,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                         var recipientIds = await targetQuery.Select(u => u.id).Take(5000).ToListAsync();
                         if (recipientIds.Any())
                         {
-                            var notifTitle = priorityVal == "URGENT" ? $"🚨 URGENT: {ann.title}" : $"📢 Announcement: {ann.title}";
+                            var notifTitle = priorityVal == "URGENT" ? $"[URGENT] {ann.title}" : $"Announcement: {ann.title}";
                             var notifMessage = ann.summary ?? (ann.content.Length > 120 ? ann.content.Substring(0, 117) + "..." : ann.content);
                             var now = DateTime.UtcNow;
 
@@ -4745,6 +4748,83 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteCategory(ulong id) => await CategoryDelete(id);
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TagCreate(string name)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    TempData["ErrorMessage"] = "Tag keyword cannot be empty.";
+                    return RedirectToAction(nameof(Categories));
+                }
+
+                var cleanName = name.Trim().TrimStart('#');
+                if (string.IsNullOrWhiteSpace(cleanName))
+                {
+                    TempData["ErrorMessage"] = "Tag keyword is invalid.";
+                    return RedirectToAction(nameof(Categories));
+                }
+
+                var slug = cleanName.ToLower().Replace(" ", "-");
+                var existing = await _db.event_tags.FirstOrDefaultAsync(t => t.name.ToLower() == cleanName.ToLower() || t.slug == slug);
+                if (existing != null)
+                {
+                    TempData["ErrorMessage"] = $"Tag '#{cleanName}' already exists.";
+                    return RedirectToAction(nameof(Categories));
+                }
+
+                var tag = new event_tag
+                {
+                    name = cleanName,
+                    slug = slug,
+                    created_at = DateTime.UtcNow
+                };
+
+                _db.event_tags.Add(tag);
+                await _db.SaveChangesAsync();
+                await LogAuditAsync("TAG_CREATED", "TAG", tag.id, $"Added discovery tag: #{cleanName}");
+                TempData["SuccessMessage"] = $"Tag '#{cleanName}' created successfully.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating discovery tag");
+                TempData["ErrorMessage"] = "Failed to add tag: " + ex.Message;
+            }
+
+            return RedirectToAction(nameof(Categories));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TagDelete(ulong id)
+        {
+            try
+            {
+                var tag = await _db.event_tags.Include(t => t.events).FirstOrDefaultAsync(t => t.id == id);
+                if (tag == null)
+                {
+                    TempData["ErrorMessage"] = "Tag not found.";
+                    return RedirectToAction(nameof(Categories));
+                }
+
+                var tagName = tag.name;
+                tag.events.Clear();
+                _db.event_tags.Remove(tag);
+                await _db.SaveChangesAsync();
+                await LogAuditAsync("TAG_DELETED", "TAG", id, $"Deleted discovery tag: #{tagName}");
+                TempData["SuccessMessage"] = $"Tag '#{tagName}' deleted successfully.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting discovery tag");
+                TempData["ErrorMessage"] = "Failed to delete tag: " + ex.Message;
+            }
+
+            return RedirectToAction(nameof(Categories));
+        }
+
         // =========================================================
         // 17. SECURITY & AUDIT LOGS
         // =========================================================
@@ -5344,7 +5424,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
                 await LogAuditAsync("DATABASE_BACKUP_CREATED", "DATABASE", null, $"Created full database backup snapshot '{fileName}' ({sizeKb:N1} KB, {totalRowsDumped} SQL rows). Notes: {notes ?? "None"}");
 
-                TempData["SuccessMessage"] = $"Database backup snapshot '{fileName}' ({sizeKb:N1} KB, {totalRowsDumped} records) successfully generated and vaulted in secure storage.";
+                TempData["SuccessMessage"] = $"Database backup snapshot '{fileName}' ({sizeKb:N1} KB, {totalRowsDumped} records) successfully generated.";
             }
             catch (Exception ex)
             {

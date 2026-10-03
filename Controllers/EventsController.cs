@@ -149,9 +149,17 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 StartTime = e.start_at.TimeOfDay,
                 EndTime = e.end_at != default && e.end_at != e.start_at ? e.end_at.TimeOfDay : (TimeSpan?)null,
                 OrganizerId = e.organizer_id,
-                Organizer = e.organizer != null ? ($"{e.organizer.first_name} {e.organizer.last_name}".Trim()) : null,
-                OrganizerEmail = e.organizer?.email,
-                ContactPhone = e.organizer?.phone,
+                Organizer = e.organizer != null 
+                    ? ((e.organizer.account_type == "SUPERADMIN" || e.organizer.account_type == "ADMIN" || e.organizer.username == "superadmin" || e.organizer.username == "admin") 
+                        ? "Hawassa University" 
+                        : $"{e.organizer.first_name} {e.organizer.last_name}".Trim()) 
+                    : "Hawassa University",
+                OrganizerEmail = (e.organizer != null && (e.organizer.account_type == "SUPERADMIN" || e.organizer.account_type == "ADMIN" || e.organizer.username == "superadmin" || e.organizer.username == "admin")) 
+                    ? "events@hawassa.edu.et" 
+                    : e.organizer?.email,
+                ContactPhone = (e.organizer != null && (e.organizer.account_type == "SUPERADMIN" || e.organizer.account_type == "ADMIN" || e.organizer.username == "superadmin" || e.organizer.username == "admin")) 
+                    ? "+251 46 220 5411" 
+                    : e.organizer?.phone,
                 IsPublished = e.is_public ?? false,
                 ApprovalStatus = e.approval_status ?? "APPROVED",
                 Status = e.status ?? "PUBLISHED",

@@ -7,13 +7,13 @@
 
 <div class="admin-page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h3 fw-bold text-dark mb-1">Registration & Attendee Management</h1>
-        <p class="text-muted small mb-0">Track attendee enrollments, verify ticket codes, confirm bookings, and export attendee rosters.</p>
+        <h1 class="h3 fw-bold text-dark mb-1">Event Registrations</h1>
+        <p class="text-muted small mb-0">View registered attendees, verify registration codes, and export attendee lists.</p>
     </div>
     <div class="d-flex gap-2">
         <a asp-controller="Admin" asp-action="ExportRegistrationsCsv" asp-route-eventId="@Model.SelectedEventId" asp-route-status="@Model.StatusFilter" class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1">
             <i class="bi bi-file-earmark-spreadsheet"></i>
-            <span>Download CSV Roster</span>
+            <span>Export CSV</span>
         </a>
     </div>
 </div>
@@ -36,7 +36,7 @@
             <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-check-circle"></i></div>
             <div>
                 <div class="stat-num">@Model.ConfirmedCount</div>
-                <div class="stat-desc">Confirmed Bookings</div>
+                <div class="stat-desc">Confirmed</div>
             </div>
         </div>
     </div>
@@ -85,7 +85,7 @@
         <div class="col-md-4">
             <div class="input-group input-group-sm">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" id="ticketLiveSearch" class="form-control" placeholder="Scan ticket code or search attendee..." onkeyup="filterLiveRegistrations()">
+                <input type="text" id="ticketLiveSearch" class="form-control" placeholder="Search ticket code or attendee name..." onkeyup="filterLiveRegistrations()">
             </div>
         </div>
         <div class="col-md-1">

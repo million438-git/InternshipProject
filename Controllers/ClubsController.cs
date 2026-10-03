@@ -484,6 +484,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =====================================================================
         [Authorize]
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Follow(ulong id)
         {
             var (userId, _) = GetCurrentUserId();
@@ -529,6 +530,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
 
         [Authorize]
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Unfollow(ulong id)
         {
             var (userId, _) = GetCurrentUserId();
@@ -939,7 +941,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         // =====================================================================
         // 7. CREATE & EDIT CLUB (Authorized Roles)
         // =====================================================================
-        [Authorize(Roles = "SuperAdmin,Admin,Faculty,Staff,Organization,SUPERADMIN,ADMIN,FACULTY,STAFF,ORGANIZATION")]
+        [Authorize(Roles = "SuperAdmin,Admin,Faculty,Staff,Organization,Club,SUPERADMIN,ADMIN,FACULTY,STAFF,ORGANIZATION,CLUB")]
         [HttpGet]
         public async Task<IActionResult> Create()
         {
@@ -948,7 +950,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
             return View(vm);
         }
 
-        [Authorize(Roles = "SuperAdmin,Admin,Faculty,Staff,Organization,SUPERADMIN,ADMIN,FACULTY,STAFF,ORGANIZATION")]
+        [Authorize(Roles = "SuperAdmin,Admin,Faculty,Staff,Organization,Club,SUPERADMIN,ADMIN,FACULTY,STAFF,ORGANIZATION,CLUB")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ClubCreateEditViewModel model)

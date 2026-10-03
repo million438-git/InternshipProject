@@ -28,7 +28,7 @@
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div>
                     <h1 class="dashboard-title h2 fw-bold text-dark mb-1">
-                        Welcome, @Model.UserName! 👋
+                        Welcome, @Model.UserName
                     </h1>
                     <div class="d-flex flex-wrap align-items-center gap-2 text-muted small">
                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
@@ -41,12 +41,16 @@
                     </div>
                 </div>
 
-                <div class="d-flex flex-wrap gap-2">
-                    <a asp-controller="Events" asp-action="Create" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm">
-                        <i class="bi bi-plus-lg"></i>
-                        <span>Create Event</span>
-                    </a>
-                </div>
+                @if (!User.IsInRole("Student") && !User.IsInRole("STUDENT") && 
+                     (User.IsInRole("Faculty") || User.IsInRole("Staff") || User.IsInRole("Organization") || User.IsInRole("Club") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("FACULTY") || User.IsInRole("STAFF") || User.IsInRole("ORGANIZATION") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN")))
+                {
+                    <div class="d-flex flex-wrap gap-2">
+                        <a asp-controller="Events" asp-action="Create" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm">
+                            <i class="bi bi-plus-lg"></i>
+                            <span>Create Event</span>
+                        </a>
+                    </div>
+                }
             </div>
         </div>
     </div>

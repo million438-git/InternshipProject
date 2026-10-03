@@ -2,7 +2,7 @@
 
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Event Categories & Taxonomy";
+    ViewData["Title"] = "Event Categories & Tags";
 }
 
 <!-- =======================================================
@@ -16,8 +16,8 @@
                 <li class="breadcrumb-item active" aria-current="page">Categories & Tags</li>
             </ol>
         </nav>
-        <h1 class="h3 fw-bold text-dark mb-1">🏷️ Event Categories & Discovery Taxonomy</h1>
-        <p class="text-muted small mb-0">Manage campus event classification taxonomies, icon badges, and student discovery search tags.</p>
+        <h1 class="h3 fw-bold text-dark mb-1"><i class="bi bi-tags me-2 text-primary"></i>Event Categories & Tags</h1>
+        <p class="text-muted small mb-0">Manage event categories, color indicators, and search tags.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
         <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#newCategoryModal">
@@ -31,7 +31,7 @@
         <a asp-controller="Admin" asp-action="ExportCategoriesCsv" 
            asp-route-search="@Model.SearchTerm"
            class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1 shadow-sm px-3"
-           title="Export category taxonomy to CSV">
+           title="Export categories to CSV">
             <i class="bi bi-file-earmark-spreadsheet me-1"></i>
             <span>Export CSV</span>
         </a>
@@ -56,7 +56,7 @@
             <div class="stat-icon-box bg-success-subtle text-success"><i class="bi bi-check-circle"></i></div>
             <div>
                 <div class="stat-num">@Model.ActiveCategoriesCount</div>
-                <div class="stat-desc">Active Taxonomies</div>
+                <div class="stat-desc">Active Categories</div>
             </div>
         </div>
     </div>
@@ -65,7 +65,7 @@
             <div class="stat-icon-box bg-info-subtle text-info"><i class="bi bi-tags-fill"></i></div>
             <div>
                 <div class="stat-num">@Model.TotalTagsCount</div>
-                <div class="stat-desc">Discovery Tags</div>
+                <div class="stat-desc">Tags</div>
             </div>
         </div>
     </div>
@@ -95,8 +95,8 @@
         <div class="col-6 col-md-3">
             <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="ALL" selected="@(Model.StatusFilter == null || Model.StatusFilter == "ALL")">All Statuses</option>
-                <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">🟢 Active Only</option>
-                <option value="INACTIVE" selected="@(Model.StatusFilter == "INACTIVE")">⚪ Inactive Only</option>
+                <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">Active Only</option>
+                <option value="INACTIVE" selected="@(Model.StatusFilter == "INACTIVE")">Inactive Only</option>
             </select>
         </div>
 
@@ -124,10 +124,10 @@
                 <table class="table admin-table align-middle mb-0" id="categoriesTable">
                     <thead>
                         <tr>
-                            <th>Category Taxonomy</th>
-                            <th>Slug Identifier</th>
+                            <th>Category Name</th>
+                            <th>Slug</th>
                             <th>Description</th>
-                            <th>Tagged Events</th>
+                            <th>Events</th>
                             <th>Status</th>
                             <th class="text-end">Actions</th>
                         </tr>
@@ -191,11 +191,11 @@
         </div>
     </div>
 
-    <!-- RIGHT PANEL: DISCOVERY TAGS -->
+    <!-- RIGHT PANEL: TAGS -->
     <div class="col-lg-4">
         <div class="admin-card p-4 h-100">
-            <h2 class="h6 fw-bold text-dark mb-3"><i class="bi bi-tags me-2 text-info"></i>Discovery Tags (@Model.Tags.Count)</h2>
-            <p class="text-muted small mb-3">Keywords used by campus organizers to highlight topics and empower instant attendee search discovery.</p>
+            <h2 class="h6 fw-bold text-dark mb-3"><i class="bi bi-tags me-2 text-info"></i>Tags (@Model.Tags.Count)</h2>
+            <p class="text-muted small mb-3">Keywords used to categorize events and improve search results.</p>
             
             <!-- INLINE QUICK TAG CREATION -->
             <form asp-controller="Admin" asp-action="TagCreate" method="post" class="mb-4">

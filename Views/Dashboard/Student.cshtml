@@ -12,7 +12,7 @@
     <div class="container-fluid px-lg-4">
 
         <!-- =====================================================
-             STUDENT HERO BANNER & ROLE SWITCHER PREVIEW
+             STUDENT HERO BANNER
              ===================================================== -->
         <div class="role-hero-banner student-hero mb-4">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
@@ -45,21 +45,7 @@
                         <i class="bi bi-calendar3"></i>
                         <span>My Schedule</span>
                     </a>
-                    <!-- Quick Role Preview Dropdown -->
-                    <div class="dropdown">
-                        <button class="btn btn-dark bg-dark-subtle border-0 text-white dropdown-toggle small px-2 py-2" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-arrow-left-right me-1"></i> Role Views
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow">
-                            <li><h6 class="dropdown-header small">Switch Dashboard Preview</h6></li>
-                            <li><a class="dropdown-item active" asp-controller="Dashboard" asp-action="Student"><i class="bi bi-mortarboard me-2"></i>Student</a></li>
-                            <li><a class="dropdown-item" asp-controller="Dashboard" asp-action="Staff"><i class="bi bi-briefcase me-2"></i>Staff</a></li>
-                            <li><a class="dropdown-item" asp-controller="Dashboard" asp-action="Faculty"><i class="bi bi-journal-bookmark me-2"></i>Faculty</a></li>
-                            <li><a class="dropdown-item" asp-controller="Dashboard" asp-action="Organization"><i class="bi bi-people me-2"></i>Organization</a></li>
-                            <li><a class="dropdown-item" asp-controller="Dashboard" asp-action="Admin"><i class="bi bi-shield-lock me-2"></i>Admin</a></li>
-                            <li><a class="dropdown-item" asp-controller="Dashboard" asp-action="SuperAdmin"><i class="bi bi-cpu me-2"></i>SuperAdmin</a></li>
-                        </ul>
-                    </div>
+
                 </div>
             </div>
         </div>
@@ -285,7 +271,7 @@
                                                 </a>
                                             </h6>
                                             <div class="small text-muted mb-3">
-                                                <div><i class="bi bi-calendar3 me-1 text-primary"></i>@ev.StartDate.ToString("MMM dd, yyyy &bull; hh:mm tt")</div>
+                                                <div><i class="bi bi-calendar3 me-1 text-primary"></i>@ev.StartDate.ToString("MMM dd, yyyy") &bull; @ev.StartDate.ToString("hh:mm tt")</div>
                                                 <div><i class="bi bi-geo-alt me-1 text-danger"></i>@(ev.VenueName ?? "Main Campus")</div>
                                             </div>
                                             <div class="mt-auto d-flex justify-content-between align-items-center pt-2 border-top">
@@ -328,7 +314,7 @@
                             <div class="alert alert-warning bg-warning-subtle border-0 rounded-3 p-3 mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bi bi-lightbulb-fill text-warning-emphasis fs-5"></i>
-                                    <span class="small text-dark">Set your topic interests to unlock personalized event & club recommendations.</span>
+                                    <span class="small text-dark">Select your topic interests to receive personalized event and club recommendations.</span>
                                 </div>
                                 <a asp-controller="Account" asp-action="Preferences" class="btn btn-sm btn-warning text-dark fw-semibold rounded-pill px-3">
                                     Choose Interests
@@ -341,6 +327,10 @@
                             <div class="d-flex flex-column gap-3">
                                 @foreach (var club in Model.RecommendedClubs)
                                 {
+                                    var clubRoute = !string.IsNullOrEmpty(club.Slug) ? club.Slug : club.Id.ToString();
+                                    var followBtnClass = club.IsFollowing ? "btn-outline-secondary" : "btn-primary";
+                                    var followBtnText = club.IsFollowing ? "Following" : "Follow";
+
                                     <div class="p-3 bg-light rounded-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
                                         <div style="max-width: 65%;">
                                             @if (!string.IsNullOrEmpty(club.RecommendationReason))
@@ -351,7 +341,7 @@
                                             }
                                             <div class="d-flex align-items-center gap-2">
                                                 <h6 class="fw-bold mb-0 text-dark">
-                                                    <a asp-controller="Clubs" asp-action="Details" asp-route-id="@(!string.IsNullOrEmpty(club.Slug) ? club.Slug : club.Id.ToString())" class="text-dark text-decoration-none hover-primary">
+                                                    <a asp-controller="Clubs" asp-action="Details" asp-route-id="@clubRoute" class="text-dark text-decoration-none hover-primary">
                                                         @club.Name
                                                     </a>
                                                 </h6>
@@ -361,11 +351,11 @@
                                         </div>
                                         <div class="d-flex align-items-center gap-2 flex-shrink-0">
                                             <button type="button"
-                                                    class="btn btn-sm @(club.IsFollowing ? "btn-outline-secondary" : "btn-primary") px-3 rounded-pill fw-semibold"
+                                                    class="btn btn-sm @followBtnClass px-3 rounded-pill fw-semibold"
                                                     onclick="quickFollowClub(@club.Id, this)">
-                                                @(club.IsFollowing ? "Following" : "Follow")
+                                                @followBtnText
                                             </button>
-                                            <a asp-controller="Clubs" asp-action="Details" asp-route-id="@(!string.IsNullOrEmpty(club.Slug) ? club.Slug : club.Id.ToString())" class="btn btn-sm btn-outline-primary px-3 rounded-pill">
+                                            <a asp-controller="Clubs" asp-action="Details" asp-route-id="@clubRoute" class="btn btn-sm btn-outline-primary px-3 rounded-pill">
                                                 View
                                             </a>
                                         </div>
@@ -397,17 +387,29 @@
                             <div class="row g-3">
                                 @foreach (var club in Model.MyClubs.Take(3))
                                 {
+                                    var clubRoute = !string.IsNullOrEmpty(club.Slug) ? club.Slug : club.Id.ToString();
+                                    var membershipBadgeClass = club.MembershipStatus == "APPROVED" 
+                                        ? "bg-success-subtle text-success" 
+                                        : club.MembershipStatus == "PENDING" 
+                                            ? "bg-warning-subtle text-warning-emphasis" 
+                                            : "bg-light text-muted border";
+                                    var membershipBadgeText = club.MembershipStatus == "APPROVED" 
+                                        ? "Official Member" 
+                                        : club.MembershipStatus == "PENDING" 
+                                            ? "Request Pending" 
+                                            : "Following Updates";
+
                                     <div class="col-md-4">
                                         <div class="p-3 border rounded-3 bg-white h-100 d-flex flex-column">
                                             <h6 class="fw-bold mb-1">
-                                                <a asp-controller="Clubs" asp-action="Details" asp-route-id="@(!string.IsNullOrEmpty(club.Slug) ? club.Slug : club.Id.ToString())" class="text-dark text-decoration-none hover-primary">
+                                                <a asp-controller="Clubs" asp-action="Details" asp-route-id="@clubRoute" class="text-dark text-decoration-none hover-primary">
                                                     @club.Name
                                                 </a>
                                             </h6>
-                                            <span class="badge @(club.MembershipStatus == "APPROVED" ? "bg-success-subtle text-success" : club.MembershipStatus == "PENDING" ? "bg-warning-subtle text-warning-emphasis" : "bg-light text-muted border") align-self-start small mb-2">
-                                                @(club.MembershipStatus == "APPROVED" ? "Official Member" : club.MembershipStatus == "PENDING" ? "Request Pending" : "Following Updates")
+                                            <span class="badge @membershipBadgeClass align-self-start small mb-2">
+                                                @membershipBadgeText
                                             </span>
-                                            <a asp-controller="Clubs" asp-action="Details" asp-route-id="@(!string.IsNullOrEmpty(club.Slug) ? club.Slug : club.Id.ToString())" class="btn btn-sm btn-outline-primary rounded-pill mt-auto w-100">
+                                            <a asp-controller="Clubs" asp-action="Details" asp-route-id="@clubRoute" class="btn btn-sm btn-outline-primary rounded-pill mt-auto w-100">
                                                 Club Room
                                             </a>
                                         </div>
@@ -442,8 +444,8 @@
                                 <span><i class="bi bi-people-fill me-2"></i>Campus Clubs & Societies</span>
                                 <i class="bi bi-arrow-right"></i>
                             </a>
-                            <a asp-controller="Events" asp-action="Create" class="btn btn-light border text-start d-flex align-items-center justify-content-between p-2 px-3">
-                                <span><i class="bi bi-plus-circle me-2 text-success"></i>Propose a Student Event</span>
+                            <a asp-controller="Events" asp-action="Index" class="btn btn-light border text-start d-flex align-items-center justify-content-between p-2 px-3">
+                                <span><i class="bi bi-compass me-2 text-success"></i>Browse Campus Events</span>
                                 <i class="bi bi-chevron-right text-muted"></i>
                             </a>
                             <a asp-controller="Calendar" asp-action="Index" class="btn btn-light border text-start d-flex align-items-center justify-content-between p-2 px-3">
@@ -474,7 +476,8 @@
                         <div class="notification-list d-flex flex-column gap-2">
                             @foreach (var n in Model.Notifications)
                             {
-                                <div class="p-2 rounded-2 border @(n.IsRead ? "bg-white" : "bg-primary-subtle border-primary-subtle")">
+                                var notifClass = n.IsRead ? "bg-white" : "bg-primary-subtle border-primary-subtle";
+                                <div class="p-2 rounded-2 border @notifClass">
                                     <p class="small text-dark mb-1">@n.Message</p>
                                     <small class="text-muted" style="font-size: 11px;"><i class="bi bi-clock me-1"></i>@n.CreatedAt.ToString("MMM dd, hh:mm tt")</small>
                                 </div>
@@ -512,36 +515,4 @@
 
 @section Scripts {
     <script src="~/js/dashboard.js" asp-append-version="true"></script>
-    <script>
-        async function quickFollowClub(clubId, btn) {
-            const isCurrentlyFollowing = btn.innerText.trim() === 'Following';
-            const endpoint = isCurrentlyFollowing ? `/Clubs/Unfollow/${clubId}` : `/Clubs/Follow/${clubId}`;
-
-            btn.disabled = true;
-
-            try {
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.isFollowing) {
-                        btn.innerText = 'Following';
-                        btn.classList.remove('btn-primary');
-                        btn.classList.add('btn-outline-secondary');
-                    } else {
-                        btn.innerText = 'Follow';
-                        btn.classList.remove('btn-outline-secondary');
-                        btn.classList.add('btn-primary');
-                    }
-                }
-            } catch (err) {
-                console.error(err);
-            } finally {
-                btn.disabled = false;
-            }
-        }
-    </script>
 }

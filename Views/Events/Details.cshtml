@@ -49,7 +49,7 @@
                             @(string.IsNullOrEmpty(Model.Category) ? "Campus Activity" : Model.Category)
                         </span>
                         <span class="badge bg-light text-muted border">
-                            <i class="bi bi-geo-alt me-1 text-danger"></i> @(string.IsNullOrEmpty(Model.Venue) ? "Main Campus Hall" : Model.Venue)
+                            <i class="bi bi-geo-alt me-1 text-primary"></i> @(string.IsNullOrEmpty(Model.Venue) ? "Main Campus Hall" : Model.Venue)
                         </span>
                         <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
                             <i class="bi bi-tag me-1"></i> Free Admission
@@ -102,7 +102,7 @@
                     @if (Model.TotalRatings > 0)
                     {
                         <span class="badge bg-warning-subtle text-warning-emphasis border px-3 py-1">
-                            ★ @Model.AverageRating.ToString("F1") / 5.0 (@Model.TotalRatings reviews)
+                            <i class="bi bi-star-fill text-warning me-1"></i>@Model.AverageRating.ToString("F1") / 5.0 (@Model.TotalRatings reviews)
                         </span>
                     }
                 </div>
@@ -115,11 +115,11 @@
                         <div class="row g-2 align-items-center">
                             <div class="col-md-3">
                                 <select name="rating" class="form-select form-select-sm" required>
-                                    <option value="5">★★★★★ (5 - Great)</option>
-                                    <option value="4">★★★★☆ (4 - Good)</option>
-                                    <option value="3">★★★☆☆ (3 - Average)</option>
-                                    <option value="2">★★☆☆☆ (2 - Fair)</option>
-                                    <option value="1">★☆☆☆☆ (1 - Poor)</option>
+                                    <option value="5">5 - Great</option>
+                                    <option value="4">4 - Good</option>
+                                    <option value="3">3 - Average</option>
+                                    <option value="2">2 - Fair</option>
+                                    <option value="1">1 - Poor</option>
                                 </select>
                             </div>
                             <div class="col-md-7">
@@ -140,7 +140,19 @@
                             <div class="list-group-item px-0 py-2 border-bottom">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="small fw-bold text-dark">@(fb.IsAnonymous ? "Campus Attendee" : "Verified Attendee")</span>
-                                    <span class="text-warning small">@string.Concat(Enumerable.Repeat("★", fb.Rating))</span>
+                                    <span class="text-warning small">
+                                        @for (int s = 1; s <= 5; s++)
+                                        {
+                                            if (s <= fb.Rating)
+                                            {
+                                                <i class="bi bi-star-fill"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-star text-muted"></i>
+                                            }
+                                        }
+                                    </span>
                                 </div>
                                 @if (!string.IsNullOrEmpty(fb.Comment))
                                 {
@@ -275,7 +287,7 @@
                 </div>
 
                 <div class="d-flex align-items-start gap-3">
-                    <div class="bg-danger-subtle text-danger rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <div class="bg-primary-subtle text-primary rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
                         <i class="bi bi-geo-alt fs-5"></i>
                     </div>
                     <div>

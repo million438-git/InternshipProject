@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateToggleButtonState(isMini) {
         if (!toggleBtn) return;
         if (isDesktop()) {
-            toggleBtn.setAttribute('title', isMini ? 'Expand Sidebar (Ctrl+B)' : 'Collapse Sidebar (Ctrl+B)');
+            toggleBtn.setAttribute('title', isMini ? 'Expand Sidebar' : 'Collapse Sidebar');
             toggleBtn.setAttribute('aria-expanded', isMini ? 'false' : 'true');
         } else {
             const isOpen = sidebar && sidebar.classList.contains('show');

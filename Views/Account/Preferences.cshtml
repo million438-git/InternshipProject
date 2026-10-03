@@ -1,6 +1,6 @@
 @model HawassaUnifiedCampusEventManagementSystem.Models.PersonalizationPreferencesViewModel
 @{
-    ViewData["Title"] = "Personalization & Notification Hub";
+    ViewData["Title"] = "Preferences & Subscriptions";
     Layout = "_Layout";
 }
 
@@ -118,11 +118,11 @@
             <div class="col-lg-8">
                 <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-white bg-opacity-10 rounded-pill mb-3 text-cyan border border-white border-opacity-25" style="font-size: 13px;">
                     <i class="bi bi-person-lines-fill"></i>
-                    <span>Personalized Campus Experience Engine</span>
+                    <span>Department & Category Preferences</span>
                 </div>
-                <h1 class="display-6 fw-bold mb-2">Campus Personalization & Alerts</h1>
+                <h1 class="display-6 fw-bold mb-2">Notification & Topic Preferences</h1>
                 <p class="text-light text-opacity-75 mb-0" style="max-width: 650px;">
-                    Tailor your Hawassa University event discovery feed, follow academic departments for instant new event push notifications, and customize your topic interests.
+                    Choose event topics of interest and subscribe to academic departments to receive notifications about upcoming events.
                 </p>
             </div>
             <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
@@ -158,7 +158,7 @@
                 <div>
                     <div class="text-muted small fw-semibold text-uppercase">Subscribed Departments</div>
                     <div class="fs-3 fw-bold text-dark" id="subscribedDeptsCounter">@Model.SubscribedDepartmentsCount</div>
-                    <small class="text-muted">Followed academic wings</small>
+                    <small class="text-muted">Followed academic departments</small>
                 </div>
             </div>
         </div>
@@ -168,9 +168,9 @@
                     <i class="bi bi-bell-fill fs-3"></i>
                 </div>
                 <div>
-                    <div class="text-muted small fw-semibold text-uppercase">Event Push Alerts</div>
+                    <div class="text-muted small fw-semibold text-uppercase">Event Notifications</div>
                     <div class="fs-3 fw-bold text-dark" id="alertsCounter">@Model.AlertsEnabledCount</div>
-                    <small class="text-muted">Instant notifications active</small>
+                    <small class="text-muted">Active notification alerts</small>
                 </div>
             </div>
         </div>
@@ -180,12 +180,12 @@
     <ul class="nav nav-pills mb-4 bg-light p-2 rounded-4 shadow-sm border" id="prefTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active rounded-pill fw-semibold px-4 py-2" id="categories-tab" data-bs-toggle="pill" data-bs-target="#categories-content" type="button" role="tab">
-                <i class="bi bi-bookmark-star me-2"></i>1. Category Interests (USER_CATEGORY_INTERESTS)
+                <i class="bi bi-bookmark-star me-2"></i>1. Category Interests
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link rounded-pill fw-semibold px-4 py-2" id="depts-tab" data-bs-toggle="pill" data-bs-target="#depts-content" type="button" role="tab">
-                <i class="bi bi-building me-2"></i>2. Department Subscriptions (USER_DEPT_SUBSCRIPTIONS)
+                <i class="bi bi-building me-2"></i>2. Department Subscriptions
             </button>
         </li>
     </ul>
@@ -201,10 +201,10 @@
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
                     <div>
                         <h4 class="fw-bold text-dark mb-1">
-                            <i class="bi bi-stars text-primary me-2"></i>Event Topic & Category Preferences
+                            <i class="bi bi-stars text-primary me-2"></i>Event Categories & Interests
                         </h4>
                         <p class="text-muted small mb-0">
-                            Select topics you are interested in. The recommendation algorithm will surface matching symposiums, hackathons, and clubs.
+                            Select topics you are interested in to highlight matching university events.
                         </p>
                     </div>
                     <div class="d-flex align-items-center gap-2">
@@ -244,7 +244,7 @@
                                         <i class="bi bi-calendar-event me-1"></i>@cat.AssociatedEventsCount Events
                                     </span>
                                     <span class="selection-status badge @(cat.IsSelected ? "bg-primary text-white" : "bg-light text-muted border")" style="font-size: 10px;">
-                                        @(cat.IsSelected ? "Active Interest" : "Not Selected")
+                                        @(cat.IsSelected ? "Selected" : "Not Selected")
                                     </span>
                                 </div>
                             </div>
@@ -254,7 +254,7 @@
 
                 <div class="d-flex justify-content-end mt-4 pt-3 border-top">
                     <button type="button" class="btn btn-primary rounded-pill px-5 shadow-sm" onclick="saveCategoryInterests()">
-                        <i class="bi bi-check2-circle me-2"></i>Apply & Save Category Interests
+                        <i class="bi bi-check2-circle me-2"></i>Save Preferences
                     </button>
                 </div>
             </div>
@@ -268,15 +268,15 @@
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
                     <div>
                         <h4 class="fw-bold text-dark mb-1">
-                            <i class="bi bi-bell-fill text-warning me-2"></i>Academic Department Subscriptions & Push Alerts
+                            <i class="bi bi-bell-fill text-warning me-2"></i>Academic Department Subscriptions
                         </h4>
                         <p class="text-muted small mb-0">
-                            Follow academic faculties to receive real-time push alerts (<code>notify_on_new_event = true</code>) when your department or other wings schedule seminars, guest lectures, and workshops.
+                            Subscribe to academic departments to receive notifications when new events, guest lectures, and seminars are scheduled.
                         </p>
                     </div>
                     <div>
                         <span class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill fw-semibold">
-                            <i class="bi bi-shield-check me-1"></i>Automated Push Alert System Active
+                            <i class="bi bi-check-circle me-1"></i>Notification Service Active
                         </span>
                     </div>
                 </div>
@@ -295,7 +295,7 @@
                                 </div>
 
                                 <div class="small text-muted mb-3">
-                                    <i class="bi bi-geo-alt me-1 text-danger"></i>Building: @(dept.Building ?? "Main Campus Wing")
+                                    <i class="bi bi-geo-alt me-1 text-primary"></i>Building: @(dept.Building ?? "Main Campus Wing")
                                     <span class="mx-1">&bull;</span>
                                     <i class="bi bi-calendar3 me-1 text-primary"></i>@dept.ActiveEventsCount Active Events
                                 </div>
@@ -368,7 +368,7 @@
                 if (cb.checked) {
                     card.classList.add('active');
                     statusBadge.className = 'selection-status badge bg-primary text-white';
-                    statusBadge.innerText = 'Active Interest';
+                    statusBadge.innerText = 'Selected';
                     selectedCount++;
                 } else {
                     card.classList.remove('active');

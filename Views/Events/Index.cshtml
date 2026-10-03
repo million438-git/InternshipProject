@@ -20,18 +20,20 @@
         </div>
 
         <div>
-            @if (User.Identity?.IsAuthenticated == true)
+            @if (User.Identity?.IsAuthenticated == true && 
+                 !User.IsInRole("Student") && !User.IsInRole("STUDENT") && 
+                 (User.IsInRole("Faculty") || User.IsInRole("Staff") || User.IsInRole("Organization") || User.IsInRole("Club") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("FACULTY") || User.IsInRole("STAFF") || User.IsInRole("ORGANIZATION") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN")))
             {
                 <a asp-controller="Events" asp-action="Create" class="btn btn-primary px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-sm">
                     <i class="bi bi-plus-circle-fill"></i>
                     <span>Create Event</span>
                 </a>
             }
-            else
+            else if (User.Identity?.IsAuthenticated != true)
             {
-                <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="/Events/Create" class="btn btn-outline-primary px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2">
+                <a asp-controller="Account" asp-action="Login" class="btn btn-outline-primary px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2">
                     <i class="bi bi-box-arrow-in-right"></i>
-                    <span>Sign In to Create Event</span>
+                    <span>Sign In</span>
                 </a>
             }
         </div>
@@ -153,7 +155,7 @@
                             <!-- METADATA SPECS -->
                             <div class="event-specs-list">
                                 <div class="event-spec-row">
-                                    <i class="bi bi-geo-alt-fill text-danger flex-shrink-0"></i>
+                                    <i class="bi bi-geo-alt-fill text-primary flex-shrink-0"></i>
                                     <span class="text-truncate">@(string.IsNullOrEmpty(item.Venue) ? "Main Campus Hall" : item.Venue)</span>
                                 </div>
                                 <div class="event-spec-row">

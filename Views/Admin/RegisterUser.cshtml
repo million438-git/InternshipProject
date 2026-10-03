@@ -39,16 +39,16 @@
         <i class="bi @(Model.IsSuperAdmin ? "bi-shield-check text-primary" : "bi-shield-exclamation text-warning-emphasis") fs-3 flex-shrink-0 mt-1"></i>
         <div>
             <h6 class="fw-bold mb-1 @(Model.IsSuperAdmin ? "text-primary" : "text-dark")">
-                @(Model.IsSuperAdmin ? "Master SuperAdmin Provisioning Hub" : "Campus Administrator Provisioning Policy")
+                @(Model.IsSuperAdmin ? "SuperAdmin User Registration" : "Campus Administrator Registration Policy")
             </h6>
             <p class="small mb-0 @(Model.IsSuperAdmin ? "text-dark" : "text-secondary")">
                 @if (Model.IsSuperAdmin)
                 {
-                    <span>As a <strong>SuperAdmin</strong>, accounts you create can be activated immediately with instant portal access, or placed in the verification queue. You also have full clearance to provision Administrator accounts.</span>
+                    <span>As a <strong>SuperAdmin</strong>, accounts you create can be activated immediately or placed in the verification queue. You can also create Administrator accounts.</span>
                 }
                 else
                 {
-                    <span>As a <strong>Campus Administrator</strong>, all user accounts you register are automatically placed in <strong>PENDING</strong> status. The SuperAdmin will verify and activate the account before the user can log in.</span>
+                    <span>As a <strong>Campus Administrator</strong>, user accounts you register are placed in <strong>PENDING</strong> status until approved by a SuperAdmin.</span>
                 }
             </p>
         </div>
@@ -327,7 +327,7 @@
                     <!-- E. ADMIN SECTION -->
                     <div id="sectionAdmin" class="d-none">
                         <div class="alert alert-danger-subtle border border-danger-subtle p-3 rounded-3 mb-0 small">
-                            <div class="fw-bold text-danger mb-1"><i class="bi bi-shield-lock-fill me-1"></i>Administrator Clearance Scope</div>
+                            <div class="fw-bold text-danger mb-1"><i class="bi bi-shield-lock-fill me-1"></i>Administrator Permissions</div>
                             <p class="mb-0 text-dark">This will provision a full Campus Administrator account with operational permissions over events, announcements, venues, and student approvals across Hawassa University.</p>
                         </div>
                     </div>
@@ -390,11 +390,11 @@
                     </div>
                 </div>
 
-                <!-- ACCOUNT STATUS & GOVERNANCE -->
+                <!-- ACCOUNT STATUS -->
                 <div class="admin-card p-4 mb-4 shadow-sm border @(Model.IsSuperAdmin ? "border-primary-subtle" : "border-warning-subtle")">
                     <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
                         <i class="bi bi-shield-check @(Model.IsSuperAdmin ? "text-primary" : "text-warning")"></i>
-                        <span>Account Status Governance</span>
+                        <span>Account Status</span>
                     </h5>
 
                     @if (Model.IsSuperAdmin)

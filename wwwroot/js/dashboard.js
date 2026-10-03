@@ -237,3 +237,43 @@ document.addEventListener("DOMContentLoaded", function () {
     generateCalendar(currentDate);
 
 });
+
+/* =========================================================
+   QUICK FOLLOW / UNFOLLOW CLUB (STUDENT DASHBOARD)
+   ========================================================= */
+window.quickFollowClub = async function (clubId, btn) {
+    if (!btn) return;
+    var isCurrentlyFollowing = btn.innerText.trim() === 'Following';
+    var endpoint = isCurrentlyFollowing ? ('/Clubs/Unfollow/' + clubId) : ('/Clubs/Follow/' + clubId);
+
+    btn.disabled = true;
+
+    try {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        var token = tokenInput ? tokenInput.value : '';
+        var response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest',
+                'RequestVerificationToken': token
+            }
+        });
+
+        if (response.ok) {
+            var data = await response.json();
+            if (data && data.isFollowing) {
+                btn.innerText = 'Following';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-secondary');
+            } else {
+                btn.innerText = 'Follow';
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-primary');
+            }
+        }
+    } catch (err) {
+        console.error("Failed to follow/unfollow club", err);
+    } finally {
+        btn.disabled = false;
+    }
+};

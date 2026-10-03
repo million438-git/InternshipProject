@@ -18,12 +18,12 @@
             </ol>
         </nav>
         <div class="d-flex align-items-center gap-2 flex-wrap">
-            <h1 class="h3 fw-bold text-dark mb-0">SuperAdmin User Approvals & Activation</h1>
+            <h1 class="h3 fw-bold text-dark mb-0">User Account Approvals</h1>
             <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill">
                 <i class="bi bi-clock-history me-1"></i>@Model.TotalPendingCount Pending
             </span>
         </div>
-        <p class="text-muted small mb-0 mt-1">Review accounts registered by Campus Administrators and grant cryptographic login credentials.</p>
+        <p class="text-muted small mb-0 mt-1">Review user accounts awaiting administrator approval and activate access.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
         <a asp-controller="Admin" asp-action="ExportPendingApprovalsCsv" 
@@ -109,14 +109,14 @@
             <i class="bi bi-shield-check fs-5"></i>
         </div>
         <div>
-            <h6 class="fw-bold mb-0 text-primary">Two-Tier Campus Governance Policy Active</h6>
+            <h6 class="fw-bold mb-0 text-primary">Account Verification Policy</h6>
             <p class="mb-0 text-dark small">
-                Campus Administrators can provision new profiles, but only SuperAdministrators hold cryptographic authority to activate accounts.
+                New user registrations require administrator review and activation before granting portal access.
             </p>
         </div>
     </div>
     <span class="badge bg-white text-primary border font-monospace px-3 py-2">
-        <i class="bi bi-lock-fill me-1"></i>SuperAdmin Authority Required
+        <i class="bi bi-lock-fill me-1"></i>Administrator Approval Required
     </span>
 </div>
 

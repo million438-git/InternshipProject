@@ -245,12 +245,12 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
         }
 
         // =====================================================
-        // REGISTER (RESTRICTED - ADMIN-MANAGED ONLY)
+        // REGISTER (CAMPUS SELF-REGISTRATION - ADMIN REVIEW REQUIRED)
         // =====================================================
 
         // GET: /Account/Register
         [HttpGet]
-        public IActionResult Register(string? returnUrl = null)
+        public async Task<IActionResult> Register(string? returnUrl = null)
         {
             if (User.Identity?.IsAuthenticated == true)
             {
@@ -261,17 +261,254 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                 return RedirectToAction("Index", "Dashboard");
             }
 
-            TempData["InfoMessage"] = "Public self-registration is restricted. All campus accounts are provisioned exclusively by authorized Campus Administrators. Please sign in with your issued credentials or contact your campus administrator.";
-            return RedirectToAction(nameof(Login), new { returnUrl });
+            ViewBag.ReturnUrl = returnUrl;
+            await LoadDepartmentsViewBagAsync();
+            return View();
         }
 
         // POST: /Account/Register
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Register(string? returnUrl = null, [FromForm] string? dummy = null)
+        public async Task<IActionResult> Register(
+            string? returnUrl,
+            string? accountType,
+            string? fullName,
+            string? username,
+            string? email,
+            string? phone,
+            ulong? departmentId,
+            string? studentId,
+            string? employeeId,
+            string? organizationName,
+            string? organizationType,
+            string? bio,
+            string? password,
+            string? confirmPassword)
         {
-            TempData["InfoMessage"] = "Public self-registration is restricted. Campus accounts are issued exclusively by authorized Campus Administrators.";
-            return RedirectToAction(nameof(Login), new { returnUrl });
+            try
+            {
+                var normType = (accountType ?? "STUDENT").Trim().ToUpperInvariant();
+                if (normType == "ADMIN" || normType == "SUPERADMIN")
+                {
+                    ViewBag.Error = "Administrator accounts cannot be self-registered. They must be provisioned by a SuperAdmin.";
+                    ViewBag.ReturnUrl = returnUrl;
+                    await LoadDepartmentsViewBagAsync();
+                    return View();
+                }
+
+                // 1. Resolve & validate full name
+                string finalFirst = "";
+                string finalLast = "";
+                string? finalMiddle = null;
+                if (!string.IsNullOrWhiteSpace(fullName))
+                {
+                    var parts = fullName.Trim().Split(' ', 3, StringSplitOptions.RemoveEmptyEntries);
+                    finalFirst = parts.Length > 0 ? parts[0] : "";
+                    if (parts.Length == 2)
+                    {
+                        finalLast = parts[1];
+                    }
+                    else if (parts.Length >= 3)
+                    {
+                        finalMiddle = parts[1];
+                        finalLast = parts[2];
+                    }
+                    else
+                    {
+                        finalLast = finalFirst;
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(finalFirst) || finalFirst.Length < 2)
+                {
+                    ViewBag.Error = "Please enter your full legal name.";
+                    ViewBag.ReturnUrl = returnUrl;
+                    await LoadDepartmentsViewBagAsync();
+                    return View();
+                }
+                if (string.IsNullOrWhiteSpace(finalLast))
+                {
+                    finalLast = finalFirst;
+                }
+
+                // 2. Validate Username
+                if (string.IsNullOrWhiteSpace(username) || username.Trim().Length < 3)
+                {
+                    ViewBag.Error = "Username must be at least 3 characters long.";
+                    ViewBag.ReturnUrl = returnUrl;
+                    await LoadDepartmentsViewBagAsync();
+                    return View();
+                }
+                var cleanUsername = username.Trim().ToLowerInvariant().Replace(" ", "_");
+                if (await _db.users.AnyAsync(u => u.username.ToLower() == cleanUsername))
+                {
+                    ViewBag.Error = $"The username '{cleanUsername}' is already taken. Please select another username.";
+                    ViewBag.ReturnUrl = returnUrl;
+                    await LoadDepartmentsViewBagAsync();
+                    return View();
+                }
+
+                // 3. Validate Email
+                if (string.IsNullOrWhiteSpace(email) || !email.Contains('@') || !email.Contains('.'))
+                {
+                    ViewBag.Error = "Please provide a valid official email address.";
+                    ViewBag.ReturnUrl = returnUrl;
+                    await LoadDepartmentsViewBagAsync();
+                    return View();
+                }
+                var cleanEmail = email.Trim().ToLowerInvariant();
+                if (await _db.users.AnyAsync(u => u.email.ToLower() == cleanEmail))
+                {
+                    ViewBag.Error = $"An account with email '{cleanEmail}' already exists in the system.";
+                    ViewBag.ReturnUrl = returnUrl;
+                    await LoadDepartmentsViewBagAsync();
+                    return View();
+                }
+
+                // 4. Validate Password
+                if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+                {
+                    ViewBag.Error = "Password must be at least 8 characters long.";
+                    ViewBag.ReturnUrl = returnUrl;
+                    await LoadDepartmentsViewBagAsync();
+                    return View();
+                }
+                if (password != confirmPassword)
+                {
+                    ViewBag.Error = "Passwords do not match. Please verify both fields.";
+                    ViewBag.ReturnUrl = returnUrl;
+                    await LoadDepartmentsViewBagAsync();
+                    return View();
+                }
+
+                // 5. Validate Role-Specific Identifiers
+                if (normType == "STUDENT" && !string.IsNullOrWhiteSpace(studentId))
+                {
+                    var sid = studentId.Trim();
+                    if (await _db.users.AnyAsync(u => u.student_id != null && u.student_id.ToLower() == sid.ToLower()))
+                    {
+                        ViewBag.Error = $"Student ID '{sid}' is already registered with an existing account.";
+                        ViewBag.ReturnUrl = returnUrl;
+                        await LoadDepartmentsViewBagAsync();
+                        return View();
+                    }
+                }
+                else if ((normType == "STAFF" || normType == "FACULTY") && !string.IsNullOrWhiteSpace(employeeId))
+                {
+                    var eid = employeeId.Trim();
+                    if (await _db.users.AnyAsync(u => u.employee_id != null && u.employee_id.ToLower() == eid.ToLower()))
+                    {
+                        ViewBag.Error = $"Employee ID '{eid}' is already registered with an existing account.";
+                        ViewBag.ReturnUrl = returnUrl;
+                        await LoadDepartmentsViewBagAsync();
+                        return View();
+                    }
+                }
+
+                // 6. Validate Department if provided
+                ulong? validDeptId = null;
+                if (departmentId.HasValue && departmentId.Value > 0)
+                {
+                    if (await _db.departments.AnyAsync(d => d.id == departmentId.Value))
+                    {
+                        validDeptId = departmentId.Value;
+                    }
+                }
+
+                // 7. Compose Bio Metadata
+                string? finalBio = !string.IsNullOrWhiteSpace(bio) ? bio.Trim() : null;
+                if (string.IsNullOrWhiteSpace(finalBio))
+                {
+                    if (normType == "STUDENT")
+                    {
+                        finalBio = "Student Account";
+                    }
+                    else if (normType == "FACULTY")
+                    {
+                        finalBio = "Faculty Member";
+                    }
+                    else if (normType == "STAFF")
+                    {
+                        finalBio = "Staff Member";
+                    }
+                    else if (normType == "ORGANIZATION")
+                    {
+                        var orgN = !string.IsNullOrWhiteSpace(organizationName) ? organizationName.Trim() : "Student Organization";
+                        finalBio = $"{orgN} - {organizationType ?? "Club"}";
+                    }
+                }
+
+                // 8. Create User in PENDING Status
+                var newUser = new User
+                {
+                    username = cleanUsername,
+                    email = cleanEmail,
+                    phone = phone?.Trim(),
+                    password_hash = _passwords.HashPassword(password),
+                    first_name = finalFirst,
+                    middle_name = finalMiddle,
+                    last_name = finalLast,
+                    department_id = validDeptId,
+                    student_id = normType == "STUDENT" ? studentId?.Trim() : null,
+                    employee_id = (normType == "STAFF" || normType == "FACULTY") ? employeeId?.Trim() : null,
+                    bio = finalBio,
+                    account_type = normType,
+                    account_status = "PENDING",
+                    email_verified = false,
+                    phone_verified = false,
+                    created_at = DateTime.UtcNow,
+                    updated_at = DateTime.UtcNow
+                };
+
+                _db.users.Add(newUser);
+                await _db.SaveChangesAsync();
+
+                // 9. Assign Corresponding Role
+                string roleName = normType switch
+                {
+                    "FACULTY" => "Faculty",
+                    "STAFF" => "Staff",
+                    "ORGANIZATION" => "Organization",
+                    _ => "Student"
+                };
+
+                var roleObj = await _db.roles.FirstOrDefaultAsync(r => r.name.ToLower() == roleName.ToLower());
+                if (roleObj != null)
+                {
+                    _db.user_roles.Add(new user_role
+                    {
+                        user_id = newUser.id,
+                        role_id = roleObj.id,
+                        assigned_at = DateTime.UtcNow
+                    });
+                    await _db.SaveChangesAsync();
+                }
+
+                // 10. Record Security Audit Log
+                _db.audit_logs.Add(new audit_log
+                {
+                    user_id = newUser.id,
+                    action = "USER_REGISTERED",
+                    entity_type = "USER",
+                    entity_id = newUser.id,
+                    description = $"Self-registered campus account ({normType}) pending administrative verification.",
+                    ip_address = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                    user_agent = Request.Headers["User-Agent"].ToString(),
+                    created_at = DateTime.UtcNow
+                });
+                await _db.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Registration submitted successfully! Your account is pending administrator approval. You will be able to sign in once an administrator approves your account.";
+                return RedirectToAction(nameof(Login), new { returnUrl });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing student/campus self-registration");
+                ViewBag.Error = "An error occurred while processing your registration. Please verify your details and try again.";
+                ViewBag.ReturnUrl = returnUrl;
+                await LoadDepartmentsViewBagAsync();
+                return View();
+            }
         }
 
         // =====================================================
@@ -508,7 +745,7 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                             $"<h3>Hawassa University Event Management System</h3><p>Hello {user.first_name},</p><p>We received a request to reset your password. Please click the link below to set a new password:</p><p><a href='{resetUrl}'><strong>Reset My Password</strong></a></p><p>This link expires in 30 minutes. If you did not request this, please ignore this email.</p>");
                     }
 
-                    // In local development, provide token in TempData for seamless manual testing
+                    // In local development, provide token in TempData for manual testing without an SMTP server
                     if (_env.IsDevelopment())
                     {
                         TempData["DevResetLink"] = resetUrl;

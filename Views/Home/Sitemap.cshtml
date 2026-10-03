@@ -34,7 +34,10 @@
         <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="filterByCategory('BROADCASTS', this)">Broadcasts & Calendar (3)</button>
         <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="filterByCategory('DASHBOARDS', this)">Role Dashboards (7)</button>
         <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="filterByCategory('AUTH', this)">Auth & Identity (6)</button>
-        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="filterByCategory('ADMIN', this)">Admin Control Center (21)</button>
+        @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN"))
+        {
+            <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="filterByCategory('ADMIN', this)">Admin Control Center (21)</button>
+        }
     </div>
 
     <!-- SITEMAP GRID -->
@@ -405,7 +408,7 @@
                         <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Calendar</span>
                     </div>
                 </div>
-                <p class="text-muted small mb-0">Master multi-view schedule of all university events and hall bookings.</p>
+                <p class="text-muted small mb-0">Interactive schedule of university events and venue bookings.</p>
             </a>
         </div>
 
@@ -480,40 +483,45 @@
             </a>
         </div>
 
-        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="DASHBOARDS" data-keywords="dashboard admin command center operational stats approvals">
-            <a asp-controller="Dashboard" asp-action="Admin" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
-                <div class="d-flex align-items-center gap-3 mb-2">
-                    <div class="icon-box bg-danger-subtle text-danger rounded-3 p-2">
-                        <i class="bi bi-shield-shaded fs-4"></i>
+        @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN"))
+        {
+            <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="DASHBOARDS" data-keywords="dashboard admin operational stats approvals">
+                <a asp-controller="Dashboard" asp-action="Admin" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <div class="icon-box bg-danger-subtle text-danger rounded-3 p-2">
+                            <i class="bi bi-shield-shaded fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0">Campus Admin Dashboard</h6>
+                            <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Dashboard/Admin</span>
+                        </div>
                     </div>
-                    <div>
-                        <h6 class="fw-bold text-dark mb-0">Campus Admin Dashboard</h6>
-                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Dashboard/Admin</span>
-                    </div>
-                </div>
-                <p class="text-muted small mb-0">Operational KPIs, quick shortcuts, event reviews, and user provisioning.</p>
-            </a>
-        </div>
+                    <p class="text-muted small mb-0">Operational KPIs, quick shortcuts, event reviews, and user provisioning.</p>
+                </a>
+            </div>
 
-        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="DASHBOARDS" data-keywords="dashboard superadmin master security audit telemetry db user approvals">
-            <a asp-controller="Dashboard" asp-action="SuperAdmin" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all border border-warning">
-                <div class="d-flex align-items-center gap-3 mb-2">
-                    <div class="icon-box bg-dark text-white rounded-3 p-2">
-                        <i class="bi bi-shield-lock fs-4"></i>
+            <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="DASHBOARDS" data-keywords="dashboard superadmin security audit database user approvals">
+                <a asp-controller="Dashboard" asp-action="SuperAdmin" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all border border-warning">
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <div class="icon-box bg-dark text-white rounded-3 p-2">
+                            <i class="bi bi-shield-lock fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0">SuperAdmin Dashboard</h6>
+                            <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Dashboard/SuperAdmin</span>
+                        </div>
                     </div>
-                    <div>
-                        <h6 class="fw-bold text-dark mb-0">SuperAdmin Dashboard</h6>
-                        <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Dashboard/SuperAdmin</span>
-                    </div>
-                </div>
-                <p class="text-muted small mb-0">User approvals queue, platform health, security incidents & database telemetry.</p>
-            </a>
-        </div>
+                    <p class="text-muted small mb-0">User approvals queue, system status, audit activity, and database management.</p>
+                </a>
+            </div>
+        }
 
 
-        <!-- =========================================================================
-             6. ADMIN CONTROL CENTER (ALL MODULES)
-             ========================================================================= -->
+        @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("ADMIN") || User.IsInRole("SUPERADMIN"))
+        {
+            <!-- =========================================================================
+                 6. ADMINISTRATIVE MODULES
+                 ========================================================================= -->
         <div class="col-12 sitemap-section mt-4" data-category="ADMIN">
             <h4 class="fw-bold text-dark mb-3 pb-2 border-bottom d-flex align-items-center gap-2">
                 <i class="bi bi-sliders text-danger"></i>
@@ -566,22 +574,22 @@
             </a>
         </div>
 
-        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="superadmin master command center platform governance user approvals audit">
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="superadmin administrator platform settings user approvals audit">
             <a asp-controller="Admin" asp-action="SuperAdmin" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all border-start border-warning border-4">
                 <div class="d-flex align-items-center gap-3 mb-2">
                     <div class="icon-box bg-dark text-warning rounded-3 p-2">
                         <i class="bi bi-shield-check fs-4"></i>
                     </div>
                     <div>
-                        <h6 class="fw-bold text-dark mb-0">SuperAdmin Master Console</h6>
+                        <h6 class="fw-bold text-dark mb-0">SuperAdmin Dashboard</h6>
                         <span class="badge bg-warning text-dark font-monospace" style="font-size: 10px;">/Admin/SuperAdmin</span>
                     </div>
                 </div>
-                <p class="text-muted small mb-0">Central authority platform governance, live user activations, and admin activity monitoring.</p>
+                <p class="text-muted small mb-0">Campus event administration, user account approvals, and system configuration.</p>
             </a>
         </div>
 
-        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="admin overview operations command center kpi metrics">
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="admin overview operations dashboard kpi metrics">
             <a asp-controller="Admin" asp-action="Index" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
                 <div class="d-flex align-items-center gap-3 mb-2">
                     <div class="icon-box bg-primary text-white rounded-3 p-2">
@@ -656,14 +664,14 @@
             </a>
         </div>
 
-        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="calendar admin master schedule conflicts bookings">
+        <div class="col-md-6 col-lg-4 sitemap-card-wrapper" data-category="ADMIN" data-keywords="calendar admin campus schedule conflicts bookings">
             <a asp-controller="Admin" asp-action="Calendar" class="card h-100 border-0 shadow-sm text-decoration-none sitemap-card p-3 rounded-4 transition-all">
                 <div class="d-flex align-items-center gap-3 mb-2">
                     <div class="icon-box bg-success-subtle text-success rounded-3 p-2">
                         <i class="bi bi-calendar3 fs-4"></i>
                     </div>
                     <div>
-                        <h6 class="fw-bold text-dark mb-0">Master Schedule Calendar</h6>
+                        <h6 class="fw-bold text-dark mb-0">Campus Schedule Calendar</h6>
                         <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/Calendar</span>
                     </div>
                 </div>
@@ -828,11 +836,11 @@
                         <i class="bi bi-database fs-4"></i>
                     </div>
                     <div>
-                        <h6 class="fw-bold text-dark mb-0">Database Backup & Health</h6>
+                        <h6 class="fw-bold text-dark mb-0">Database Management & Backups</h6>
                         <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/DatabaseManagement</span>
                     </div>
                 </div>
-                <p class="text-muted small mb-0">SQL backups, restore snapshots, database engine telemetry, and diagnostics.</p>
+                <p class="text-muted small mb-0">Database backups, restoration, and system status information.</p>
             </a>
         </div>
 
@@ -843,7 +851,7 @@
                         <i class="bi bi-table fs-4"></i>
                     </div>
                     <div>
-                        <h6 class="fw-bold text-dark mb-0">Live Database Records Explorer</h6>
+                        <h6 class="fw-bold text-dark mb-0">Database Records Explorer</h6>
                         <span class="badge bg-light text-muted border font-monospace" style="font-size: 10px;">/Admin/DatabaseRecords</span>
                     </div>
                 </div>
@@ -865,6 +873,7 @@
                 <p class="text-muted small mb-0">SMTP email sender configuration, security rules, and global portal branding.</p>
             </a>
         </div>
+        }
 
     </div>
 </div>

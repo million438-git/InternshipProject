@@ -81,7 +81,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     Priority = a.priority,
                     AnnouncementType = a.announcement_type,
                     ImageUrl = a.image_url,
-                    AuthorName = a.author != null ? $"{a.author.first_name} {a.author.last_name}".Trim() : "University Administration",
+                    AuthorName = a.author != null 
+                        ? ((a.author.account_type == "SUPERADMIN" || a.author.account_type == "ADMIN" || a.author.username == "superadmin" || a.author.username == "admin") 
+                            ? "University Communications" 
+                            : $"{a.author.first_name} {a.author.last_name}".Trim()) 
+                        : "University Communications",
                     DepartmentName = a.department != null ? a.department.name : "Campus Directorate",
                     PublishedDate = a.published_at ?? a.created_at,
                     ExpiresDate = a.expires_at
@@ -132,7 +136,11 @@ namespace HawassaUnifiedCampusEventManagementSystem.Controllers
                     Priority = a.priority,
                     AnnouncementType = a.announcement_type,
                     ImageUrl = a.image_url,
-                    AuthorName = a.author != null ? $"{a.author.first_name} {a.author.last_name}".Trim() : "University Administration",
+                    AuthorName = a.author != null 
+                        ? ((a.author.account_type == "SUPERADMIN" || a.author.account_type == "ADMIN" || a.author.username == "superadmin" || a.author.username == "admin") 
+                            ? "University Communications" 
+                            : $"{a.author.first_name} {a.author.last_name}".Trim()) 
+                        : "University Communications",
                     DepartmentName = a.department != null ? a.department.name : "Campus Directorate",
                     PublishedDate = a.published_at ?? a.created_at,
                     ExpiresDate = a.expires_at,

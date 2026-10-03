@@ -2,13 +2,13 @@
 
 @{
     Layout = "_SuperAdminLayout";
-    ViewData["Title"] = "Database Diagnostics & Snapshot Vault";
+    ViewData["Title"] = "Database Diagnostics & Snapshots";
 }
 
 @section Styles {
     <style>
         /* ==========================================================================
-           DB VAULT & DIAGNOSTICS STYLES
+           DATABASE DIAGNOSTICS & SNAPSHOT STYLES
            ========================================================================== */
         
         .db-vault-hero {
@@ -135,7 +135,7 @@
             color: #93c5fd;
         }
 
-        /* Snapshot Vault Items */
+        /* Snapshot Archive Items */
         .snapshot-item {
             background: var(--admin-body-bg, #f8fafc);
             border: 1px solid var(--admin-border-color, #e2e8f0);
@@ -175,51 +175,27 @@
             color: #94a3b8;
         }
 
-        /* Pulse Dot for Online Engine */
-        .pulse-indicator {
-            width: 10px;
-            height: 10px;
-            background-color: #10b981;
-            border-radius: 50%;
-            display: inline-block;
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-            animation: pulse-green 2s infinite;
-        }
-
-        @@keyframes pulse-green {
-            0% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-            }
-            70% {
-                transform: scale(1);
-                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
-            }
-            100% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-            }
         }
     </style>
 }
 
 <!-- =======================================================
-     1. VAULT HERO & COMMAND HEADER
+     1. HERO & COMMAND HEADER
      ======================================================= -->
 <div class="db-vault-hero">
     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 position-relative z-1">
         <div>
             <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                 <span class="badge bg-primary bg-opacity-25 text-primary-light border border-primary border-opacity-25 px-3 py-1 rounded-pill fw-semibold" style="font-size: 11px; letter-spacing: 0.5px;">
-                    <i class="bi bi-shield-lock-fill me-1 text-warning"></i> SUPERADMIN SECURITY VAULT
+                    <i class="bi bi-database me-1 text-info"></i> DATABASE MANAGEMENT
                 </span>
                 <span class="badge bg-success bg-opacity-25 text-success-light border border-success border-opacity-25 px-3 py-1 rounded-pill fw-semibold" style="font-size: 11px;">
-                    <span class="pulse-indicator me-1"></span> @Model.ConnectionStatus
+                    <i class="bi bi-check-circle-fill me-1"></i> @Model.ConnectionStatus
                 </span>
             </div>
-            <h1 class="h3 fw-bold text-white mb-1 tracking-tight">Database Diagnostics & Snapshot Vault</h1>
+            <h1 class="h3 fw-bold text-white mb-1 tracking-tight">Database Management & Backups</h1>
             <p class="text-white-50 small mb-0 max-w-700" style="max-width: 680px; line-height: 1.5;">
-                Centralized MySQL InnoDB telemetry, relational schema entity records, automated snapshot backups, and point-in-time disaster recovery verification.
+                Database status, relational tables, automated backups, and recovery tools.
             </p>
         </div>
 
@@ -227,13 +203,13 @@
         <div class="d-flex flex-wrap align-items-center gap-2">
             <a asp-controller="Admin" asp-action="DatabaseRecords" class="btn btn-outline-light btn-sm px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1 rounded-3">
                 <i class="bi bi-table"></i>
-                <span>Records CRUD Grid</span>
+                <span>View Table Records</span>
             </a>
             <button type="button" class="btn btn-primary btn-sm px-3 py-2 fw-semibold shadow-sm d-inline-flex align-items-center gap-1 rounded-3" data-bs-toggle="modal" data-bs-target="#snapshotModal">
                 <i class="bi bi-cloud-arrow-down-fill"></i>
-                <span>Generate Snapshot</span>
+                <span>Create Backup</span>
             </button>
-            <button type="button" class="btn btn-dark btn-sm px-2 py-2 text-white-50 hover-white rounded-3 border border-secondary border-opacity-25" onclick="window.location.reload();" title="Refresh Live Telemetry">
+            <button type="button" class="btn btn-dark btn-sm px-2 py-2 text-white-50 hover-white rounded-3 border border-secondary border-opacity-25" onclick="window.location.reload();" title="Refresh Status">
                 <i class="bi bi-arrow-clockwise"></i>
             </button>
         </div>
@@ -254,7 +230,7 @@
                 <span class="text-muted small text-uppercase fw-semibold" style="font-size: 11px; letter-spacing: 0.5px;">Engine & Host</span>
                 <h2 class="h5 fw-bold mb-0 text-truncate text-dark">@Model.DatabaseName</h2>
                 <small class="text-muted text-truncate d-block" style="font-size: 12px;">
-                    <span class="text-success fw-semibold">● @Model.ServerHost</span> &bull; MySQL 8.0
+                    <span class="text-success fw-semibold"><i class="bi bi-hdd me-1"></i>@Model.ServerHost</span> &bull; MySQL 8.0
                 </small>
             </div>
         </div>
@@ -292,14 +268,14 @@
         </div>
     </div>
 
-    <!-- Card 4: Vault Storage -->
+    <!-- Card 4: Backup Storage -->
     <div class="col-sm-6 col-xl-3">
         <div class="db-stat-card">
             <div class="stat-icon-wrapper bg-info-subtle text-info-emphasis">
                 <i class="bi bi-safe2-fill"></i>
             </div>
             <div class="min-w-0">
-                <span class="text-muted small text-uppercase fw-semibold" style="font-size: 11px; letter-spacing: 0.5px;">Vault Snapshots</span>
+                <span class="text-muted small text-uppercase fw-semibold" style="font-size: 11px; letter-spacing: 0.5px;">Backup Snapshots</span>
                 <h2 class="h5 fw-bold mb-0 text-dark">@Model.BackupFiles.Count Archives</h2>
                 <small class="text-muted text-truncate d-block" style="font-size: 12px;">
                     @(Model.LastBackupTimestamp.HasValue ? "Latest: " + Model.LastBackupTimestamp.Value.ToString("MMM dd, HH:mm") + " UTC" : "Zero Snapshots")
@@ -435,7 +411,7 @@
         </div>
     </div>
 
-    <!-- RIGHT COLUMN: SNAPSHOT VAULT & RECOVERY ARCHIVE -->
+    <!-- RIGHT COLUMN: SNAPSHOTS & RECOVERY ARCHIVE -->
     <div class="col-xl-5">
         <div class="schema-card-box">
             
@@ -446,7 +422,7 @@
                         <i class="bi bi-safe2-fill"></i>
                     </div>
                     <div>
-                        <h2 class="h6 fw-bold text-dark mb-0">Disaster Recovery Snapshot Vault</h2>
+                        <h2 class="h6 fw-bold text-dark mb-0">Database Backup Snapshots</h2>
                         <small class="text-muted">@Model.BackupFiles.Count point-in-time SQL archives</small>
                     </div>
                 </div>
@@ -465,7 +441,7 @@
                         <div class="p-3 bg-primary-subtle text-primary rounded-circle d-inline-flex mb-3">
                             <i class="bi bi-cloud-arrow-down fs-2"></i>
                         </div>
-                        <h3 class="h6 fw-bold text-dark mb-1">No Database Snapshots Vaulted</h3>
+                        <h3 class="h6 fw-bold text-dark mb-1">No Database Snapshots Available</h3>
                         <p class="small text-muted mb-3 max-w-300 mx-auto" style="max-width: 320px;">
                             Secure your database schema, users, events, and audit logs by generating an immutable SQL dump snapshot.
                         </p>
@@ -477,7 +453,7 @@
                 else
                 {
                     <div class="mb-3">
-                        <input type="text" class="form-control form-control-sm" id="snapshotFilterInput" placeholder="Search vaulted files by name or date..." />
+                        <input type="text" class="form-control form-control-sm" id="snapshotFilterInput" placeholder="Search backup files by name or date..." />
                     </div>
 
                     <div id="snapshotListContainer">
@@ -549,9 +525,9 @@
 
             </div>
 
-            <!-- VAULT FOOTER -->
+            <!-- BACKUP STATUS FOOTER -->
             <div class="p-3 border-top bg-body-tertiary d-flex justify-content-between align-items-center small text-muted">
-                <span>Vault Status: <strong class="text-success">Active & Encrypted</strong></span>
+                <span>Storage Status: <strong class="text-success">Active & Protected</strong></span>
                 <span class="text-muted"><i class="bi bi-lock-fill me-1"></i>SuperAdmin Only</span>
             </div>
 
@@ -586,7 +562,7 @@
             </div>
             <div class="flex-grow-1">
                 <h3 class="h6 fw-bold text-dark mb-1">Security Audit Trail</h3>
-                <p class="text-muted small mb-2">Track all administrative logins, record mutations, and vault operations.</p>
+                <p class="text-muted small mb-2">Track all administrative logins, record mutations, and database operations.</p>
                 <a asp-controller="Admin" asp-action="AuditLogs" class="text-primary fw-bold text-decoration-none small d-inline-flex align-items-center gap-1">
                     <span>View Audit Logs</span>
                     <i class="bi bi-arrow-right"></i>
@@ -667,7 +643,7 @@
                 <div class="modal-footer border-top bg-body-tertiary p-3">
                     <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold" id="btnSubmitSnapshot">
-                        <i class="bi bi-shield-check me-1"></i>Generate & Vault Now
+                        <i class="bi bi-shield-check me-1"></i>Generate Snapshot Now
                     </button>
                 </div>
             </form>
@@ -691,8 +667,8 @@
                             <i class="bi bi-exclamation-triangle-fill"></i>
                         </div>
                         <div>
-                            <h2 class="modal-title h5 fw-bold mb-0 text-white" id="restoreModalLabel">Authorize Database Restoration</h2>
-                            <small class="text-white-50">Disaster recovery verification safeguard</small>
+                            <h2 class="modal-title h5 fw-bold mb-0 text-white" id="restoreModalLabel">Confirm Database Restoration</h2>
+                            <small class="text-white-50">Database restoration safeguard</small>
                         </div>
                     </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -700,12 +676,12 @@
 
                 <div class="modal-body p-4">
                     <div class="alert alert-warning border-0 rounded-3 small mb-3">
-                        <strong>Security Safeguard:</strong> You are about to initiate database restoration verification from snapshot archive:
+                        <strong>Warning:</strong> You are about to restore the database from backup:
                         <div class="mt-2 p-2 bg-white rounded border font-monospace fw-bold text-danger text-break" id="restoreFileNameDisplay"></div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-dark">SuperAdmin Security Clearance Password</label>
+                        <label class="form-label small fw-bold text-dark">SuperAdmin Password Confirmation</label>
                         <div class="input-group">
                             <input type="password" name="superAdminPassword" id="superAdminPasswordInput" class="form-control" placeholder="Enter SuperAdmin password" required autocomplete="current-password" />
                             <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('superAdminPasswordInput', this)">
@@ -719,7 +695,7 @@
                 <div class="modal-footer border-top bg-body-tertiary p-3">
                     <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-danger rounded-pill px-4 fw-semibold">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i>Authorize & Restore
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Confirm & Restore
                     </button>
                 </div>
             </form>

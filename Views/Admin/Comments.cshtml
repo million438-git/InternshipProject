@@ -16,7 +16,7 @@
                 <li class="breadcrumb-item active" aria-current="page">Comments & Moderation</li>
             </ol>
         </nav>
-        <h1 class="h3 fw-bold text-dark mb-1">💬 Community Feedback & Content Moderation</h1>
+        <h1 class="h3 fw-bold text-dark mb-1"><i class="bi bi-chat-left-text me-2 text-primary"></i>Community Feedback & Content Moderation</h1>
         <p class="text-muted small mb-0">Oversee campus event discussions, monitor attendee sentiment and star ratings, and moderate inappropriate submissions.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
@@ -109,10 +109,10 @@
             <div class="col-6 col-md-3">
                 <select name="rating" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="ALL" selected="@(Model.RatingFilter == null || Model.RatingFilter == "ALL")">All Star Ratings</option>
-                    <option value="5" selected="@(Model.RatingFilter == "5")">⭐⭐⭐⭐⭐ 5 Stars</option>
-                    <option value="4" selected="@(Model.RatingFilter == "4")">⭐⭐⭐⭐ 4 Stars</option>
-                    <option value="3" selected="@(Model.RatingFilter == "3")">⭐⭐⭐ 3 Stars</option>
-                    <option value="CRITICAL" selected="@(Model.RatingFilter == "CRITICAL")">⚠️ 1-2 Stars (Critical)</option>
+                    <option value="5" selected="@(Model.RatingFilter == "5")">5 Stars</option>
+                    <option value="4" selected="@(Model.RatingFilter == "4")">4 Stars</option>
+                    <option value="3" selected="@(Model.RatingFilter == "3")">3 Stars</option>
+                    <option value="CRITICAL" selected="@(Model.RatingFilter == "CRITICAL")">1-2 Stars (Low Rating)</option>
                 </select>
             </div>
         }
